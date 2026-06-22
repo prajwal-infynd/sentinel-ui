@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace } from "lucide-react";
+import { AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
