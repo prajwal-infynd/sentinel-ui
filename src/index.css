@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 40% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 40% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 40% 8%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 220 40% 8%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 263 70% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --navy: 220 53% 9%;
+    --navy-foreground: 220 20% 95%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 220 53% 9%;
+    --sidebar-foreground: 220 20% 85%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 40% 15%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 220 30% 16%;
+    --sidebar-ring: 221 83% 53%;
+    --sidebar-muted: 220 15% 40%;
+  }
+
+  .dark {
+    --background: 220 53% 5%;
+    --foreground: 220 20% 95%;
+    --card: 220 40% 8%;
+    --card-foreground: 220 20% 95%;
+    --popover: 220 40% 8%;
+    --popover-foreground: 220 20% 95%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 30% 14%;
+    --secondary-foreground: 220 20% 95%;
+    --muted: 220 20% 14%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 263 70% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 20% 16%;
+    --input: 220 20% 16%;
+    --ring: 221 83% 53%;
+    --sidebar-background: 220 53% 5%;
+    --sidebar-foreground: 220 20% 85%;
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 30% 12%;
+    --sidebar-accent-foreground: 220 20% 95%;
+    --sidebar-border: 220 20% 12%;
+    --sidebar-ring: 221 83% 53%;
+    --sidebar-muted: 220 15% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  code, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  /* Hide sidebar and top navigation for clean PDF export */
+  nav, header, aside, .sidebar, button {
+    display: none !important;
+  }
+  
+  /* Ensure main content takes full width */
+  main {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Force light theme colors for printing */
+  body {
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .bg-card, .bg-muted {
+    background-color: white !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Prevent page breaks inside cards */
+  .rounded-2xl, .rounded-xl {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
