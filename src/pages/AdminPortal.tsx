@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2, Search } from "lucide-react";
+import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2, Search, Loader2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAuditLogs } from "@/lib/policy-data";
 
 const initialUsersData = [
   { id: 1, name: "Sarah Jenkins", role: "Lead Investigator", email: "sarah.j@sentinel.com", tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
@@ -41,6 +43,11 @@ const spendData = [
 export default function AdminPortal() {
   const [users, setUsers] = useState(initialUsersData);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const { data: globalLogs, isLoading: isLogsLoading } = useQuery({ 
+    queryKey: ["global-audit-logs"], 
+    queryFn: () => fetchAuditLogs() 
+  });
 
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -328,6 +335,49 @@ export default function AdminPortal() {
             </Card>
           </motion.div>
         </div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+          <Card className="border-border/50 shadow-sm">
+            <CardHeader>
+              <CardTitle>Global Policy Changes</CardTitle>
+              <CardDescription>Comprehensive audit log of all compliance policy configurations across all data sources.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-muted-foreground bg-muted/30 border-y border-border/50">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold">Date & Time</th>
+                      <th className="px-4 py-3 font-semibold">Data Source / Entity</th>
+                      <th className="px-4 py-3 font-semibold">Action Taken</th>
+                      <th className="px-4 py-3 font-semibold">User</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {isLogsLoading ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></td>
+                      </tr>
+                    ) : !globalLogs || globalLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No policy changes recorded yet.</td>
+                      </tr>
+                    ) : (
+                      globalLogs.map((log: any) => (
+                        <tr key={log.id} className="bg-white hover:bg-muted/20">
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">{new Date(log.timestamp).toLocaleString()}</td>
+                          <td className="px-4 py-3 font-medium text-indigo-700">{log.entity}</td>
+                          <td className="px-4 py-3">{log.action}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{log.user}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
       </div>
     </DashboardLayout>

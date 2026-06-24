@@ -9,6 +9,7 @@ import PortfolioOnboarding from "./pages/PortfolioOnboarding";
 import Dashboard from "./pages/Dashboard";
 import LiveAlerts from "./pages/LiveAlerts";
 import Investigation from "./pages/Investigation";
+import InvestigationsList from "./pages/InvestigationsList";
 import AIAgents from "./pages/AIAgents";
 import DataArchitecture from "./pages/DataArchitecture";
 import PolicyConfig from "./pages/PolicyConfig";
@@ -28,22 +29,25 @@ import MediaExplainability from "./pages/media/MediaExplainability";
 import MediaAutomation from "./pages/media/MediaAutomation";
 import Settings from "./pages/Settings";
 import AdminPortal from "./pages/AdminPortal";
+import { InvestigationsProvider } from "./context/InvestigationsContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+      <InvestigationsProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/demo" element={<DemoEntry />} />
           <Route path="/portfolio" element={<PortfolioOnboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/alerts" element={<LiveAlerts />} />
-          <Route path="/investigations" element={<Investigation />} />
+          <Route path="/investigations" element={<InvestigationsList />} />
+          <Route path="/investigations/:id" element={<Investigation />} />
           <Route path="/agents" element={<AIAgents />} />
           <Route path="/architecture" element={<DataArchitecture />} />
           <Route path="/policy" element={<PolicyConfig />} />
@@ -65,6 +69,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+    </InvestigationsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

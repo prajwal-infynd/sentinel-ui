@@ -322,10 +322,11 @@ const Dashboard = () => {
                   )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground relative">
-                  <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                     <span>Assigned</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
                       <button className="px-2 py-1 text-[10px] font-bold uppercase text-indigo-600 hover:bg-indigo-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate("/investigations", { state: { entity: e } }); }}>Investigate</button>
+                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-emerald-600 hover:bg-emerald-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate(`/policy?entity=${encodeURIComponent(e.name)}`); }}>Policy</button>
                       <button className="px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded" onClick={(ev) => { 
                         ev.stopPropagation(); 
                         setMutedEntities(prev => {

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useInvestigations } from "@/context/InvestigationsContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,8 +54,13 @@ const defaultDebate = [
 ];
 
 const Investigation = () => {
+  const { id } = useParams();
   const location = useLocation();
-  const entity = location.state?.entity || {
+  const navigate = useNavigate();
+  const { getCaseById, updateCaseStatus, assignUser } = useInvestigations();
+  
+  const caseData = id ? getCaseById(id) : null;
+  const entity = caseData?.entity || location.state?.entity || {
     name: "John Doe",
     entity_type: "individual",
     jurisdiction: "UK",
@@ -64,7 +70,10 @@ const Investigation = () => {
   const isCompany = entity.entity_type === "company";
   
   const [isSarOpen, setIsSarOpen] = useState(false);
-  const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">("pending");
+  const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">(
+    caseData?.status === "Approved" || caseData?.status === "Resolved" ? "approved" : 
+    caseData?.status === "Dismissed" ? "dismissed" : "pending"
+  );
   const [isExplainableOpen, setIsExplainableOpen] = useState(false);
 
   // Dynamic Debate State
@@ -186,6 +195,11 @@ const Investigation = () => {
   return (
   <DashboardLayout>
     <div className="p-6 space-y-5">
+      <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground pl-0 -ml-2" onClick={() => navigate('/investigations')}>
+        <ArrowLeft className="h-4 w-4" />
+        Back to Inbox
+      </Button>
+
       {/* Case Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
@@ -252,7 +266,11 @@ const Investigation = () => {
                   size="sm" 
                   onClick={() => {
                     setCaseStatus("approving");
-                    setTimeout(() => setCaseStatus("approved"), 1200);
+                    setTimeout(() => {
+                      setCaseStatus("approved");
+                      if (id) updateCaseStatus(id, "Approved");
+                      toast({ title: "Case Approved", description: "This case has been marked as approved." });
+                    }, 1200);
                   }}
                   disabled={caseStatus !== "pending"}
                   className={`h-9 gap-2 text-xs font-bold rounded-xl shadow-md transition-all duration-300 w-full ${
@@ -281,7 +299,11 @@ const Investigation = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setCaseStatus("dismissed")}
+                    onClick={() => {
+                      setCaseStatus("dismissed");
+                      if (id) updateCaseStatus(id, "Dismissed");
+                      toast({ title: "Case Dismissed", description: "This case has been dismissed.", variant: "destructive" });
+                    }}
                     className="h-9 px-2 border-destructive/20 text-destructive hover:bg-destructive/10"
                   >
                     <XCircle className="h-4 w-4" />
@@ -289,7 +311,21 @@ const Investigation = () => {
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => toast({ title: "Case Assigned", description: "The case has been assigned to you." })} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted w-1/2"><UserPlus className="h-4 w-4" /> Assign</Button>
+                <div className="w-1/2">
+                  <Select onValueChange={(val) => {
+                    if (id) assignUser(id, val);
+                    toast({ title: "Assigned", description: `Case assigned to ${val}` });
+                  }}>
+                    <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-white hover:bg-muted">
+                      <SelectValue placeholder={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Assign</div>} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Admin">Admin (You)</SelectItem>
+                      <SelectItem value="Sarah K.">Sarah K.</SelectItem>
+                      <SelectItem value="Michael R.">Michael R.</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button variant="outline" size="sm" onClick={() => setIsSarOpen(true)} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-indigo-50 hover:text-indigo-600 border-indigo-200 text-indigo-700 w-1/2 group relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <FileSignature className="h-4 w-4" /> Auto-SAR

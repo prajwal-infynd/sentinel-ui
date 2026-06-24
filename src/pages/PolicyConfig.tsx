@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPolicyConfig, savePolicyConfig, type Watchlist, type PolicyConfigData } from "@/lib/policy-data";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { fetchPolicyConfig, savePolicyConfig, fetchAuditLogs, rollbackPolicy, type Watchlist, type PolicyConfigData } from "@/lib/policy-data";
 import { toast } from "@/components/ui/use-toast";
 import Xarrow, { Xwrapper, useXarrow } from "react-xarrows";
 
@@ -87,6 +88,10 @@ const DraggableNode = ({ node, bringToFront }: any) => {
 };
 
 const PolicyConfig = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const entityName = searchParams.get('entity');
+
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["policy-config"], queryFn: fetchPolicyConfig });
 
@@ -94,6 +99,12 @@ const PolicyConfig = () => {
   const [confidence, setConfidence] = useState([75]);
   const [severity, setSeverity] = useState([60]);
   const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+
+  const { data: auditLogs, isLoading: isLogsLoading } = useQuery({ 
+    queryKey: ["policy-audit-logs", entityName], 
+    queryFn: () => fetchAuditLogs(entityName!),
+    enabled: !!entityName
+  });
 
   // Add Policy State
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -138,10 +149,20 @@ const PolicyConfig = () => {
   }, [data]);
 
   const saveMutation = useMutation({
-    mutationFn: (config: PolicyConfigData) => savePolicyConfig(config),
+    mutationFn: (config: PolicyConfigData) => savePolicyConfig(entityName!, config),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["policy-config"] });
+      queryClient.invalidateQueries({ queryKey: ["policy-audit-logs"] });
       toast({ title: "Policy Saved", description: "Your policy configuration has been updated.", variant: "default" });
+    },
+  });
+
+  const rollbackMutation = useMutation({
+    mutationFn: (logId: string) => rollbackPolicy(entityName!, logId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["policy-config"] });
+      queryClient.invalidateQueries({ queryKey: ["policy-audit-logs"] });
+      toast({ title: "Policy Rolled Back", description: "Successfully reverted to the selected historical version.", variant: "default" });
     },
   });
 
@@ -201,13 +222,28 @@ const PolicyConfig = () => {
     });
   };
 
+  if (!entityName) {
+    return (
+      <DashboardLayout>
+        <div className="p-6 max-w-4xl mx-auto flex flex-col items-center justify-center text-center mt-32">
+          <Shield className="h-16 w-16 text-indigo-300 mb-6" />
+          <h1 className="text-3xl font-bold tracking-tight mb-3">No Data Source Selected</h1>
+          <p className="text-muted-foreground mb-8 max-w-md">The policy layer is dynamically configured per data source. Please select an uploaded data source or API from the Data Sources page to configure its specific rules and thresholds.</p>
+          <Button onClick={() => navigate('/architecture')} className="bg-indigo-600 hover:bg-indigo-700 shadow-md">Go to Data Sources</Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6 max-w-4xl">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-between items-start">
+      <div className="p-6 space-y-6 max-w-4xl mx-auto">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight mb-1">Policy Configuration</h1>
-            <p className="text-sm text-muted-foreground">Configure screening rules, watchlists, and alert thresholds</p>
+            <h1 className="text-2xl font-bold tracking-tight mb-1 text-indigo-950 flex items-center gap-2">
+              <span className="text-muted-foreground font-normal text-lg">Policy Layer /</span> {entityName}
+            </h1>
+            <p className="text-sm text-muted-foreground">Configure entity-specific screening rules, watchlists, and alert thresholds.</p>
           </div>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
@@ -253,19 +289,35 @@ const PolicyConfig = () => {
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-6">
                 <h3 className="text-base font-bold tracking-tight mb-5">Policy Change History</h3>
                 <div className="space-y-4">
-                  {[
-                    { date: "2026-06-24 09:12", user: "Admin", action: "Updated KYB Thresholds from 70% to 75%" },
-                    { date: "2026-06-23 14:45", user: "System", action: "Deployed new Agent Pipeline rules" },
-                    { date: "2026-06-21 11:20", user: "Compliance Officer", action: "Added new Watchlist: APAC Sanctions" }
-                  ].map((log, i) => (
-                    <div key={i} className="flex justify-between items-center border-b border-border/50 pb-3 last:border-0 last:pb-0">
-                      <div>
-                        <div className="text-sm font-semibold">{log.action}</div>
-                        <div className="text-xs text-muted-foreground mt-1">by {log.user}</div>
+                  {isLogsLoading ? (
+                    <div className="flex justify-center py-10"><Loader2 className="animate-spin text-muted-foreground h-6 w-6" /></div>
+                  ) : !auditLogs || auditLogs.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground text-sm">No historical changes found for this entity.</div>
+                  ) : (
+                    auditLogs.map((log, i) => (
+                      <div key={log.id} className="flex justify-between items-center border-b border-border/50 pb-4 last:border-0 last:pb-0 group">
+                        <div>
+                          <div className="text-sm font-semibold">{log.action}</div>
+                          <div className="text-xs text-muted-foreground mt-1">by {log.user}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-xs font-mono text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</div>
+                          {i !== 0 && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-7 text-xs bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"
+                              onClick={() => rollbackMutation.mutate(log.id)}
+                              disabled={rollbackMutation.isPending}
+                            >
+                              {rollbackMutation.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                              Rollback
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-xs font-mono text-muted-foreground">{log.date}</div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </motion.div>
             </TabsContent>

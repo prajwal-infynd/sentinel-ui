@@ -1,5 +1,6 @@
 import MockAdapter from "axios-mock-adapter";
 import { apiClient } from "./api-client";
+import { formatRelativeTime } from "./utils";
 
 // Initialize mock adapter
 export const mock = new MockAdapter(apiClient, { delayResponse: 500 }); // simulate network delay
@@ -76,17 +77,6 @@ mock.onGet("/investigations/snapshot").reply(200, {
 mock.onPost("/portfolio/import").reply(200, { imported: 3 });
 
 // --- MEDIA AGENT DATA ---
-
-const formatRelativeTime = (value?: string | null) => {
-  if (!value) return "—";
-  const diffMs = Date.now() - new Date(value).getTime();
-  const diffMin = Math.max(1, Math.floor(diffMs / 60000));
-  if (diffMin < 60) return `${diffMin} min ago`;
-  const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return `${diffHours} hr ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-};
 
 mock.onGet("/media/summary").reply(200, {
   sourcesScanned: 154, articlesProcessed: 4215, riskSignals: 892, highRiskAlerts: 42, entitiesImpacted: 118, falsePositiveRate: 12.5, avgConfidence: 88.4, activeAgents: 3
@@ -226,10 +216,59 @@ let policyConfigData = {
   severity: [60]
 };
 
-mock.onGet("/policy/config").reply(() => [200, policyConfigData]);
+const entityPolicyConfigs: Record<string, any> = {};
+let policyAuditLogs: any[] = [
+  { id: "1", entity: "Historical_SAR_Filings_2023.csv", timestamp: new Date(Date.now() - 86400000).toISOString(), user: "System", action: "Initial policy configuration", configState: policyConfigData },
+  { id: "2", entity: "Google", timestamp: new Date(Date.now() - 172800000).toISOString(), user: "Admin", action: "Updated thresholds", configState: policyConfigData }
+];
+
+mock.onGet(/\/policy\/config.*/).reply((config) => {
+  const params = new URLSearchParams(config.url?.split("?")[1]);
+  const entity = params.get("entity") || "default";
+  return [200, entityPolicyConfigs[entity] || policyConfigData];
+});
 
 mock.onPost("/policy/config").reply((config) => {
-  policyConfigData = JSON.parse(config.data);
+  const { entity, config: newConfig } = JSON.parse(config.data);
+  entityPolicyConfigs[entity] = newConfig;
+  
+  const log = {
+    id: Date.now().toString(),
+    entity,
+    timestamp: new Date().toISOString(),
+    user: "Admin",
+    action: "Updated Policy Configuration",
+    configState: newConfig
+  };
+  policyAuditLogs.unshift(log);
+  
+  return [200, { success: true }];
+});
+
+mock.onGet(/\/policy\/audit-logs.*/).reply((config) => {
+  const params = new URLSearchParams(config.url?.split("?")[1]);
+  const entity = params.get("entity");
+  if (entity) {
+    return [200, policyAuditLogs.filter(l => l.entity === entity)];
+  }
+  return [200, policyAuditLogs];
+});
+
+mock.onPost("/policy/rollback").reply((config) => {
+  const { entity, logId } = JSON.parse(config.data);
+  const log = policyAuditLogs.find(l => l.id === logId);
+  if (log) {
+    entityPolicyConfigs[entity] = log.configState;
+    const newLog = {
+      id: Date.now().toString(),
+      entity,
+      timestamp: new Date().toISOString(),
+      user: "Admin",
+      action: `Rolled back to version from ${new Date(log.timestamp).toLocaleTimeString()}`,
+      configState: log.configState
+    };
+    policyAuditLogs.unshift(newLog);
+  }
   return [200, { success: true }];
 });
 
@@ -239,4 +278,14 @@ mock.onGet("/portfolio/sample-preview").reply(200, [
   { id: "CUST-00389", name: "Al Noor Trading LLC", type: "Company", dob: "2011-06-10", country: "UAE", regNo: "DXB-2011-4827", risk: "Critical", onboarded: "2022-09-01" },
   { id: "CUST-01204", name: "Maria Petrov", type: "Individual", dob: "1978-11-30", country: "Russia", regNo: "—", risk: "Medium", onboarded: "2023-06-20" },
   { id: "CUST-00671", name: "Eastern Capital Partners", type: "Company", dob: "2015-02-14", country: "Singapore", regNo: "SG-201504821K", risk: "Medium", onboarded: "2023-03-10" },
+]);
+
+// --- MASTER DATA INDEX ---
+mock.onGet("/unified-records").reply(200, [
+  { id: "ur_1", entity: "John Doe", contextSnippet: "Customer profile matched with internal banking records. Risk score updated.", sourceName: "Banking API", sourceType: "api", confidence: 99, timestamp: new Date(Date.now() - 3600000).toISOString() },
+  { id: "ur_2", entity: "Acme Corp", contextSnippet: "Found in transaction logs associated with high-risk jurisdictions.", sourceName: "SAR_Filings.csv", sourceType: "csv", confidence: 85, timestamp: new Date(Date.now() - 7200000).toISOString() },
+  { id: "ur_3", entity: "Jane Smith", contextSnippet: "Listed as beneficial owner in recent KYC documents.", sourceName: "KYC_Records.pdf", sourceType: "pdf", confidence: 92, timestamp: new Date(Date.now() - 86400000).toISOString() },
+  { id: "ur_4", entity: "Global Tech LLC", contextSnippet: "Entity flagged on internal sanctions monitoring list.", sourceName: "Sanctions.xlsx", sourceType: "excel", confidence: 100, timestamp: new Date(Date.now() - 150000).toISOString() },
+  { id: "ur_5", entity: "Acme Corp", contextSnippet: "Mentioned in quarterly board meeting minutes regarding compliance audit.", sourceName: "Board_Minutes.docx", sourceType: "doc", confidence: 78, timestamp: new Date(Date.now() - 172800000).toISOString() },
+  { id: "ur_6", entity: "Frontier Ltd", contextSnippet: "Cross-referenced with external watchlist API feed.", sourceName: "Watchlist API", sourceType: "api", confidence: 95, timestamp: new Date(Date.now() - 50000).toISOString() }
 ]);
