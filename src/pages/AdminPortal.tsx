@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2, Search } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
