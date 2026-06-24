@@ -16,28 +16,61 @@ mock.onGet("/dashboard/summary").reply(200, {
   activeAgentRuns: 3,
 });
 
-mock.onGet("/portfolio/entities").reply(200, [
+const mockEntities = [
   { id: "1", name: "Acme Corp", entity_type: "company", jurisdiction: "US", risk_score: 85, latest_signal: "Adverse Media Mention", last_screened_at: new Date().toISOString(), status: "Active" },
   { id: "2", name: "Global Tech", entity_type: "company", jurisdiction: "UK", risk_score: 42, latest_signal: "PEP Match", last_screened_at: new Date().toISOString(), status: "Active" },
   { id: "3", name: "John Doe", entity_type: "individual", jurisdiction: "EU", risk_score: 92, latest_signal: "Sanctions List", last_screened_at: new Date().toISOString(), status: "Active" },
-]);
+  { id: "4", name: "Helena Rostova", entity_type: "individual", jurisdiction: "UK", risk_score: 82, latest_signal: "PEP Record Updated", last_screened_at: new Date().toISOString(), status: "Active" },
+  { id: "5", name: "Desert Sands Construction", entity_type: "company", jurisdiction: "QA", risk_score: 61, latest_signal: "Adverse Media", last_screened_at: new Date().toISOString(), status: "Active" },
+  { id: "7", name: "Novosibirsk Logistics Ltd", entity_type: "company", jurisdiction: "RU", risk_score: 98, latest_signal: "State-Sponsored Cyber Activity", last_screened_at: new Date().toISOString(), status: "Critical" },
+  { id: "8", name: "Sinaloa Agribusiness Corp", entity_type: "company", jurisdiction: "MX", risk_score: 96, latest_signal: "Cartel Front Company", last_screened_at: new Date().toISOString(), status: "Critical" },
+  { id: "9", name: "Dr. Chen Wei", entity_type: "individual", jurisdiction: "HK", risk_score: 88, latest_signal: "IP Theft Allegation", last_screened_at: new Date().toISOString(), status: "Active" },
+  { id: "10", name: "Panama Trust Services", entity_type: "company", jurisdiction: "PA", risk_score: 85, latest_signal: "Panama Papers Associated", last_screened_at: new Date().toISOString(), status: "Active" },
+];
+
+mock.onGet("/portfolio/entities").reply(() => [200, mockEntities]);
+
+mock.onPatch(/\/portfolio\/entities\/.+\/status/).reply((config) => {
+  const match = config.url?.match(/\/portfolio\/entities\/(.+)\/status/);
+  if (match) {
+    const id = match[1];
+    const { status } = JSON.parse(config.data);
+    const entityIndex = mockEntities.findIndex(e => e.id === id);
+    if (entityIndex !== -1) {
+      mockEntities[entityIndex] = { ...mockEntities[entityIndex], status };
+      return [200, mockEntities[entityIndex]];
+    }
+  }
+  return [404, { message: "Entity not found" }];
+});
 
 mock.onGet("/alerts").reply(200, [
   { id: "a1", title: "Sanctions Match", summary: "Entity matched with OFAC sanctions list.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 95, status: "open", monitored_entities: { name: "John Doe" }, media_articles: { headline: "John Doe added to sanctions list" } },
   { id: "a2", title: "Adverse Media", summary: "Negative news regarding fraud allegations.", severity: "high", generated_at: new Date(Date.now() - 3600000).toISOString(), confidence_score: 88, status: "investigating", monitored_entities: { name: "Acme Corp" }, media_articles: { headline: "Acme Corp under investigation for fraud" } },
+  { id: "a3", title: "Suspected sanctions evasion network", summary: "Vladimir Sokolov linked to shell company network in Cyprus", severity: "critical", generated_at: new Date(Date.now() - 60000).toISOString(), confidence_score: 91, status: "open", monitored_entities: { name: "Vladimir Sokolov" }, media_articles: { headline: "Cyprus shell companies tied to sanctioned individuals" } },
+  { id: "a5", title: "State-Sponsored Cyber Activity Detected", summary: "Entity identified as a front for Russian intelligence cyber operations targeting financial infrastructure.", severity: "critical", generated_at: new Date(Date.now() - 45000).toISOString(), confidence_score: 98, status: "open", monitored_entities: { name: "Novosibirsk Logistics Ltd" }, media_articles: { headline: "Treasury sanctions cyber warfare fronts" } },
+  { id: "a6", title: "Cartel Front Company Allegations", summary: "Mexican agribusiness flagged for laundering illicit narcotics proceeds through shell networks.", severity: "critical", generated_at: new Date(Date.now() - 120000).toISOString(), confidence_score: 96, status: "investigating", monitored_entities: { name: "Sinaloa Agribusiness Corp" }, media_articles: { headline: "DOJ indicts massive cartel laundering ring" } },
+  { id: "a7", title: "Corporate Espionage / IP Theft", summary: "High-ranking executive accused of transferring proprietary trading algorithms to foreign state.", severity: "high", generated_at: new Date(Date.now() - 86400000).toISOString(), confidence_score: 88, status: "open", monitored_entities: { name: "Dr. Chen Wei" }, media_articles: { headline: "Tech giant executive charged with espionage" } },
+  { id: "a8", title: "Offshore Tax Evasion Leak", summary: "Entity appeared in recent leak of offshore trust structures facilitating widespread tax evasion.", severity: "medium", generated_at: new Date(Date.now() - 172800000).toISOString(), confidence_score: 85, status: "resolved", monitored_entities: { name: "Panama Trust Services" }, media_articles: { headline: "New offshore leak exposes corporate tax havens" } },
 ]);
 
 mock.onGet("/agents/runs").reply(200, [
   { id: "r1", agent_name: "News Crawler", stage: "Extraction", status: "running", started_at: new Date().toISOString(), details: { summary: "Crawling latest financial news" }, output_count: 15, average_confidence: 85 },
   { id: "r2", agent_name: "Entity Matcher", stage: "Matching", status: "completed", started_at: new Date(Date.now() - 7200000).toISOString(), details: { summary: "Matched 150 entities" }, output_count: 150, average_confidence: 92 },
+  { id: "r3", agent_name: "Risk Scorer", stage: "Scoring", status: "running", started_at: new Date(Date.now() - 300000).toISOString(), details: { summary: "Calculating proximity scores for Russian logistics network" }, output_count: 42, average_confidence: 88 },
+  { id: "r4", agent_name: "Network Analyzer", stage: "Graph Analysis", status: "running", started_at: new Date(Date.now() - 600000).toISOString(), details: { summary: "Mapping cartel money laundering typologies" }, output_count: 12, average_confidence: 96 },
 ]);
 
 mock.onGet("/investigations/snapshot").reply(200, {
   alert: {
-    id: "a1", title: "Sanctions Match", summary: "Entity matched with OFAC sanctions list.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 95, status: "open", monitored_entities: { name: "John Doe" }, media_articles: { headline: "John Doe added to sanctions list" }, risk_signals: [{ category: "Sanctions", confidence_score: 95 }]
+    id: "a5", title: "State-Sponsored Cyber Activity Detected", summary: "Entity identified as a front for Russian intelligence cyber operations targeting financial infrastructure. Critical match against Treasury OFAC Cyber Sanctions program.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 98, status: "open", monitored_entities: { name: "Novosibirsk Logistics Ltd" }, media_articles: { headline: "Treasury sanctions cyber warfare fronts" }, risk_signals: [{ category: "Sanctions", confidence_score: 98 }, { category: "Cybersecurity", confidence_score: 99 }]
   },
-  caseRecord: { id: "c1", status: "open", opened_at: new Date().toISOString(), title: "Investigation into John Doe" },
-  notes: [{ id: "n1", body: "Initial review started. Awaiting further documentation.", created_at: new Date().toISOString() }],
+  caseRecord: { id: "c1", status: "open", opened_at: new Date(Date.now() - 86400000).toISOString(), title: "Investigation into Novosibirsk Cyber Network" },
+  notes: [
+    { id: "n1", body: "Initial review started. Awaiting further documentation from the cyber threat intelligence team regarding the IP routing through this logistics firm.", created_at: new Date(Date.now() - 80000000).toISOString() },
+    { id: "n2", body: "CRITICAL: External threat intelligence confirms that Novosibirsk Logistics Ltd is a confirmed shell company operating on behalf of APT29. They are facilitating server payments for malware C2 infrastructure.", created_at: new Date(Date.now() - 40000000).toISOString() },
+    { id: "n3", body: "Escalating to FinCEN and filing a SAR immediately. Freezing all associated accounts connected to their Singapore subsidiary.", created_at: new Date().toISOString() }
+  ],
 });
 
 mock.onPost("/portfolio/import").reply(200, { imported: 3 });
@@ -92,7 +125,11 @@ mock.onGet(/\/media\/alerts.*/).reply(200, Array.from({ length: 12 }, (_, i) => 
 
 mock.onGet("/media/agents-overview").reply(200, [
   { name: "News Crawler", status: "running", processed: 45000, signals: 1200, accuracy: 94, uptime: "99.9%", lastAction: "Crawling EU financial feeds" },
-  { name: "Entity Matcher", status: "completed", processed: 1200, signals: 45, accuracy: 89, uptime: "99.5%", lastAction: "Matched 45 entities" }
+  { name: "NLP Extractor", status: "running", processed: 14200, signals: 890, accuracy: 96, uptime: "99.8%", lastAction: "Extracting named entities" },
+  { name: "Entity Matcher", status: "completed", processed: 1200, signals: 45, accuracy: 89, uptime: "99.5%", lastAction: "Matched 45 entities" },
+  { name: "Risk Scorer", status: "running", processed: 850, signals: 210, accuracy: 92, uptime: "99.9%", lastAction: "Calculating proximity scores" },
+  { name: "Policy Engine", status: "paused", processed: 560, signals: 12, accuracy: 100, uptime: "99.9%", lastAction: "Waiting for threshold updates" },
+  { name: "Alert Generator", status: "completed", processed: 210, signals: 210, accuracy: 99, uptime: "100%", lastAction: "Generated 12 new alerts" }
 ]);
 
 mock.onGet(/\/media\/article\/.+/).reply(200, {

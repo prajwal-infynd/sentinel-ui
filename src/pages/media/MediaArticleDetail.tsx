@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { toast } from "@/components/ui/use-toast";
 import { fetchMediaArticleDetail } from "@/lib/media-agent-data";
 
 const severityColor = (severity: string) =>
@@ -67,7 +68,7 @@ export default function MediaArticleDetail() {
                   })}
                 </div>
                 <div className="mt-4 flex items-center gap-2 border-t pt-4">
-                  <Button variant="outline" size="sm" className="gap-1 text-xs"><ExternalLink className="h-3 w-3" /> View Source</Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => toast({ title: "Opening Source", description: "Navigating to original article source..." })}><ExternalLink className="h-3 w-3" /> View Source</Button>
                 </div>
               </CardContent>
             </Card>

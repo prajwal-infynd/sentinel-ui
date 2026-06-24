@@ -35,6 +35,11 @@ export async function fetchEntities() {
   return data;
 }
 
+export async function updateEntityStatus(id: string, status: string) {
+  const { data } = await apiClient.patch(`/portfolio/entities/${id}/status`, { status });
+  return data;
+}
+
 export async function importMonitoredEntities(rows: MonitoredEntityImportRow[]) {
   const { data } = await apiClient.post("/portfolio/import", rows);
   return data;

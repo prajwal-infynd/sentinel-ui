@@ -29,9 +29,7 @@ const LiveAlerts = () => {
     <DashboardLayout>
       <div className="p-6 h-[calc(100vh-3.5rem)] flex flex-col">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
-        <Link to="/media" className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-indigo-600 mb-4 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Back to Media Agent
-        </Link>
+
         <h1 className="text-2xl font-bold tracking-tight mb-1">Live Alert Stream</h1>
         <p className="text-sm text-muted-foreground">Real-time risk event detection and AI agent activity</p>
       </motion.div>

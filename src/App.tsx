@@ -27,6 +27,7 @@ import MediaWorkspace from "./pages/media/MediaWorkspace";
 import MediaExplainability from "./pages/media/MediaExplainability";
 import MediaAutomation from "./pages/media/MediaAutomation";
 import Settings from "./pages/Settings";
+import AdminPortal from "./pages/AdminPortal";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/media/explainability" element={<MediaExplainability />} />
           <Route path="/media/automation" element={<MediaAutomation />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<AdminPortal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

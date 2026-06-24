@@ -105,10 +105,10 @@ const Index = () => {
           <span className="text-lg font-bold tracking-tight">Sentinel</span>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="text-navy-foreground/70 hover:text-navy-foreground hover:bg-white/5">
+          <Button variant="ghost" className="text-navy-foreground/70 hover:text-navy-foreground hover:bg-white/5" onClick={() => toast({ title: "Coming Soon", description: "The About page is under construction." })}>
             About
           </Button>
-          <Button variant="ghost" className="text-navy-foreground/70 hover:text-navy-foreground hover:bg-white/5">
+          <Button variant="ghost" className="text-navy-foreground/70 hover:text-navy-foreground hover:bg-white/5" onClick={() => toast({ title: "Coming Soon", description: "The Contact page is under construction." })}>
             Contact
           </Button>
           <Button size="sm" onClick={() => navigate(user ? "/dashboard" : "/")}>
@@ -133,9 +133,9 @@ const Index = () => {
               <Shield className="h-3.5 w-3.5 text-primary" />
               <span className="text-navy-foreground/70">Operational compliance intelligence for bank teams</span>
             </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] mb-6">
-              Continuous AML & KYC Monitoring, <span className="text-primary">Powered by AI Agents</span>
-            </h1>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
+              Continuous KYB Monitoring, <span className="text-primary">Powered by AI Agents</span>
+            </h2>
             <p className="text-lg md:text-xl text-navy-foreground/60 max-w-2xl mb-10 leading-relaxed">
               Sign in to a live workspace backed by Lovable Cloud for monitored entities, adverse media ingestion,
               alerts, investigations, analyst notes, and autonomous agent runs.

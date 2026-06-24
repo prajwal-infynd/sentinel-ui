@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { toast } from "@/components/ui/use-toast";
 import { mediaArticles } from "@/lib/media-sample-data";
 
 const severityBorder = (s: string) =>
@@ -123,13 +124,13 @@ export default function MediaWorkspace() {
                 <CardTitle className="text-sm font-semibold">Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full text-xs gap-1.5 bg-success hover:bg-success/90 text-success-foreground" size="sm">
+                <Button className="w-full text-xs gap-1.5 bg-success hover:bg-success/90 text-success-foreground" size="sm" onClick={() => toast({ title: "Risk Confirmed", description: "Article marked as a true positive." })}>
                   <CheckCircle className="h-3.5 w-3.5" /> Confirm Risk
                 </Button>
-                <Button variant="outline" className="w-full text-xs gap-1.5" size="sm">
+                <Button variant="outline" className="w-full text-xs gap-1.5" size="sm" onClick={() => toast({ title: "Rejected", description: "Article marked as a false positive." })}>
                   <X className="h-3.5 w-3.5" /> Reject / False Positive
                 </Button>
-                <Button variant="outline" className="w-full text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5" size="sm">
+                <Button variant="outline" className="w-full text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/5" size="sm" onClick={() => toast({ title: "Escalated", description: "Article escalated for further review.", variant: "destructive" })}>
                   <TrendingUp className="h-3.5 w-3.5" /> Escalate
                 </Button>
 
@@ -141,7 +142,10 @@ export default function MediaWorkspace() {
                     value={note}
                     onChange={e => setNote(e.target.value)}
                   />
-                  <Button size="sm" variant="outline" className="w-full mt-2 text-xs">Save Note</Button>
+                  <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={() => {
+                    toast({ title: "Note Saved", description: "Analyst note has been attached to the article." });
+                    setNote("");
+                  }}>Save Note</Button>
                 </div>
 
                 <div className="pt-3 border-t">

@@ -7,6 +7,11 @@ export const sampleEntities = [
   { id: "ENT-006", name: "Chen Wei Industries", type: "Company", jurisdiction: "Hong Kong", riskScore: 34, latestSignal: "Routine check", lastChecked: "1 hr ago", status: "Low Risk", owner: "David Park" },
   { id: "ENT-007", name: "Nordic Shipping AS", type: "Company", jurisdiction: "Norway", riskScore: 21, latestSignal: "No new signals", lastChecked: "2 hr ago", status: "Low Risk", owner: "Sarah Chen" },
   { id: "ENT-008", name: "Banco del Sur SA", type: "Company", jurisdiction: "Argentina", riskScore: 71, latestSignal: "Corruption allegation", lastChecked: "20 min ago", status: "High Risk", owner: "James Mitchell" },
+  { id: "ENT-009", name: "Quantum Innovations", type: "Company", jurisdiction: "Switzerland", riskScore: 28, latestSignal: "UBO change", lastChecked: "3 hr ago", status: "Low Risk", owner: "Sarah Chen" },
+  { id: "ENT-010", name: "Vladimir Sokolov", type: "Individual", jurisdiction: "Cyprus", riskScore: 94, latestSignal: "Sanctions evasion risk", lastChecked: "1 min ago", status: "Critical", owner: "James Mitchell" },
+  { id: "ENT-011", name: "Desert Sands Construction", type: "Company", jurisdiction: "Qatar", riskScore: 61, latestSignal: "Adverse media - labor", lastChecked: "45 min ago", status: "Medium Risk", owner: "David Park" },
+  { id: "ENT-012", name: "Helena Rostova", type: "Individual", jurisdiction: "United Kingdom", riskScore: 82, latestSignal: "PEP list update", lastChecked: "5 min ago", status: "High Risk", owner: "Sarah Chen" },
+  { id: "ENT-013", name: "Alpha Trading Group", type: "Company", jurisdiction: "British Virgin Islands", riskScore: 75, latestSignal: "Shell company indicator", lastChecked: "18 min ago", status: "High Risk", owner: "David Park" },
 ];
 
 export const sampleAlerts = [
@@ -16,6 +21,10 @@ export const sampleAlerts = [
   { id: "ALT-4888", title: "New PEP association identified", subtitle: "Director linked to politically exposed person in Russia", severity: "high" as const, entity: "Maria Petrov", source: "PEP Database", time: "22 min ago", confidence: 88 },
   { id: "ALT-4887", title: "Sanctions list update - potential match", subtitle: "Entity name fuzzy match on EU consolidated sanctions list", severity: "medium" as const, entity: "Global Meridian Holdings", source: "EU Sanctions", time: "35 min ago", confidence: 71 },
   { id: "ALT-4886", title: "Corruption allegation in media", subtitle: "Local news report linking entity to government contract irregularities", severity: "medium" as const, entity: "Banco del Sur SA", source: "Adverse Media", time: "1 hr ago", confidence: 67 },
+  { id: "ALT-4885", title: "Suspected sanctions evasion network", subtitle: "Vladimir Sokolov linked to shell company network in Cyprus", severity: "critical" as const, entity: "Vladimir Sokolov", source: "Network Analysis", time: "1 min ago", confidence: 91 },
+  { id: "ALT-4884", title: "New high-ranking PEP match", subtitle: "Helena Rostova identified as close associate of sanctioned individual", severity: "high" as const, entity: "Helena Rostova", source: "PEP Database", time: "5 min ago", confidence: 86 },
+  { id: "ALT-4883", title: "Shell company risk indicator", subtitle: "Alpha Trading Group matches known typology for illicit fund flows", severity: "high" as const, entity: "Alpha Trading Group", source: "Behavioral AI", time: "18 min ago", confidence: 79 },
+  { id: "ALT-4882", title: "Adverse media hit - Labor practices", subtitle: "Desert Sands Construction mentioned in NGO report on labor conditions", severity: "medium" as const, entity: "Desert Sands Construction", source: "Adverse Media", time: "45 min ago", confidence: 62 },
 ];
 
 export const agentActivities = [

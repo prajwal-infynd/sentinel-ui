@@ -51,7 +51,13 @@ export function ArticlePreviewModal({ open, onOpenChange, alert }: ArticlePrevie
               <span className="flex items-center gap-1.5">
                 Credibility: <span className="font-mono text-foreground font-black">90</span>
               </span>
-              <Badge className="bg-success/10 text-success border border-success/20 hover:bg-success/20 shadow-none px-2 py-0.5 text-[10px]">LOW</Badge>
+              <Badge className={`${
+                alert.severity === 'critical' ? 'bg-destructive/10 text-destructive border-destructive/20' : 
+                alert.severity === 'high' ? 'bg-warning/10 text-warning border-warning/20' : 
+                'bg-success/10 text-success border-success/20'
+              } hover:bg-transparent shadow-none px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider`}>
+                {alert.severity || 'LOW'}
+              </Badge>
             </div>
           </div>
         </div>
@@ -133,10 +139,21 @@ export function ArticlePreviewModal({ open, onOpenChange, alert }: ArticlePrevie
                 ))}
               </TabsContent>
               
-              <TabsContent value="risk" className="flex-1 overflow-y-auto m-0">
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
-                  <Shield className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <p className="text-sm">Risk analysis is actively processing. Review entity matches while confidence scoring completes.</p>
+              <TabsContent value="risk" className="flex-1 overflow-y-auto m-0 pr-2 space-y-4 custom-scrollbar">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Risk Factors</div>
+                <div className="p-4 rounded-xl border border-warning/30 bg-warning/5 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                     <div className="text-sm font-bold text-warning-foreground">High Risk Association</div>
+                     <Badge className="bg-warning text-warning-foreground hover:bg-warning shadow-none">86% CONFIDENCE</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">The extracted entity "Helena Rostova" exhibits a high likelihood of matching the sanctioned individual's known associates network. Sentiment analysis of the surrounding text indicates negative context regarding regulatory scrutiny.</p>
+                </div>
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                     <div className="text-sm font-bold text-indigo-900">Regulatory Risk</div>
+                     <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-white shadow-none">72% CONFIDENCE</Badge>
+                  </div>
+                  <p className="text-xs text-indigo-700 leading-relaxed">Article references impending regulatory actions and investigations. Natural language processing models have flagged the contextual usage of "investigates" and "connections".</p>
                 </div>
               </TabsContent>
               
@@ -146,10 +163,29 @@ export function ArticlePreviewModal({ open, onOpenChange, alert }: ArticlePrevie
                 </div>
               </TabsContent>
               
-              <TabsContent value="trace" className="flex-1 overflow-y-auto m-0">
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
-                  <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                  <p className="text-sm">Pipeline trace log available for this event.</p>
+              <TabsContent value="trace" className="flex-1 overflow-y-auto m-0 pr-2 space-y-4 custom-scrollbar">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 px-1">Pipeline Execution Log</div>
+                <div className="space-y-3">
+                  {[
+                    { step: "Source Ingestion", desc: "Successfully pulled article from target API endpoint.", time: "12ms" },
+                    { step: "NLP Extraction", desc: "Identified 8 distinct named entities using LLM heuristics.", time: "145ms" },
+                    { step: "Entity Resolution", desc: "Resolved monitored entity using fuzzy matching algorithms.", time: "89ms" },
+                    { step: "Risk Scoring", desc: "Calculated confidence score based on contextual proximity.", time: "210ms" },
+                  ].map((trace, i) => (
+                    <div key={i} className="flex gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 mt-1.5" />
+                        {i !== 3 && <div className="w-px h-full bg-slate-200" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-bold text-slate-800">{trace.step}</span>
+                          <span className="text-xs font-mono text-slate-400">{trace.time}</span>
+                        </div>
+                        <p className="text-xs text-slate-500">{trace.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </TabsContent>
             </Tabs>

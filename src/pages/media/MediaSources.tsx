@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { toast } from "@/components/ui/use-toast";
 import { mediaSources } from "@/lib/media-sample-data";
 
 const reliabilityColor = (r: string) =>
@@ -35,7 +36,7 @@ export default function MediaSources() {
               <h1 className="text-2xl font-bold tracking-tight">Source Intelligence</h1>
               <p className="text-sm text-muted-foreground mt-1">Manage and monitor global media intelligence sources</p>
             </div>
-            <Button size="sm" className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add Source</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => toast({ title: "Add Source", description: "Source configuration modal would open here." })}><Plus className="h-3.5 w-3.5" /> Add Source</Button>
           </div>
         </motion.div>
 
@@ -128,7 +129,7 @@ export default function MediaSources() {
               { icon: Globe, title: "Website", desc: "Add a website URL for periodic crawling and extraction" },
               { icon: Wifi, title: "API Source", desc: "Connect via REST API for structured data ingestion" },
             ].map((item, i) => (
-              <Card key={item.title} className="hover:shadow-md transition-all cursor-pointer hover:border-primary/30 active:scale-[0.98]">
+              <Card key={item.title} className="hover:shadow-md transition-all cursor-pointer hover:border-primary/30 active:scale-[0.98]" onClick={() => toast({ title: "Connecting Source", description: `Initializing connection to ${item.title} source...` })}>
                 <CardContent className="p-4 flex items-start gap-3">
                   <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <item.icon className="h-4 w-4 text-primary" />
@@ -184,7 +185,7 @@ export default function MediaSources() {
                   <div>
                     <h4 className="text-xs font-semibold mb-2">Sample Recent Articles</h4>
                     <div className="space-y-2">
-                      {["Major bank fined for AML failures", "New sanctions regime announced", "Corporate fraud investigation opened"].map((a, i) => (
+                      {["Major bank fined for KYB compliance failures", "New sanctions regime announced", "Corporate fraud investigation opened"].map((a, i) => (
                         <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground py-1.5 border-b border-border/50 last:border-0">
                           <ExternalLink className="h-3 w-3 shrink-0" />
                           <span>{a}</span>

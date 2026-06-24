@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Bell, Shield, Key, Database, Mail, Cpu, Bot, Swords, Gavel, ShieldCheck, User, Plus, Webhook, Copy, TerminalSquare } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Shield, Key, Database, Mail, Cpu, Bot, Swords, Gavel, ShieldCheck, User, Plus, Webhook, Copy, TerminalSquare, Trash2, ChevronDown } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -12,22 +12,65 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function Settings() {
-  const [personas, setPersonas] = useState([
-    { id: 1, role: "Prosecution / Investigator Persona", icon: Swords, color: "text-destructive", prompt: "You are an aggressive financial fraud investigator. Your goal is to identify maximum risk. Look for subtle correlations, mentions of subpoenas, or negative sentiment and argue for the highest possible risk score." },
-    { id: 2, role: "Defense / Skeptic Persona", icon: ShieldCheck, color: "text-success", prompt: "You are a skeptical defense attorney. Your goal is to poke holes in the prosecution's argument. Look for hearsay, unverified sources, and lack of direct evidence to argue for a lower risk score." },
-    { id: 3, role: "Judge / Compliance Officer Persona", icon: Gavel, color: "text-primary", prompt: "You are a strict but fair compliance officer. Read the arguments from both sides and issue a final ruling. Your ruling must balance regulatory risk with operational false-positive costs." }
-  ]);
+  const [personas, setPersonas] = useState(() => {
+    const saved = localStorage.getItem('sentinel_personas');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((p: Record<string, unknown>) => ({
+          ...p,
+          icon: p.id === 1 ? Swords : p.id === 2 ? ShieldCheck : p.id === 3 ? Gavel : User
+        }));
+      } catch (e) {
+        console.error("Failed to parse personas", e);
+      }
+    }
+    return [
+      { id: 1, role: "Prosecution / Investigator Persona", icon: Swords, color: "text-destructive", prompt: "You are an aggressive financial fraud investigator. Your goal is to identify maximum risk. Look for subtle correlations, mentions of subpoenas, or negative sentiment and argue for the highest possible risk score." },
+      { id: 2, role: "Defense / Skeptic Persona", icon: ShieldCheck, color: "text-success", prompt: "You are a skeptical defense attorney. Your goal is to poke holes in the prosecution's argument. Look for hearsay, unverified sources, and lack of direct evidence to argue for a lower risk score." },
+      { id: 3, role: "Judge / Compliance Officer Persona", icon: Gavel, color: "text-primary", prompt: "You are a strict but fair compliance officer. Read the arguments from both sides and issue a final ruling. Your ruling must balance regulatory risk with operational false-positive costs." }
+    ];
+  });
+
+  useEffect(() => {
+    const toSave = personas.map(({ icon, ...rest }) => rest);
+    localStorage.setItem('sentinel_personas', JSON.stringify(toSave));
+  }, [personas]);
+
+  const [isAddPersonaOpen, setIsAddPersonaOpen] = useState(false);
+  const [newPersonaRole, setNewPersonaRole] = useState("");
+  const [newPersonaPrompt, setNewPersonaPrompt] = useState("");
+  const [newPersonaColor, setNewPersonaColor] = useState("text-indigo-600");
+
+  const AVAILABLE_COLORS = [
+    { label: 'Indigo', value: 'text-indigo-600', bg: 'bg-indigo-600' },
+    { label: 'Emerald', value: 'text-emerald-600', bg: 'bg-emerald-600' },
+    { label: 'Amber', value: 'text-amber-600', bg: 'bg-amber-600' },
+    { label: 'Rose', value: 'text-rose-600', bg: 'bg-rose-600' },
+    { label: 'Cyan', value: 'text-cyan-600', bg: 'bg-cyan-600' },
+    { label: 'Fuchsia', value: 'text-fuchsia-600', bg: 'bg-fuchsia-600' },
+  ];
 
   const handleAddPersona = () => {
+    if (!newPersonaRole.trim() || !newPersonaPrompt.trim()) {
+      toast({ title: "Incomplete", description: "Please provide both a name and a prompt.", variant: "destructive" });
+      return;
+    }
     setPersonas([...personas, { 
       id: Date.now(), 
-      role: "New Custom Persona", 
+      role: newPersonaRole, 
       icon: User, 
-      color: "text-foreground", 
-      prompt: "Define the specific instructions and constraints for this new agent." 
+      color: newPersonaColor, 
+      prompt: newPersonaPrompt 
     }]);
+    setIsAddPersonaOpen(false);
+    setNewPersonaRole("");
+    setNewPersonaPrompt("");
+    setNewPersonaColor("text-indigo-600");
+    toast({ title: "Persona Added", description: `Added ${newPersonaRole} to the MiroFish Engine.` });
   };
 
   const handlePromptChange = (id: number, newPrompt: string) => {
@@ -53,13 +96,13 @@ export default function Settings() {
           <p className="text-sm text-muted-foreground">Manage your workspace configuration and integrations</p>
         </motion.div>
 
-        <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid grid-cols-5 md:w-[750px] bg-muted/50 border border-border p-1 rounded-xl shadow-inner">
-            <TabsTrigger value="general" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"><SettingsIcon className="h-4 w-4" /> <span className="hidden md:inline">General</span></TabsTrigger>
-            <TabsTrigger value="swarm" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all"><Cpu className="h-4 w-4" /> <span className="hidden md:inline font-semibold">MiroFish Engine</span></TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"><Bell className="h-4 w-4" /> <span className="hidden md:inline">Alerts</span></TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"><Shield className="h-4 w-4" /> <span className="hidden md:inline">Security</span></TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"><Key className="h-4 w-4" /> <span className="hidden md:inline">API Keys</span></TabsTrigger>
+        <Tabs defaultValue="general" className="space-y-6 w-full">
+          <TabsList className="flex flex-wrap h-auto gap-1.5 bg-muted/50 border border-border p-1.5 rounded-xl shadow-inner w-full justify-start">
+            <TabsTrigger value="general" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><SettingsIcon className="h-4 w-4" /> <span className="hidden md:inline font-medium">General</span></TabsTrigger>
+            <TabsTrigger value="swarm" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all py-2 px-3"><Cpu className="h-4 w-4" /> <span className="hidden md:inline font-semibold">MiroFish Engine</span></TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Bell className="h-4 w-4" /> <span className="hidden md:inline font-medium">Alerts</span></TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Shield className="h-4 w-4" /> <span className="hidden md:inline font-medium">Security</span></TabsTrigger>
+            <TabsTrigger value="integrations" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Key className="h-4 w-4" /> <span className="hidden md:inline font-medium">API Keys</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value="swarm" className="space-y-6">
@@ -107,7 +150,7 @@ export default function Settings() {
                       <CardTitle>Agent Personas</CardTitle>
                       <CardDescription>Edit the system instructions for the primary agent roles in the swarm.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" onClick={handleAddPersona} className="gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setIsAddPersonaOpen(true)} className="gap-1">
                       <Plus className="h-3.5 w-3.5" /> Add Persona
                     </Button>
                   </div>
@@ -115,21 +158,44 @@ export default function Settings() {
                 <CardContent className="space-y-6 pt-6">
                   {personas.map(persona => {
                     const IconComponent = persona.icon;
+                    const isCustom = persona.id > 3;
                     return (
-                      <div key={persona.id} className="grid gap-3 relative group">
-                        <div className="flex items-center gap-2">
-                          <IconComponent className={`h-4 w-4 ${persona.color}`} />
-                          <Input 
-                            value={persona.role} 
-                            onChange={(e) => handleRoleChange(persona.id, e.target.value)} 
-                            className={`font-semibold bg-transparent border-transparent hover:border-border focus-visible:ring-0 px-1 py-0 h-7 ${persona.color}`}
-                          />
+                      <div key={persona.id} className={`relative group border rounded-xl p-5 shadow-sm transition-all hover:shadow-md ${isCustom ? 'bg-indigo-50/30 border-indigo-100' : 'bg-slate-50/50 border-slate-200'}`}>
+                        {isCustom && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setPersonas(personas.filter(p => p.id !== persona.id))}
+                            className="absolute top-4 right-4 h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <div className="grid gap-5">
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                              <IconComponent className={`h-3.5 w-3.5 ${persona.color}`} />
+                              Persona Name / Role
+                            </Label>
+                            <Input 
+                              value={persona.role} 
+                              onChange={(e) => handleRoleChange(persona.id, e.target.value)} 
+                              className={`font-bold bg-white w-full md:max-w-md focus-visible:ring-indigo-500 shadow-sm ${persona.color === 'text-foreground' ? 'text-indigo-900' : persona.color}`}
+                              placeholder="e.g. Risk-Averse Auditor"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              System Prompt & Instructions
+                            </Label>
+                            <Textarea 
+                              value={persona.prompt} 
+                              onChange={(e) => handlePromptChange(persona.id, e.target.value)} 
+                              className="min-h-[80px] bg-white resize-y focus-visible:ring-indigo-500 text-sm shadow-sm" 
+                              placeholder="Define the specific instructions and constraints for this new agent."
+                            />
+                          </div>
                         </div>
-                        <Textarea 
-                          value={persona.prompt} 
-                          onChange={(e) => handlePromptChange(persona.id, e.target.value)} 
-                          className="h-20" 
-                        />
                       </div>
                     );
                   })}
@@ -236,7 +302,7 @@ export default function Settings() {
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Last used: 2 minutes ago</p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-indigo-600"><Copy className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-indigo-600" onClick={() => toast({ title: "Copied", description: "API key copied to clipboard." })}><Copy className="h-4 w-4" /></Button>
                     </div>
                     <div className="bg-slate-50 border rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground break-all">
                       sk_live_9f823a...<span className="blur-sm">b839c210d4</span>
@@ -252,7 +318,7 @@ export default function Settings() {
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Last used: 3 days ago</p>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-indigo-600"><Copy className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground group-hover:text-indigo-600" onClick={() => toast({ title: "Copied", description: "API key copied to clipboard." })}><Copy className="h-4 w-4" /></Button>
                     </div>
                     <div className="bg-slate-50 border rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground break-all">
                       sk_test_1847cc...<span className="blur-sm">x891ab023</span>
@@ -260,7 +326,7 @@ export default function Settings() {
                   </div>
                 </CardContent>
                 <div className="p-4 border-t bg-muted/20">
-                  <Button variant="outline" className="w-full gap-2 border-dashed bg-white"><Plus className="h-4 w-4" /> Generate New Secret Key</Button>
+                  <Button variant="outline" className="w-full gap-2 border-dashed bg-white" onClick={() => toast({ title: "Key Generated", description: "A new secret key has been generated." })}><Plus className="h-4 w-4" /> Generate New Secret Key</Button>
                 </div>
               </Card>
 
@@ -314,6 +380,57 @@ export default function Settings() {
           <Button onClick={handleSave}>Save Configuration</Button>
         </div>
       </div>
+
+      {/* Add Persona Dialog */}
+      <Dialog open={isAddPersonaOpen} onOpenChange={setIsAddPersonaOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Custom Persona</DialogTitle>
+            <DialogDescription>
+              Create a new specialized AI agent persona to participate in the Adversarial Debate Engine.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="role" className="text-xs font-bold uppercase tracking-wider text-slate-500">Persona Name / Role</Label>
+              <Input 
+                id="role" 
+                placeholder="e.g. KYB Auditor" 
+                value={newPersonaRole}
+                onChange={(e) => setNewPersonaRole(e.target.value)}
+                className="font-bold focus-visible:ring-indigo-500"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="prompt" className="text-xs font-bold uppercase tracking-wider text-slate-500">System Prompt & Instructions</Label>
+              <Textarea 
+                id="prompt" 
+                placeholder="Provide detailed instructions on how this agent should analyze evidence..." 
+                value={newPersonaPrompt}
+                onChange={(e) => setNewPersonaPrompt(e.target.value)}
+                className="min-h-[120px] resize-y focus-visible:ring-indigo-500 text-sm"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Theme Color</Label>
+              <div className="flex items-center gap-3">
+                {AVAILABLE_COLORS.map(c => (
+                  <button
+                    key={c.value}
+                    onClick={() => setNewPersonaColor(c.value)}
+                    className={`h-8 w-8 rounded-full ${c.bg} shadow-sm transition-transform ${newPersonaColor === c.value ? 'scale-110 ring-2 ring-offset-2 ring-indigo-500' : 'hover:scale-105 opacity-80 hover:opacity-100'}`}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddPersonaOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddPersona} className="bg-indigo-600 hover:bg-indigo-700 text-white">Create Persona</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

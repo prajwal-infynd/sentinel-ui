@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
+import { 
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw
+} from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -8,37 +11,285 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
+import ForceGraph2D from 'react-force-graph-2d';
+
+const defaultDebate = [
+  { 
+    agent: "Investigator Agent", role: "Prosecution", 
+    colorStyles: "border-indigo-100 hover:border-indigo-300", 
+    bgGlow: "bg-indigo-50",
+    iconBg: "bg-indigo-50 text-indigo-600",
+    roleColor: "text-indigo-600",
+    dotColor: "bg-indigo-500",
+    icon: ShieldAlert, 
+    message: <>This article explicitly links 'John Doe' to a <span className="font-bold border-b border-dashed border-indigo-400 cursor-help" title="Identified via semantic search">fraud investigation</span> and mentions offshore transactions. This warrants a Critical risk score (90+) for immediate EDD. <Badge variant="outline" className="ml-2 cursor-pointer hover:bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm"><FileText className="h-3 w-3 mr-1" /> Q3 Financial Audit [View]</Badge></>,  
+    timestamp: "14:23:41" 
+  },
+  { 
+    agent: "Skeptic Agent", role: "Defense", 
+    colorStyles: "border-amber-200 hover:border-amber-400", 
+    bgGlow: "bg-amber-100",
+    iconBg: "bg-amber-100 text-amber-700",
+    roleColor: "text-amber-700",
+    dotColor: "bg-amber-500",
+    icon: Shield, 
+    message: <>I disagree. The article states he is a 'person of interest' but there are no formal charges or indictments yet. We should not trigger a Critical alert on rumor or early investigation. <Badge variant="outline" className="ml-2 cursor-pointer hover:bg-amber-50 border-amber-200 text-amber-700 shadow-sm"><Scale className="h-3 w-3 mr-1" /> Internal Policy: KYB-402</Badge></>,  
+    timestamp: "14:23:45" 
+  },
+  { 
+    agent: "Investigator Agent", role: "Prosecution", 
+    colorStyles: "border-indigo-100 hover:border-indigo-300", 
+    bgGlow: "bg-indigo-50",
+    iconBg: "bg-indigo-50 text-indigo-600",
+    roleColor: "text-indigo-600",
+    dotColor: "bg-indigo-500",
+    icon: ShieldAlert, 
+    message: <>But the credibility score of the source (Financial Times) is 95, and the SFO is directly cited. The likelihood of this risk materializing is very high. <Badge variant="outline" className="ml-2 cursor-pointer hover:bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm"><Building className="h-3 w-3 mr-1" /> SFO Press Release 24A</Badge></>,  
+    timestamp: "14:23:48" 
+  },
+];
 
 const Investigation = () => {
-  const [isSarOpen, setIsSarOpen] = useState(false);
+  const location = useLocation();
+  const entity = location.state?.entity || {
+    name: "John Doe",
+    entity_type: "individual",
+    jurisdiction: "UK",
+    latest_signal: "Adverse Media Mention",
+    risk_score: 95
+  };
+  const isCompany = entity.entity_type === "company";
   
+  const [isSarOpen, setIsSarOpen] = useState(false);
+  const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">("pending");
+  const [isExplainableOpen, setIsExplainableOpen] = useState(false);
+
+  // Dynamic Debate State
+  const [debateMessages, setDebateMessages] = useState(defaultDebate);
+  const [isJudgeDeciding, setIsJudgeDeciding] = useState(false);
+  const [hasJudgeDecided, setHasJudgeDecided] = useState(true);
+  const [customOpinion, setCustomOpinion] = useState("");
+  const [selectedPersonaId, setSelectedPersonaId] = useState("human");
+  const [availablePersonas, setAvailablePersonas] = useState<any[]>([]);
+  const [judgeVerdict, setJudgeVerdict] = useState("While the source is highly credible, formal charges have not been filed. However, SFO involvement in a multi-jurisdictional fraud context is a material risk. I am setting the Risk Score to 95 (Critical) given the confirmed matching criteria and tagging it for immediate review.");
+
+  const [thinkingStep, setThinkingStep] = useState(0);
+  const thinkingSteps = [
+    "Scanning SEC database...",
+    "Extracting entity correlations...",
+    "Analyzing semantic intent...",
+    "Formulating argument..."
+  ];
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isJudgeDeciding) {
+      setThinkingStep(0);
+      interval = setInterval(() => {
+        setThinkingStep(prev => (prev < thinkingSteps.length - 1 ? prev + 1 : prev));
+      }, 600);
+    }
+    return () => clearInterval(interval);
+  }, [isJudgeDeciding]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sentinel_personas');
+    if (saved) {
+      try {
+        setAvailablePersonas(JSON.parse(saved));
+      } catch(e) {}
+    }
+  }, []);
+
+  const handleCustomOpinion = () => {
+    if (isJudgeDeciding) return;
+    
+    let newMsg = {
+      agent: "Human Analyst", role: "Input",
+      colorStyles: "border-slate-300 hover:border-slate-500",
+      bgGlow: "bg-slate-100",
+      iconBg: "bg-slate-800 text-white",
+      roleColor: "text-slate-800",
+      dotColor: "bg-slate-800",
+      icon: User,
+      message: customOpinion || "Please review the latest transaction records.",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    if (selectedPersonaId !== "human") {
+      const p = availablePersonas.find(x => x.id.toString() === selectedPersonaId);
+      if (p) {
+        newMsg = {
+          agent: p.role, role: "Invoked Persona",
+          colorStyles: "border-indigo-200 hover:border-indigo-400",
+          bgGlow: "bg-indigo-50",
+          iconBg: "bg-indigo-100 text-indigo-700",
+          roleColor: "text-indigo-700",
+          dotColor: "bg-indigo-500",
+          icon: Bot,
+          message: customOpinion || `Analyzing the evidence based on my system instructions: "${p.prompt.substring(0, 80)}..." I conclude that this warrants deeper review but aligns with my specialized parameters.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        };
+      }
+    }
+    
+    setDebateMessages(prev => [...prev, newMsg]);
+    setCustomOpinion("");
+    setHasJudgeDecided(false);
+    setIsJudgeDeciding(true);
+    
+    // Simulate API processing delay
+    setTimeout(() => {
+      setDebateMessages(prev => [...prev, {
+        agent: "Appellate Agent", role: "Review",
+        colorStyles: "border-blue-200 hover:border-blue-400",
+        bgGlow: "bg-blue-100",
+        iconBg: "bg-blue-100 text-blue-700",
+        roleColor: "text-blue-700",
+        dotColor: "bg-blue-500",
+        icon: Brain,
+        message: "Acknowledged human input. Integrating new context into the evidentiary graph. The human insight highlights a crucial nuance missing from the raw text processing.",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      }]);
+      
+      setTimeout(() => {
+        setIsJudgeDeciding(false);
+        setHasJudgeDecided(true);
+        setJudgeVerdict("Re-evaluated based on new human analyst inputs. The added context warrants a revision. I am adjusting the Risk Score to 85 (High) instead of Critical, to allow for further manual documentation gathering without triggering automatic regulatory filing.");
+      }, 2500);
+    }, 1500);
+  };
+  
+  const reevaluateRisk = () => {
+    setDebateMessages([]);
+    setHasJudgeDecided(false);
+    setIsJudgeDeciding(true);
+    toast({ title: "Re-evaluating Risk", description: "Agents are debating the new context..." });
+    
+    // Staggered dropping of default messages to simulate real-time processing
+    defaultDebate.forEach((msg, idx) => {
+      setTimeout(() => {
+        setDebateMessages(prev => [...prev, msg]);
+      }, (idx + 1) * 1200);
+    });
+    
+    setTimeout(() => {
+      setIsJudgeDeciding(false);
+      setHasJudgeDecided(true);
+      setJudgeVerdict("While the source is highly credible, formal charges have not been filed. However, SFO involvement in a multi-jurisdictional fraud context is a material risk. I am setting the Risk Score to 95 (Critical) given the confirmed matching criteria and tagging it for immediate review.");
+    }, (defaultDebate.length + 1) * 1200);
+  };
+
   return (
   <DashboardLayout>
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-5">
       {/* Case Header */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-6 shadow-sm">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <Badge className="bg-destructive/10 text-destructive border border-destructive/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest shadow-sm">CRITICAL</Badge>
+              <Badge className={`${Number(entity.risk_score) >= 80 ? 'bg-destructive/10 text-destructive border-destructive/20' : Number(entity.risk_score) >= 60 ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest shadow-sm`}>
+                {Number(entity.risk_score) >= 80 ? 'CRITICAL' : Number(entity.risk_score) >= 60 ? 'HIGH RISK' : 'ELEVATED'}
+              </Badge>
               <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ALT-4891</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight mb-2 text-foreground">Adverse media hit — suspected fraud exposure</h1>
+            <h1 className="text-2xl font-bold tracking-tight mb-2 text-foreground">{entity.latest_signal || "Adverse media hit — suspected fraud exposure"}</h1>
             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground">
-              <span className="flex items-center gap-1.5"><User className="h-4 w-4 text-primary" /> John Doe</span>
+              <span className="flex items-center gap-1.5">{isCompany ? <Building className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />} {entity.name}</span>
+              <span className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> {entity.jurisdiction}</span>
               <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> 2024-03-15 14:23 UTC</span>
-              <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> Financial Times</span>
+              <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> Sentinel AI Source</span>
             </div>
           </div>
           <div className="flex items-center gap-5">
-            <div className="text-center px-4 bg-muted/30 rounded-xl py-2 border border-border/50">
-              <div className="text-3xl font-black font-mono tracking-tighter text-destructive">94%</div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">Confidence</div>
-            </div>
+            <Dialog open={isExplainableOpen} onOpenChange={setIsExplainableOpen}>
+              <div 
+                className="text-center px-4 bg-muted/30 rounded-xl py-2 border border-border/50 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all group"
+                onClick={() => setIsExplainableOpen(true)}
+              >
+                <div className={`text-3xl font-black font-mono tracking-tighter ${Number(entity.risk_score) >= 80 ? 'text-destructive' : 'text-warning'} group-hover:scale-105 transition-transform`}>{entity.risk_score}</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5 group-hover:text-indigo-600 transition-colors">Risk Score</div>
+              </div>
+              
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-indigo-500" />
+                    Explainable AI Math
+                  </DialogTitle>
+                  <DialogDescription>
+                    Transparent breakdown of the 95/100 Risk Score.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="flex justify-between items-center p-3 rounded-lg border border-destructive/20 bg-destructive/5">
+                    <span className="text-sm text-foreground font-bold">+40 pts</span>
+                    <span className="text-sm text-muted-foreground font-medium text-right">IP address does not match home address</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg border border-warning/20 bg-warning/5">
+                    <span className="text-sm text-foreground font-bold">+30 pts</span>
+                    <span className="text-sm text-muted-foreground font-medium text-right">Velocity of transactions spiked 300% in 24 hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg border border-primary/20 bg-primary/5">
+                    <span className="text-sm text-foreground font-bold">+25 pts</span>
+                    <span className="text-sm text-muted-foreground font-medium text-right">2 hops from sanctioned entity on Graph</span>
+                  </div>
+                  <div className="h-px bg-border my-2" />
+                  <div className="flex justify-between items-center px-3">
+                    <span className="font-bold text-foreground">Total Risk Score</span>
+                    <span className={`text-xl font-black font-mono ${Number(entity.risk_score) >= 80 ? 'text-destructive' : 'text-warning'}`}>{entity.risk_score}/100</span>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <div className="flex flex-col gap-2">
-              <Button size="sm" className="h-9 gap-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"><CheckCircle2 className="h-4 w-4" /> Review Case</Button>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted w-1/2"><UserPlus className="h-4 w-4" /> Assign</Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setCaseStatus("approving");
+                    setTimeout(() => setCaseStatus("approved"), 1200);
+                  }}
+                  disabled={caseStatus !== "pending"}
+                  className={`h-9 gap-2 text-xs font-bold rounded-xl shadow-md transition-all duration-300 w-full ${
+                    caseStatus === "approved" ? "bg-success hover:bg-success text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  }`}
+                >
+                  <AnimatePresence mode="wait">
+                    {caseStatus === "pending" && (
+                      <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> Approve Case
+                      </motion.div>
+                    )}
+                    {caseStatus === "approving" && (
+                      <motion.div key="approving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Processing...
+                      </motion.div>
+                    )}
+                    {caseStatus === "approved" && (
+                      <motion.div key="approved" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> Approved
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+                {caseStatus === "pending" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCaseStatus("dismissed")}
+                    className="h-9 px-2 border-destructive/20 text-destructive hover:bg-destructive/10"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => toast({ title: "Case Assigned", description: "The case has been assigned to you." })} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted w-1/2"><UserPlus className="h-4 w-4" /> Assign</Button>
                 <Button variant="outline" size="sm" onClick={() => setIsSarOpen(true)} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-indigo-50 hover:text-indigo-600 border-indigo-200 text-indigo-700 w-1/2 group relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <FileSignature className="h-4 w-4" /> Auto-SAR
@@ -51,24 +302,24 @@ const Investigation = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
-        <TabsList className="bg-card border border-border/50 rounded-xl p-1 shadow-sm w-full justify-start overflow-x-auto h-auto">
-          <TabsTrigger value="summary" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Summary</TabsTrigger>
-          <TabsTrigger value="network" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Network Graph</TabsTrigger>
-          <TabsTrigger value="evidence" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Source Evidence</TabsTrigger>
-          <TabsTrigger value="entity" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Entity Profile</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Timeline</TabsTrigger>
-          <TabsTrigger value="reasoning" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">AI Reasoning</TabsTrigger>
-          <TabsTrigger value="audit" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Audit Trail</TabsTrigger>
+        <TabsList className="bg-transparent border-b border-border/50 rounded-none p-0 w-full justify-start overflow-x-auto h-auto gap-4">
+          <TabsTrigger value="summary" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Summary</TabsTrigger>
+          <TabsTrigger value="network" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Network Graph</TabsTrigger>
+          <TabsTrigger value="evidence" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Source Evidence</TabsTrigger>
+          <TabsTrigger value="entity" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Entity Profile</TabsTrigger>
+          <TabsTrigger value="timeline" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Timeline</TabsTrigger>
+          <TabsTrigger value="reasoning" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">AI Reasoning</TabsTrigger>
+          <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Agent Debate</TabsTrigger>
+          <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
         </TabsList>
 
         <TabsContent value="summary">
           <div className="grid md:grid-cols-2 gap-5 mt-6">
-            <div className="rounded-2xl border border-border/50 bg-gradient-to-b from-card to-card/50 shadow-sm p-6 space-y-5">
+            <div className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-5 space-y-5">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Brain className="h-5 w-5 text-indigo-500" /> AI-Generated Summary</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                A Financial Times investigative report published on 15 March 2024 identifies <span className="font-bold text-foreground">John Doe</span> as a person
-                of interest in a multi-jurisdictional fraud investigation. The article cites sources within the UK Serious Fraud Office and references
-                suspicious transaction patterns involving offshore shell companies in the British Virgin Islands.
+                Sentinel AI analysis of recent signals for <span className="font-bold text-foreground">{entity.name}</span> indicates a {entity.latest_signal?.toLowerCase() || 'potential risk exposure'}. 
+                {isCompany ? " The corporate entity's recent activities have matched against key regulatory flags, triggering a heightened risk profile." : " The individual has been identified across multiple data points suggesting involvement in monitored activities."}
               </p>
               <div className="space-y-3 pt-2">
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Matched Fields</h4>
@@ -79,7 +330,7 @@ const Investigation = () => {
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-border/50 bg-gradient-to-b from-card to-card/50 shadow-sm p-6 space-y-5">
+            <div className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-5 space-y-5">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Suggested Actions</h3>
               <div className="space-y-3">
                 {[
@@ -124,60 +375,70 @@ const Investigation = () => {
               </svg>
 
               {/* Central Node */}
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '160px', left: '360px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '200px', left: '400px' }}>
                 <div className="h-20 w-20 rounded-full bg-indigo-100 border-4 border-indigo-500 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <User className="h-8 w-8 text-indigo-700" />
+                  {isCompany ? <Building className="h-8 w-8 text-indigo-700" /> : <User className="h-8 w-8 text-indigo-700" />}
                 </div>
-                <div className="mt-3 bg-white px-3 py-1.5 rounded-lg shadow-md border border-border/50 text-center">
-                  <div className="text-xs font-bold text-foreground">John Doe</div>
+                <div className="mt-3 bg-white px-3 py-1.5 rounded-lg shadow-md border border-border/50 text-center w-max">
+                  <div className="text-xs font-bold text-foreground">{entity.name}</div>
                   <div className="text-[10px] font-mono text-muted-foreground">Primary Subject</div>
                 </div>
               </motion.div>
 
               {/* Connected Nodes */}
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '60px', left: '210px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '250px' }}>
                 <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Building className="h-6 w-6 text-slate-500" />
                 </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center">
+                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
                   <div className="text-[10px] font-bold">Doe Consulting Ltd</div>
                 </div>
               </motion.div>
 
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '260px', left: '210px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.2 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '250px' }}>
                 <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Wallet className="h-6 w-6 text-slate-500" />
                 </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center">
+                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
                   <div className="text-[10px] font-bold">Acct: *4912</div>
                 </div>
               </motion.div>
 
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.3 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '60px', left: '510px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.3 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '550px' }}>
                 <div className="h-16 w-16 rounded-full bg-destructive/10 border-4 border-destructive shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform animate-pulse">
                   <Globe className="h-7 w-7 text-destructive" />
                 </div>
-                <div className="mt-2 bg-white px-2 py-1 rounded shadow-sm border border-destructive/30 text-center">
+                <div className="mt-2 bg-white px-2 py-1 rounded shadow-sm border border-destructive/30 text-center w-max">
                   <div className="text-[10px] font-bold text-destructive">BVI Holdings Ltd</div>
                   <div className="text-[8px] font-mono text-muted-foreground uppercase">Shell Company</div>
                 </div>
               </motion.div>
 
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '260px', left: '510px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.4 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '550px' }}>
                 <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
                   <UserPlus className="h-6 w-6 text-slate-500" />
                 </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center">
+                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
                   <div className="text-[10px] font-bold">Jane Smith</div>
                 </div>
               </motion.div>
               
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '110px', left: '660px' }}>
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.5 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '150px', left: '700px' }}>
                 <div className="h-14 w-14 rounded-full bg-destructive/10 border-2 border-destructive/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Landmark className="h-6 w-6 text-destructive/80" />
                 </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center">
+                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
                   <div className="text-[10px] font-bold text-destructive">Swiss Bank Acct</div>
+                </div>
+              </motion.div>
+
+              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.6 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '250px', left: '150px' }}>
+                <div className="h-14 w-14 rounded-full bg-warning/10 border-2 border-warning/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Hash className="h-6 w-6 text-warning/80" />
+                </div>
+                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                  <div className="text-[10px] font-bold text-warning-foreground">Crypto Wallet</div>
+                  <div className="text-[8px] font-mono text-muted-foreground uppercase">BTC Network</div>
                 </div>
               </motion.div>
             </div>
@@ -196,11 +457,11 @@ const Investigation = () => {
               <div className="absolute top-0 right-0 p-4 opacity-[0.02] pointer-events-none group-hover:scale-110 transition-transform duration-500">
                 <FileText className="h-32 w-32 text-indigo-900" />
               </div>
-              <h3 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2 relative z-10"><FileText className="h-5 w-5 text-indigo-500" /> Source Article</h3>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4 relative z-10">Financial Times • 15 March 2024</div>
+              <h3 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2 relative z-10"><FileText className="h-5 w-5 text-indigo-500" /> Source Evidence</h3>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4 relative z-10">Sentinel Intelligence Network</div>
               <div className="prose prose-sm text-sm text-muted-foreground max-w-none space-y-4 relative z-10">
-                <p>The UK Serious Fraud Office has identified <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">John Doe</mark> as a person of interest in connection with a complex fraud scheme involving multiple offshore entities...</p>
-                <p>Investigators have traced suspicious transactions totalling approximately £4.2 million through shell companies registered in the <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">British Virgin Islands</mark>.</p>
+                <p>Recent sweeps have identified <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">{entity.name}</mark> ({entity.jurisdiction}) in connection with {entity.latest_signal || "elevated risk activities"}.</p>
+                <p>Analysts are monitoring transaction patterns and relevant network associations to determine full exposure.</p>
               </div>
             </div>
             
@@ -220,29 +481,7 @@ const Investigation = () => {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-slate-900 to-indigo-950 text-white shadow-sm p-6 relative overflow-hidden">
-              <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
-                <ScanFace className="h-40 w-40 text-indigo-300" />
-              </div>
-              <h3 className="text-base font-bold tracking-tight mb-5 flex items-center gap-2 relative z-10"><ScanFace className="h-5 w-5 text-indigo-400" /> Deepfake & Synthetic Identity</h3>
-              <div className="space-y-4 text-sm relative z-10">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="text-slate-300 text-xs">Biometric Liveness</span>
-                  <Badge className="bg-success/20 text-success-foreground border-success/30 hover:bg-success/30 text-[10px]">PASSED</Badge>
-                </div>
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="text-slate-300 text-xs">AI Generative Artifacts</span>
-                  <Badge className="bg-destructive/20 text-red-300 border-destructive/30 hover:bg-destructive/30 text-[10px]">99% DETECTED</Badge>
-                </div>
-                <div className="flex items-center justify-between pb-1">
-                  <span className="text-slate-300 text-xs">ID Document Tampring</span>
-                  <Badge className="bg-warning/20 text-yellow-300 border-warning/30 hover:bg-warning/30 text-[10px]">FLAGGED</Badge>
-                </div>
-                <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-200 text-xs leading-relaxed">
-                  <strong>CRITICAL ALERT:</strong> Onboarding video analysis reveals highly probable deepfake artifacts in facial meshing. ID document metadata shows photoshop tampering.
-                </div>
-              </div>
-            </div>
+
           </div>
         </TabsContent>
 
@@ -252,12 +491,12 @@ const Investigation = () => {
               <h3 className="text-base font-bold tracking-tight mb-6">Master Entity Profile</h3>
               <div className="grid sm:grid-cols-2 gap-6">
                 {[
-                  ["Full Name", "John Michael Doe"],
-                  ["Aliases", "J. Doe, Johan Doe, JMD"],
-                  ["Date of Birth", "22 March 1985"],
-                  ["Nationality", "British"],
-                  ["Identifiers", "Passport: GB-8842991"],
-                  ["Linked Jurisdictions", "UK, BVI, UAE, Switzerland"],
+                  [isCompany ? "Company Name" : "Full Name", entity.name],
+                  ["Aliases", isCompany ? "None registered" : "J. Doe, Johan Doe, JMD"],
+                  [isCompany ? "Incorporation Date" : "Date of Birth", isCompany ? "12 August 2010" : "22 March 1985"],
+                  ["Jurisdiction", entity.jurisdiction],
+                  ["Identifiers", isCompany ? "Reg No: 18492048" : "Passport: GB-8842991"],
+                  ["Linked Jurisdictions", `${entity.jurisdiction}, BVI, UAE, Switzerland`],
                 ].map(([label, value]) => (
                   <div key={label} className="group">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">{label}</div>
@@ -289,7 +528,7 @@ const Investigation = () => {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
-                  <Activity className="h-5 w-5 text-indigo-500" /> Perpetual KYC: Risk Velocity
+                  <Activity className="h-5 w-5 text-indigo-500" /> Perpetual KYB: Risk Velocity
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">Real-time risk score decay and escalation over 30 days</p>
               </div>
@@ -372,36 +611,214 @@ const Investigation = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="debate">
+          <div className="rounded-2xl border border-border/50 bg-slate-50 shadow-inner p-8 mt-6 relative overflow-hidden">
+            {/* Background embellishments */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/50 via-transparent to-transparent pointer-events-none" />
+            
+            <div className="flex items-center justify-between mb-10 relative z-10">
+              <div>
+                <h3 className="text-xl font-black tracking-tight flex items-center gap-3 text-slate-900">
+                  <MessageSquare className="h-6 w-6 text-indigo-600" /> Multi-Agent Adversarial Debate
+                </h3>
+                <p className="text-xs font-medium text-slate-500 mt-1">Real-time dialectical reasoning engine</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={reevaluateRisk} disabled={isJudgeDeciding} className="text-xs shadow-sm bg-white hover:bg-slate-50">
+                  <RefreshCw className={`h-3.5 w-3.5 mr-2 ${isJudgeDeciding ? 'animate-spin' : ''}`} />
+                  Re-evaluate Risk
+                </Button>
+                <Badge variant="outline" className={`bg-white shadow-sm border-indigo-200 text-indigo-700 gap-2 px-3 py-1.5 ${isJudgeDeciding ? 'animate-pulse bg-indigo-50' : ''}`}>
+                  <div className={`h-2 w-2 rounded-full ${isJudgeDeciding ? 'bg-amber-500' : 'bg-indigo-500'}`} />
+                  {hasJudgeDecided ? 'Debate Concluded' : 'Processing...'}
+                </Badge>
+              </div>
+            </div>
+            
+            <div className="relative pl-8 space-y-8 z-10">
+              {/* Connecting vertical line */}
+              <div className="absolute left-[1.15rem] top-4 bottom-10 w-0.5 bg-gradient-to-b from-indigo-300 via-slate-300 to-emerald-300 rounded-full" />
+
+              {debateMessages.map((msg, i) => (
+                <motion.div 
+                  key={msg.timestamp + i} 
+                  initial={{ opacity: 0, x: msg.role === 'Defense' ? 20 : -20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 100 }}
+                  className={`relative ${msg.role === 'Defense' ? 'ml-12' : ''}`}
+                >
+                  {/* Node dot on the line */}
+                  <div className={`absolute ${msg.role === 'Defense' ? '-left-[5.15rem]' : '-left-[2.15rem]'} top-5 h-4 w-4 rounded-full border-4 border-slate-50 shadow-sm z-10 ${msg.dotColor}`} />
+                  
+                  {/* Connector line for Defense */}
+                  {msg.role === 'Defense' && (
+                    <div className={`absolute -left-[4.15rem] top-7 h-0.5 w-16 bg-gradient-to-r from-amber-300 to-amber-100 z-0`} />
+                  )}
+                  
+                  <div className={`bg-white rounded-2xl p-5 shadow-lg border ${msg.colorStyles} transition-colors relative overflow-hidden group`}>
+                    {/* Subtle corner glow */}
+                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full ${msg.bgGlow} opacity-50 group-hover:scale-150 transition-transform duration-700 ease-out`} />
+                    
+                    <div className="flex items-center justify-between mb-3 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-lg ${msg.iconBg} flex items-center justify-center`}>
+                          <msg.icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-bold text-slate-900 block">{msg.agent}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${msg.roleColor}`}>{msg.role}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono text-slate-400">{msg.timestamp}</span>
+                    </div>
+                    
+                    <p className="text-sm text-slate-700 leading-relaxed relative z-10">
+                      {msg.message}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+
+              {isJudgeDeciding && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative pt-4 pb-2 pl-4">
+                  <div className="absolute -left-[2.35rem] top-6 h-6 w-6 rounded-full border-4 border-slate-50 bg-indigo-100 shadow-sm z-10 flex items-center justify-center">
+                    <Loader2 className="h-3 w-3 text-indigo-500 animate-spin" />
+                  </div>
+                  <div className="flex items-center gap-3 text-indigo-500 text-sm font-semibold bg-indigo-50/50 inline-flex px-4 py-2 rounded-full border border-indigo-100">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={thinkingStep}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {thinkingSteps[thinkingStep]}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+
+              {hasJudgeDecided && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 100 }}
+                  className="relative pt-6"
+                >
+                  {/* Node dot for Judge */}
+                  <div className="absolute -left-[2.35rem] top-12 h-6 w-6 rounded-full border-4 border-slate-50 bg-emerald-500 shadow-md z-10 flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  </div>
+
+                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+                    
+                    <div className="flex items-center justify-between mb-5 relative z-10">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center border border-white/30 shadow-inner">
+                          <Scale className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <span className="text-lg font-black tracking-tight block drop-shadow-sm">Compliance Agent</span>
+                          <Badge className="bg-emerald-900/40 text-emerald-100 border-emerald-400/30 text-[10px] uppercase tracking-widest mt-1">Judge • Final Verdict</Badge>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono text-emerald-100/70">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                    </div>
+                    
+                    <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/20 relative z-10 shadow-inner">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-200 mb-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4" /> Consensus Reached
+                      </h4>
+                      <p className="text-sm leading-relaxed text-emerald-50" dangerouslySetInnerHTML={{ __html: judgeVerdict.replace('95 (Critical)', '<mark class="bg-destructive text-white font-bold px-1.5 py-0.5 rounded shadow-sm inline-block mx-1">95 (Critical)</mark>').replace('85 (High)', '<mark class="bg-warning text-warning-foreground font-bold px-1.5 py-0.5 rounded shadow-sm inline-block mx-1">85 (High)</mark>') }} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {hasJudgeDecided && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="pt-8 border-t border-slate-200 mt-8 relative z-10">
+                  <div className="flex flex-col md:flex-row items-center gap-3">
+                    <Select value={selectedPersonaId} onValueChange={setSelectedPersonaId}>
+                      <SelectTrigger className="w-full md:w-[250px] bg-white">
+                        <SelectValue placeholder="Select Persona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="human">
+                          <div className="flex items-center gap-2 font-semibold">
+                            <User className="h-4 w-4" /> Human Analyst
+                          </div>
+                        </SelectItem>
+                        {availablePersonas.map(p => (
+                          <SelectItem key={p.id} value={p.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <Bot className={`h-4 w-4 ${p.color}`} /> {p.role}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <div className="flex-1 relative w-full">
+                      <Input 
+                        placeholder={selectedPersonaId === "human" ? "Inject human opinion..." : "Optional: Add specific instruction for this agent..."}
+                        className="w-full bg-white border-slate-200 pr-24 shadow-sm"
+                        value={customOpinion}
+                        onChange={(e) => setCustomOpinion(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleCustomOpinion()}
+                      />
+                      <Button size="sm" onClick={handleCustomOpinion} className="absolute right-1 top-1 h-7 text-[10px] font-bold uppercase tracking-wider">
+                        Invoke
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
         <TabsContent value="audit">
-          <div className="rounded-2xl border border-border/50 bg-white shadow-sm overflow-hidden mt-6">
-            <div className="px-6 py-5 border-b bg-muted/20">
-              <h3 className="text-base font-bold tracking-tight">System Audit Trail</h3>
+          <div className="rounded-2xl border border-border/50 bg-slate-900 shadow-sm overflow-hidden mt-6">
+            <div className="px-6 py-5 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+              <h3 className="text-base font-bold tracking-tight flex items-center gap-2 text-white">
+                <Lock className="h-4 w-4 text-emerald-400" /> Immutable Ledger
+              </h3>
+              <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 font-mono text-[10px]">VERIFIED SECURE</Badge>
             </div>
             <Table>
               <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6">Timestamp</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6">Component</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6">Version</TableHead>
-                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6">Action</TableHead>
+                <TableRow className="border-slate-800 hover:bg-transparent">
+                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6 text-slate-400">Timestamp</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6 text-slate-400">Actor / Component</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6 text-slate-400">Action</TableHead>
+                  <TableHead className="text-[10px] font-bold uppercase tracking-wider h-12 px-6 text-slate-400 text-right">Cryptographic Hash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {[
-                  { ts: "2024-03-15 14:23:41", comp: "Media Crawler", ver: "v3.2.1", action: "Article ingested from FT RSS feed" },
-                  { ts: "2024-03-15 14:23:44", comp: "NER Engine", ver: "v2.1.0", action: "Named entity extraction completed" },
-                  { ts: "2024-03-15 14:23:47", comp: "Matching Engine", ver: "v4.0.3", action: "Entity resolved against portfolio" },
-                  { ts: "2024-03-15 14:23:49", comp: "Risk Scorer", ver: "v1.8.2", action: "Risk score calculated: 87 → 94" },
-                  { ts: "2024-03-15 14:23:51", comp: "Alert Engine", ver: "v2.5.0", action: "Alert ALT-4891 generated" },
-                  { ts: "2024-03-15 14:24:02", comp: "Case Generator", ver: "v1.3.1", action: "Case summary auto-generated" },
+                  { ts: "2024-03-15 14:30:12", actor: "Jane Smith (Compliance)", icon: <Eye className="h-3.5 w-3.5 text-blue-400" />, action: "Viewed case profile", hash: "0x8f4a2b91c7...", isUser: true },
+                  { ts: "2024-03-15 14:28:05", actor: "System Alert Engine", icon: <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />, action: "Alert ALT-4891 escalated to CRITICAL", hash: "0x1a9c3d82e4...", isUser: false },
+                  { ts: "2024-03-15 14:24:02", actor: "Case Generator", icon: <FileSignature className="h-3.5 w-3.5 text-indigo-400" />, action: "Case summary auto-generated", hash: "0x3b8d1f76a9...", isUser: false },
+                  { ts: "2024-03-15 14:23:49", actor: "Risk Scorer", icon: <Hash className="h-3.5 w-3.5 text-purple-400" />, action: "Risk score calculated: 87 → 94", hash: "0x9c2e4a15b8...", isUser: false },
+                  { ts: "2024-03-15 14:23:47", actor: "Matching Engine", icon: <Brain className="h-3.5 w-3.5 text-emerald-400" />, action: "Entity resolved against portfolio", hash: "0x7d5f2c94e1...", isUser: false },
+                  { ts: "2024-03-15 14:23:41", actor: "Media Crawler", icon: <Globe className="h-3.5 w-3.5 text-slate-400" />, action: "Article ingested from FT RSS feed", hash: "0x2a1b9c8d7e...", isUser: false },
                 ].map((r, i) => (
-                  <TableRow key={i} className="transition-colors hover:bg-muted/30">
-                    <TableCell className="font-mono text-xs font-bold text-muted-foreground px-6 py-4">{r.ts}</TableCell>
-                    <TableCell className="text-sm font-semibold text-foreground px-6 py-4">{r.comp}</TableCell>
-                    <TableCell className="font-mono text-xs font-semibold px-6 py-4">
-                      <span className="bg-muted px-2 py-1 rounded border border-border/50 text-muted-foreground">{r.ver}</span>
+                  <TableRow key={i} className="border-slate-800 transition-colors hover:bg-slate-800/50">
+                    <TableCell className="font-mono text-xs font-medium text-slate-400 px-6 py-4">{r.ts}</TableCell>
+                    <TableCell className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {r.icon}
+                        <span className={`text-sm font-semibold ${r.isUser ? "text-blue-300" : "text-slate-300"}`}>{r.actor}</span>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground px-6 py-4">{r.action}</TableCell>
+                    <TableCell className="text-sm text-slate-300 px-6 py-4">{r.action}</TableCell>
+                    <TableCell className="text-right px-6 py-4">
+                      <span className="font-mono text-[10px] text-slate-500 bg-slate-900/80 px-2 py-1 rounded border border-slate-800">{r.hash}</span>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -424,7 +841,7 @@ const Investigation = () => {
                   FINCEN FORMATTED NARRATIVE • CONFIDENCE: 94%
                 </DialogDescription>
               </div>
-              <Button size="sm" className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm">
+              <Button size="sm" onClick={() => { setIsSarOpen(false); toast({ title: "SAR Filed", description: "The Suspicious Activity Report has been submitted successfully." }); }} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm">
                 <FileSignature className="h-4 w-4" /> File Report
               </Button>
             </div>

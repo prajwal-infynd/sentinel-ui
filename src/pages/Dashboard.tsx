@@ -1,11 +1,17 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, AlertTriangle, Users, Shield, Newspaper, FileWarning, Clock, RefreshCw, TrendingUp } from "lucide-react";
+import { Activity, AlertTriangle, Users, Shield, Newspaper, FileWarning, Clock, RefreshCw, TrendingUp, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useQuery } from "@tanstack/react-query";
-import { fetchDashboardSummary, fetchEntities } from "@/lib/dashboard-data";
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchDashboardSummary, fetchEntities, updateEntityStatus } from "@/lib/dashboard-data";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 
 const alertsOverTime = [
   { date: "Mon", alerts: 12 }, { date: "Tue", alerts: 19 }, { date: "Wed", alerts: 8 },
@@ -30,8 +36,34 @@ const statusColor = (s: string) =>
   s === "Medium Risk" ? "text-primary bg-primary/10" : "text-success bg-success/10";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [mutedEntities, setMutedEntities] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { data: summary } = useQuery({ queryKey: ["dashboard-summary"], queryFn: fetchDashboardSummary });
   const { data: entities = [] } = useQuery({ queryKey: ["dashboard-entities"], queryFn: fetchEntities });
+
+  const filteredEntities = entities.filter((e: any) => {
+    const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "all" || e.entity_type === typeFilter;
+    const matchesJurisdiction = jurisdictionFilter === "all" || e.jurisdiction === jurisdictionFilter;
+    const matchesStatus = statusFilter === "all" || e.status === statusFilter;
+    return matchesSearch && matchesType && matchesJurisdiction && matchesStatus;
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) => updateEntityStatus(id, status),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-entities"] });
+      toast({ title: "Status Updated", description: `Entity status changed to ${variables.status}` });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update entity status", variant: "destructive" });
+    }
+  });
 
   const kpis = [
     { label: "Entities Monitored", value: String(summary?.entityCount ?? 0), icon: Users, delta: "live portfolio" },
@@ -128,27 +160,111 @@ const Dashboard = () => {
       </div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-        className="rounded-xl bg-card p-5 shadow-sm"
+        className="rounded-xl bg-card p-5 shadow-sm border border-border/50"
       >
-        <h3 className="text-sm font-semibold mb-4">Risk Events by Category</h3>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={riskByCategory}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" />
-            <XAxis dataKey="category" tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
-            <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 46%)" />
-            <Tooltip />
-            <Bar dataKey="count" fill="hsl(221 83% 53%)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        <h3 className="text-sm font-semibold mb-4">Global Risk Concentration Heatmap</h3>
+        <div className="w-full h-[250px] bg-slate-50/50 rounded-lg overflow-hidden border border-slate-100 flex items-center justify-center relative">
+          {/* Topography map */}
+          <ComposableMap 
+            projectionConfig={{ scale: 140, center: [0, 20] }} 
+            width={800} height={400} 
+            className="w-full h-full"
+          >
+            <Geographies geography="https://unpkg.com/world-atlas@2.0.2/countries-110m.json">
+              {({ geographies }) =>
+                geographies.map((geo) => {
+                  const name = geo.properties.name;
+                  // Dummy risk logic
+                  let riskColor = "#E2E8F0"; // Default slate-200
+                  if (["Russia", "Iran", "North Korea"].includes(name)) riskColor = "#EF4444"; // Red for Critical
+                  else if (["China", "Venezuela", "Syria"].includes(name)) riskColor = "#F59E0B"; // Amber for High
+                  else if (["United Kingdom", "Switzerland", "United Arab Emirates", "British Virgin Islands", "Panama"].includes(name)) riskColor = "#6366F1"; // Indigo for Media hits
+
+                  return (
+                    <Geography
+                      key={geo.rsmKey}
+                      geography={geo}
+                      fill={riskColor}
+                      stroke="#FFFFFF"
+                      strokeWidth={0.5}
+                      style={{
+                        default: { outline: "none" },
+                        hover: { outline: "none", fill: riskColor, opacity: 0.8, cursor: "pointer" },
+                        pressed: { outline: "none" },
+                      }}
+                    />
+                  );
+                })
+              }
+            </Geographies>
+          </ComposableMap>
+          
+          <div className="absolute bottom-4 right-4 flex flex-col gap-1.5 bg-white/90 backdrop-blur px-3 py-2 rounded-lg border border-slate-200 shadow-sm text-[10px] font-medium">
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500"></div> Sanctioned List</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-amber-500"></div> Elevated Risk</div>
+            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-indigo-500"></div> Active Investigations</div>
+          </div>
+        </div>
       </motion.div>
 
       {/* Entity Table */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
         className="rounded-xl bg-card shadow-sm overflow-hidden"
       >
-        <div className="px-5 py-3.5 border-b flex items-center justify-between">
-          <h3 className="text-sm font-semibold">Monitored Entities</h3>
-          <Badge variant="outline" className="text-xs font-mono">{entities.length} shown</Badge>
+        <div className="px-5 py-3.5 border-b flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold whitespace-nowrap">Monitored Entities</h3>
+            <Badge variant="outline" className="text-xs font-mono">{filteredEntities.length} shown</Badge>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search entities..."
+                className="pl-8 h-8 w-[200px] text-xs bg-muted/30"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-8 text-xs w-[110px] bg-muted/30 border-dashed">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">All Types</SelectItem>
+                <SelectItem value="company" className="text-xs">Company</SelectItem>
+                <SelectItem value="individual" className="text-xs">Individual</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={jurisdictionFilter} onValueChange={setJurisdictionFilter}>
+              <SelectTrigger className="h-8 text-xs w-[110px] bg-muted/30 border-dashed">
+                <SelectValue placeholder="Location" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">All Locations</SelectItem>
+                <SelectItem value="US" className="text-xs">US</SelectItem>
+                <SelectItem value="UK" className="text-xs">UK</SelectItem>
+                <SelectItem value="EU" className="text-xs">EU</SelectItem>
+                <SelectItem value="QA" className="text-xs">QA</SelectItem>
+                <SelectItem value="RU" className="text-xs">RU</SelectItem>
+                <SelectItem value="MX" className="text-xs">MX</SelectItem>
+                <SelectItem value="HK" className="text-xs">HK</SelectItem>
+                <SelectItem value="PA" className="text-xs">PA</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 text-xs w-[110px] bg-muted/30 border-dashed">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">All Statuses</SelectItem>
+                <SelectItem value="Active" className="text-xs">Active</SelectItem>
+                <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
+                <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
+                <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <Table>
           <TableHeader>
@@ -164,9 +280,14 @@ const Dashboard = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {entities.map((e) => (
-              <TableRow key={e.id} className="cursor-pointer hover:bg-muted/50">
-                <TableCell className="font-medium text-sm">{e.name}</TableCell>
+            {filteredEntities.map((e: any) => (
+              <TableRow key={e.id} className={`cursor-pointer hover:bg-muted/50 group ${mutedEntities.has(e.id) ? 'opacity-60 bg-muted/20' : ''}`}>
+                <TableCell className="font-medium text-sm">
+                  <div className="flex items-center gap-2">
+                    {e.name}
+                    {mutedEntities.has(e.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Muted</Badge>}
+                  </div>
+                </TableCell>
                 <TableCell className="text-xs text-muted-foreground capitalize">{e.entity_type}</TableCell>
                 <TableCell className="text-xs">{e.jurisdiction}</TableCell>
                 <TableCell>
@@ -180,9 +301,50 @@ const Dashboard = () => {
                 <TableCell className="text-xs max-w-[200px] truncate">{e.latest_signal ?? "Awaiting fresh signal"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground font-mono">{e.last_screened_at ? new Date(e.last_screened_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</TableCell>
                 <TableCell>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColor(Number(e.risk_score) >= 80 ? "Critical" : Number(e.risk_score) >= 60 ? "High Risk" : Number(e.risk_score) >= 40 ? "Medium Risk" : "Low Risk")}`}>{e.status}</span>
+                  {mutedEntities.has(e.id) ? (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Muted</span>
+                  ) : (
+                    <Select
+                      defaultValue={e.status}
+                      onValueChange={(val) => statusMutation.mutate({ id: e.id, status: val })}
+                    >
+                      <SelectTrigger className={`h-6 text-[10px] font-semibold px-2 py-0.5 rounded-full border-none shadow-none w-[110px] focus:ring-0 ${statusColor(e.status === "Critical" ? "Critical" : e.status === "High Risk" ? "High Risk" : e.status === "Active" ? "Medium Risk" : "Low Risk")}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active" className="text-xs">Active</SelectItem>
+                        <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
+                        <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
+                        <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
+                        <SelectItem value="Inactive" className="text-xs">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">Assigned</TableCell>
+                <TableCell className="text-xs text-muted-foreground relative">
+                  <div className="flex items-center justify-between">
+                    <span>Assigned</span>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
+                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-indigo-600 hover:bg-indigo-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate("/investigations", { state: { entity: e } }); }}>Investigate</button>
+                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded" onClick={(ev) => { 
+                        ev.stopPropagation(); 
+                        setMutedEntities(prev => {
+                          const next = new Set(prev);
+                          if (next.has(e.id)) {
+                            next.delete(e.id);
+                            toast({ title: "Entity Unmuted", description: `${e.name} has been unmuted.` });
+                          } else {
+                            next.add(e.id);
+                            toast({ title: "Entity Muted", description: `${e.name} will not trigger new alerts for 30 days.` });
+                          }
+                          return next;
+                        });
+                      }}>
+                        {mutedEntities.has(e.id) ? "Unmute" : "Mute"}
+                      </button>
+                    </div>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

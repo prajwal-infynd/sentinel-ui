@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { toast } from "@/components/ui/use-toast";
 
 export default function MediaConfig() {
   const [trustedOnly, setTrustedOnly] = useState(false);
@@ -63,7 +64,7 @@ export default function MediaConfig() {
               <h1 className="text-2xl font-bold tracking-tight">Media Agent Configuration</h1>
               <p className="text-sm text-muted-foreground mt-1">Control source intelligence, risk detection, and alert behaviour</p>
             </div>
-            <Button size="sm">Save Configuration</Button>
+            <Button size="sm" onClick={() => toast({ title: "Configuration Saved", description: "Media agent configurations have been successfully updated." })}>Save Configuration</Button>
           </div>
         </motion.div>
 

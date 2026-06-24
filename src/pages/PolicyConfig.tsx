@@ -12,6 +12,79 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPolicyConfig, savePolicyConfig, type Watchlist, type PolicyConfigData } from "@/lib/policy-data";
 import { toast } from "@/components/ui/use-toast";
+import Xarrow, { Xwrapper, useXarrow } from "react-xarrows";
+
+const DraggableNode = ({ node, bringToFront }: any) => {
+  const updateXarrow = useXarrow();
+  return (
+    <motion.div
+      id={`node-${node.id}`}
+      drag
+      dragMomentum={false}
+      onDrag={updateXarrow}
+      onDragEnd={updateXarrow}
+      onDragStart={() => bringToFront(node.id)}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={`absolute w-[280px] bg-white rounded-xl shadow-xl border-2 cursor-grab active:cursor-grabbing p-4 ${
+        node.type === 'trigger' ? 'border-primary/40 shadow-primary/10' :
+        node.type === 'condition' ? 'border-warning/40 shadow-warning/10' :
+        node.type === 'logic' ? 'border-indigo-500/40 w-[420px] shadow-indigo-500/10' :
+        'border-destructive/40 shadow-destructive/10'
+      }`}
+      style={{ top: node.y, left: node.x }}
+    >
+      {node.type !== 'trigger' && <div className="absolute -top-2 left-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-slate-300 border-2 border-white shadow-sm" />}
+      {node.type !== 'action' && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-slate-300 border-2 border-white shadow-sm" />}
+
+      <div className="flex items-center justify-between mb-3 border-b border-border/50 pb-2">
+        <div className={`flex items-center gap-2 text-sm font-bold ${
+          node.type === 'trigger' ? 'text-primary' :
+          node.type === 'condition' ? 'text-warning-foreground' :
+          node.type === 'logic' ? 'text-indigo-600' :
+          'text-destructive'
+        }`}>
+          {node.type === 'trigger' && <Database className="h-4 w-4" />}
+          {node.type === 'condition' && <Filter className="h-4 w-4" />}
+          {node.type === 'logic' && <GitMerge className="h-4 w-4" />}
+          {node.type === 'action' && <AlertTriangle className="h-4 w-4" />}
+          {node.title}
+        </div>
+        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+      </div>
+      
+      {node.type === 'trigger' && (
+        <>
+          <div className="text-xs text-muted-foreground font-medium mb-2">Trigger Event</div>
+          <div className="text-xs bg-slate-100 p-2 rounded border font-mono text-slate-700">{node.detail}</div>
+        </>
+      )}
+      {node.type === 'condition' && (
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs font-bold text-slate-600 uppercase">IF</span>
+          <Badge variant="outline" className="text-xs font-mono bg-warning/20 text-yellow-800 border-warning/40 font-bold">{node.detail}</Badge>
+        </div>
+      )}
+      {node.type === 'logic' && (
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 flex flex-col items-center justify-center">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Check 1</span>
+            <Badge variant="outline" className="text-xs bg-white text-indigo-700">Entity is PEP</Badge>
+          </div>
+          <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 flex flex-col items-center justify-center">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Check 2</span>
+            <Badge variant="outline" className="text-xs bg-white text-indigo-700">High-Risk Juris.</Badge>
+          </div>
+        </div>
+      )}
+      {node.type === 'action' && (
+        <div className="text-sm font-bold text-slate-800 flex items-center justify-center py-2 bg-white rounded shadow-sm border border-destructive/20">
+          {node.detail}
+        </div>
+      )}
+    </motion.div>
+  );
+};
 
 const PolicyConfig = () => {
   const queryClient = useQueryClient();
@@ -26,6 +99,34 @@ const PolicyConfig = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newPolicyName, setNewPolicyName] = useState("");
   const [newPolicyRegion, setNewPolicyRegion] = useState("");
+
+  // Visual Rule Builder State
+  const [nodes, setNodes] = useState([
+    { id: "1", type: "trigger", title: "Data Sources", x: 150, y: 40, detail: "Ingest CSV/PDF/API" },
+    { id: "2", type: "condition", title: "Policy Routing", x: 150, y: 180, detail: "Apply KYB Rules & Thresholds" },
+    { id: "3", type: "logic", title: "Output Stage", x: 80, y: 320, detail: "Standardize Data Schema" },
+    { id: "4", type: "action", title: "Agents Pipeline", x: 150, y: 480, detail: "DISPATCH TO SWARM" }
+  ]);
+
+  const bringToFront = (id: string) => {
+    setNodes(prev => {
+      const node = prev.find(n => n.id === id);
+      if (!node) return prev;
+      return [...prev.filter(n => n.id !== id), node];
+    });
+  };
+
+  const handleAddNode = () => {
+    const newNode = {
+      id: Date.now().toString(),
+      type: "condition",
+      title: "New Condition",
+      x: 350 + Math.random() * 40,
+      y: 250 + Math.random() * 40,
+      detail: "Unconfigured"
+    };
+    setNodes([...nodes, newNode]);
+  };
 
   useEffect(() => {
     if (data) {
@@ -137,33 +238,62 @@ const PolicyConfig = () => {
         {isLoading ? (
           <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground h-8 w-8" /></div>
         ) : !data ? null : (
-          <Tabs defaultValue="global" className="w-full">
-            <TabsList className="bg-card border border-border/50 rounded-xl p-1 shadow-sm mb-6 inline-flex">
-              <TabsTrigger value="global" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4">Global Thresholds</TabsTrigger>
-              <TabsTrigger value="builder" className="text-xs font-bold uppercase tracking-wider rounded-lg data-[state=active]:bg-indigo-500/10 data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-2 px-4 gap-2">
-                <Workflow className="h-3 w-3" /> Visual Rule Builder
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="global" className="w-full">
+              <TabsList className="bg-transparent border-b border-border/50 rounded-none p-0 w-full justify-start overflow-x-auto h-auto gap-4 mb-6">
+                <TabsTrigger value="global" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Global Thresholds</TabsTrigger>
+                <TabsTrigger value="builder" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 gap-2">
+                  <Workflow className="h-4 w-4" /> Visual Rule Builder
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 gap-2">
+                  Audit Logs
+                </TabsTrigger>
+              </TabsList>
+
+            <TabsContent value="audit" className="space-y-6">
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-6">
+                <h3 className="text-base font-bold tracking-tight mb-5">Policy Change History</h3>
+                <div className="space-y-4">
+                  {[
+                    { date: "2026-06-24 09:12", user: "Admin", action: "Updated KYB Thresholds from 70% to 75%" },
+                    { date: "2026-06-23 14:45", user: "System", action: "Deployed new Agent Pipeline rules" },
+                    { date: "2026-06-21 11:20", user: "Compliance Officer", action: "Added new Watchlist: APAC Sanctions" }
+                  ].map((log, i) => (
+                    <div key={i} className="flex justify-between items-center border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                      <div>
+                        <div className="text-sm font-semibold">{log.action}</div>
+                        <div className="text-xs text-muted-foreground mt-1">by {log.user}</div>
+                      </div>
+                      <div className="text-xs font-mono text-muted-foreground">{log.date}</div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </TabsContent>
 
             <TabsContent value="global" className="space-y-6">
             {/* Watchlists */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="rounded-xl bg-card shadow-sm p-6"
+              className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-6"
             >
-              <h3 className="font-semibold mb-4 flex items-center gap-2"><Shield className="h-4 w-4 text-primary" /> Watchlist Sources</h3>
-              <div className="space-y-3">
+              <h3 className="text-base font-bold tracking-tight mb-5 flex items-center gap-2"><Shield className="h-5 w-5 text-indigo-500" /> Watchlist Sources</h3>
+              <div className="space-y-4">
                 {lists.map((list, i) => (
-                  <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={list.name} className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/40 transition-colors group">
-                    <div>
-                      <div className="text-sm font-semibold">{list.name}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                        <Globe className="h-3.5 w-3.5 text-muted-foreground/70" />{list.region}
+                  <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={list.name} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-white shadow-sm hover:shadow-md hover:border-indigo-500/30 transition-all group">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
+                        <Globe className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-foreground tracking-tight">{list.name}</div>
+                        <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mt-0.5 uppercase tracking-wider">
+                          {list.region}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <Switch checked={list.enabled} onCheckedChange={() => toggle(i)} className="data-[state=checked]:bg-primary" />
+                      <Switch checked={list.enabled} onCheckedChange={() => toggle(i)} className="data-[state=checked]:bg-indigo-600" />
                       <div className="h-8 w-px bg-border/50 hidden sm:block"></div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeletePolicy(i)}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive hover:bg-destructive/10 rounded-full" onClick={() => handleDeletePolicy(i)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -174,24 +304,24 @@ const PolicyConfig = () => {
 
             {/* Thresholds */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="rounded-xl bg-card shadow-sm p-6 space-y-6"
+              className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-6 space-y-6"
             >
-              <h3 className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-warning" /> Alert Thresholds</h3>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Matching Confidence Threshold</span>
-                  <span className="text-sm font-mono font-bold">{confidence[0]}%</span>
+              <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Alert Thresholds</h3>
+              <div className="p-5 rounded-xl border border-border/50 bg-white shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-bold text-foreground">Matching Confidence Threshold</span>
+                  <span className="text-lg font-black tracking-tighter text-indigo-600">{confidence[0]}%</span>
                 </div>
                 <Slider value={confidence} onValueChange={setConfidence} max={100} min={30} step={5} />
-                <p className="text-xs text-muted-foreground mt-1">Matches below this threshold will not generate alerts</p>
+                <p className="text-[11px] font-medium text-muted-foreground mt-4">Matches below this threshold will <span className="font-bold text-foreground">not generate alerts</span>.</p>
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Alert Severity Escalation</span>
-                  <span className="text-sm font-mono font-bold">{severity[0]}%</span>
+              <div className="p-5 rounded-xl border border-border/50 bg-white shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-bold text-foreground">Alert Severity Escalation</span>
+                  <span className="text-lg font-black tracking-tighter text-warning">{severity[0]}%</span>
                 </div>
                 <Slider value={severity} onValueChange={setSeverity} max={100} min={20} step={5} />
-                <p className="text-xs text-muted-foreground mt-1">Scores above this threshold trigger high-severity alerts</p>
+                <p className="text-[11px] font-medium text-muted-foreground mt-4">Scores above this threshold trigger <span className="font-bold text-foreground">high-severity escalation</span>.</p>
               </div>
             </motion.div>
 
@@ -220,15 +350,15 @@ const PolicyConfig = () => {
             </TabsContent>
 
             <TabsContent value="builder">
-              <div className="rounded-2xl border border-border/50 bg-[#F8FAFC] shadow-sm overflow-hidden h-[600px] flex flex-col relative">
+              <div className="rounded-2xl border border-border/50 bg-[#F8FAFC] shadow-sm overflow-hidden h-[700px] flex flex-col relative">
                 
                 {/* Header / Toolbar */}
-                <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-10">
+                <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-20 relative">
                   <div className="flex items-center gap-3">
                     <Button variant="outline" size="sm" className="gap-2 h-8 text-xs font-bold shadow-sm">
                       <MousePointerSquareDashed className="h-3.5 w-3.5" /> Select
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-2 h-8 text-xs font-bold shadow-sm">
+                    <Button variant="outline" size="sm" onClick={handleAddNode} className="gap-2 h-8 text-xs font-bold shadow-sm text-indigo-600 border-indigo-200 hover:bg-indigo-50">
                       <Plus className="h-3.5 w-3.5" /> Add Node
                     </Button>
                     <div className="h-4 w-px bg-border/50 mx-1" />
@@ -237,93 +367,54 @@ const PolicyConfig = () => {
                     </Button>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold">Discard Draft</Button>
-                    <Button size="sm" className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md">Deploy Rule</Button>
+                    <Button variant="outline" size="sm" className="h-8 text-xs font-bold" onClick={() => toast({ title: "Draft Discarded", description: "Your changes have been discarded." })}>Discard Draft</Button>
+                    <Button size="sm" className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md" onClick={() => toast({ title: "Rule Deployed", description: "The new rule is now active in the pipeline." })}>Deploy Rule</Button>
                   </div>
                 </div>
 
-                {/* Canvas Area */}
-                <div className="flex-1 relative overflow-hidden bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:20px_20px]">
-                  
-                  {/* Start Node */}
-                  <div className="absolute top-10 left-[40%] w-[280px] bg-white rounded-xl shadow-md border-2 border-primary/20 p-4">
-                    <div className="flex items-center justify-between mb-3 border-b pb-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <Database className="h-4 w-4 text-primary" /> Incoming Transaction
+                <div className="flex flex-1 relative overflow-hidden">
+                  {/* Toolbox Sidebar */}
+                  <div className="w-64 bg-white border-r border-border/50 p-4 shadow-sm z-10 flex flex-col gap-6">
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Triggers</h4>
+                      <div className="p-3 rounded-lg border border-primary/20 bg-primary/5 flex items-center gap-3 cursor-grab hover:shadow-md transition-shadow">
+                        <Database className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-semibold">Incoming Tx</span>
                       </div>
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div className="text-xs text-muted-foreground font-medium mb-2">Trigger Event</div>
-                    <div className="text-xs bg-slate-100 p-2 rounded border font-mono">Any Swift/SEPA Transfer</div>
-                  </div>
-
-                  {/* SVG Connector 1 */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                    <path d="M 400 150 L 400 200" stroke="#94A3B8" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
-                    <defs>
-                      <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8" />
-                      </marker>
-                    </defs>
-                  </svg>
-
-                  {/* Condition Node */}
-                  <div className="absolute top-[200px] left-[40%] w-[280px] bg-white rounded-xl shadow-md border-2 border-warning/40 p-4">
-                    <div className="flex items-center justify-between mb-3 border-b pb-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <Filter className="h-4 w-4 text-warning" /> Amount Condition
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Conditions</h4>
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-lg border border-warning/30 bg-warning/5 flex items-center gap-3 cursor-grab hover:shadow-md transition-shadow">
+                          <Filter className="h-4 w-4 text-warning" />
+                          <span className="text-sm font-semibold">Amount Filter</span>
+                        </div>
+                        <div className="p-3 rounded-lg border border-indigo-200 bg-indigo-50 flex items-center gap-3 cursor-grab hover:shadow-md transition-shadow">
+                          <GitMerge className="h-4 w-4 text-indigo-500" />
+                          <span className="text-sm font-semibold">Risk Engine</span>
+                        </div>
                       </div>
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs font-bold text-slate-600 uppercase">IF</span>
-                      <Badge variant="outline" className="text-xs font-mono bg-warning/10 text-warning-foreground border-warning/30">Amount {'>'} $10,000</Badge>
-                    </div>
-                  </div>
-
-                  {/* SVG Connector 2 */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                    <path d="M 400 300 L 400 350" stroke="#94A3B8" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
-                  </svg>
-
-                  {/* Logic Split Node */}
-                  <div className="absolute top-[350px] left-[31%] w-[420px] bg-white rounded-xl shadow-md border-2 border-indigo-500/40 p-4">
-                    <div className="flex items-center justify-between mb-3 border-b pb-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                        <GitMerge className="h-4 w-4 text-indigo-500" /> And Risk Assessment
-                      </div>
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 flex flex-col items-center justify-center">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Check 1</span>
-                        <Badge variant="outline" className="text-xs bg-white text-indigo-700">Entity is PEP</Badge>
-                      </div>
-                      <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 flex flex-col items-center justify-center">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Check 2</span>
-                        <Badge variant="outline" className="text-xs bg-white text-indigo-700">High-Risk Juris.</Badge>
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">Actions</h4>
+                      <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 flex items-center gap-3 cursor-grab hover:shadow-md transition-shadow">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <span className="text-sm font-semibold">Block Payment</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* SVG Connector 3 */}
-                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                    <path d="M 400 480 L 400 520" stroke="#94A3B8" strokeWidth="2" fill="none" markerEnd="url(#arrow)" />
-                  </svg>
-                  
-                  {/* Action Node */}
-                  <div className="absolute top-[520px] left-[40%] w-[280px] bg-destructive/5 rounded-xl shadow-md border-2 border-destructive/40 p-4">
-                    <div className="flex items-center justify-between mb-3 border-b border-destructive/20 pb-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-destructive">
-                        <AlertTriangle className="h-4 w-4" /> Trigger Action
-                      </div>
-                      <MoreHorizontal className="h-4 w-4 text-destructive/70" />
-                    </div>
-                    <div className="text-sm font-bold text-slate-800 flex items-center justify-center py-2 bg-white rounded shadow-sm">
-                      BLOCK PAYMENT & ALERT
-                    </div>
+                  {/* Canvas Area */}
+                  <div className="flex-1 relative overflow-hidden bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:20px_20px]">
+                    <Xwrapper>
+                      {nodes.map((node) => (
+                        <DraggableNode key={node.id} node={node} bringToFront={bringToFront} />
+                      ))}
+                      <Xarrow start="node-1" end="node-2" color="#94A3B8" strokeWidth={2} path="smooth" startAnchor="bottom" endAnchor="top" />
+                      <Xarrow start="node-2" end="node-3" color="#94A3B8" strokeWidth={2} path="smooth" startAnchor="bottom" endAnchor="top" />
+                      <Xarrow start="node-3" end="node-4" color="#ef4444" strokeWidth={2} path="smooth" dashness={{ animation: true }} startAnchor="bottom" endAnchor="top" />
+                    </Xwrapper>
                   </div>
-
                 </div>
               </div>
             </TabsContent>

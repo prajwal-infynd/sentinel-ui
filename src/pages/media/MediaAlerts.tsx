@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { toast } from "@/components/ui/use-toast";
 import { fetchMediaAlerts } from "@/lib/media-agent-data";
 import { ArticlePreviewModal } from "@/components/media/ArticlePreviewModal";
 
@@ -121,9 +122,9 @@ export default function MediaAlerts() {
                             </div>
 
                             <div className="mt-6 flex items-center gap-3 border-t border-border/50 pt-5">
-                              <Button size="sm" onClick={(e) => e.stopPropagation()} className="h-9 gap-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"><Search className="h-4 w-4" /> Open Case</Button>
-                              <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted"><X className="h-4 w-4" /> Dismiss</Button>
-                              <Button size="sm" variant="outline" onClick={(e) => e.stopPropagation()} className="h-9 gap-2 text-xs font-bold rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5"><TrendingUp className="h-4 w-4" /> Escalate</Button>
+                              <Button size="sm" onClick={(e) => { e.stopPropagation(); toast({ title: "Case Opened", description: "Navigating to investigation workspace..." }); }} className="h-9 gap-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"><Search className="h-4 w-4" /> Open Case</Button>
+                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast({ title: "Alert Dismissed", description: "This alert has been marked as a false positive." }); }} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted"><X className="h-4 w-4" /> Dismiss</Button>
+                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast({ title: "Alert Escalated", description: "This alert has been escalated to senior analysts.", variant: "destructive" }); }} className="h-9 gap-2 text-xs font-bold rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5"><TrendingUp className="h-4 w-4" /> Escalate</Button>
                             </div>
                           </motion.div>
                         )}
