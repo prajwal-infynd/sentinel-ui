@@ -3,7 +3,7 @@ import { TrendingUp, Globe, Users, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { riskCategories, mediaSignalsOverTime } from "../lib/mock-api";
+import { riskCategories, mediaSignalsOverTime } from "../../lib/mock-api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const geoData = [
@@ -162,4 +162,5 @@ export default function MediaSignals() {
     </DashboardLayout>
   );
 }
+
 

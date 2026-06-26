@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { pipelineStages } from "../lib/mock-api";
+import { pipelineStages } from "../../lib/mock-api";
 
 export default function MediaPipeline() {
   const [expandedStage, setExpandedStage] = useState<number | null>(null);
@@ -133,4 +133,5 @@ export default function MediaPipeline() {
     </DashboardLayout>
   );
 }
+
 
