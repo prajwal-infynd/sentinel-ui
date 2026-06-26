@@ -6,7 +6,7 @@ import { formatRelativeTime } from "./utils";
 export const mock = new MockAdapter(apiClient, { delayResponse: 500 }); // simulate network delay
 
 // --- DASHBOARD DATA ---
-mock.onGet("/dashboard/summary").reply(200, {
+let dashboardSummary = {
   organizationName: "Monitoring Workspace",
   entityCount: 154,
   alertCount: 42,
@@ -15,9 +15,11 @@ mock.onGet("/dashboard/summary").reply(200, {
   openCaseCount: 8,
   avgRiskScore: 68.4,
   activeAgentRuns: 3,
-});
+};
 
-const mockEntities = [
+mock.onGet("/dashboard/summary").reply(() => [200, dashboardSummary]);
+
+let mockEntities = [
   { id: "1", name: "Acme Corp", entity_type: "company", jurisdiction: "US", risk_score: 85, latest_signal: "Adverse Media Mention", last_screened_at: new Date().toISOString(), status: "Inactive" },
   { id: "2", name: "Global Tech", entity_type: "company", jurisdiction: "UK", risk_score: 42, latest_signal: "PEP Match", last_screened_at: new Date().toISOString(), status: "Inactive" },
   { id: "3", name: "John Doe", entity_type: "individual", jurisdiction: "EU", risk_score: 92, latest_signal: "Sanctions List", last_screened_at: new Date().toISOString(), status: "Inactive" },
@@ -90,7 +92,31 @@ mock.onGet("/investigations/snapshot").reply(200, {
   ],
 });
 
-mock.onPost("/portfolio/import").reply(200, { imported: 3 });
+mock.onPost("/portfolio/import").reply((config) => {
+  try {
+    const rows = JSON.parse(config.data);
+    const importCount = Array.isArray(rows) ? rows.length : 1;
+    
+    // For demo purposes, we replace the dashboard count with the exact number of entities imported
+    dashboardSummary.entityCount = importCount;
+    
+    // Replace the portfolio list with the newly imported entities
+    mockEntities = (Array.isArray(rows) ? rows : [rows]).map((r: any, i: number) => ({
+      id: r.externalReference || `new_${Date.now()}_${i}`,
+      name: r.name || "Unknown Entity",
+      entity_type: r.entityType || "company",
+      jurisdiction: r.jurisdiction || "Unknown",
+      risk_score: r.riskScore || 50,
+      latest_signal: "Newly Imported",
+      last_screened_at: new Date().toISOString(),
+      status: "Active"
+    }));
+
+    return [200, { imported: importCount }];
+  } catch (e) {
+    return [200, { imported: 3 }];
+  }
+});
 
 // --- MEDIA AGENT DATA ---
 
