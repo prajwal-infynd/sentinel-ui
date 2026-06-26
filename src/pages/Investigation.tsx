@@ -105,6 +105,7 @@ const Investigation = () => {
   const [availablePersonas, setAvailablePersonas] = useState<any[]>([]);
   const [judgeVerdict, setJudgeVerdict] = useState("While the source is highly credible, formal charges have not been filed. However, SFO involvement in a multi-jurisdictional fraud context is a material risk. I am setting the Risk Score to 95 (Critical) given the confirmed matching criteria and tagging it for immediate review.");
 
+  const [pendingUpdatesCount, setPendingUpdatesCount] = useState(2);
   const [thinkingStep, setThinkingStep] = useState(0);
   const thinkingSteps = [
     "Scanning SEC database...",
@@ -368,7 +369,11 @@ const Investigation = () => {
           <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Infyous Debate</TabsTrigger>
           <TabsTrigger value="pending_updates" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 flex items-center gap-1.5">
             Pending Updates
-            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">2</span>
+            {pendingUpdatesCount > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                {pendingUpdatesCount}
+              </span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
         </TabsList>
@@ -402,6 +407,7 @@ const Investigation = () => {
                     onClick={(e) => {
                       const el = (e.target as HTMLElement).closest('.bg-white');
                       if (el) el.classList.add('hidden');
+                      setPendingUpdatesCount(prev => Math.max(0, prev - 1));
                       toast({ title: "Change Rejected", description: "The address update has been discarded.", variant: "destructive" });
                     }}
                   >
@@ -412,6 +418,7 @@ const Investigation = () => {
                     onClick={(e) => {
                       const el = (e.target as HTMLElement).closest('.bg-white');
                       if (el) el.classList.add('hidden');
+                      setPendingUpdatesCount(prev => Math.max(0, prev - 1));
                       toast({ title: "Change Approved", description: "The company profile address has been updated successfully." });
                     }}
                   >
@@ -466,6 +473,7 @@ const Investigation = () => {
                     onClick={(e) => {
                       const el = (e.target as HTMLElement).closest('.bg-white');
                       if (el) el.classList.add('hidden');
+                      setPendingUpdatesCount(prev => Math.max(0, prev - 1));
                       toast({ title: "Change Rejected", description: "The director appointment has been discarded.", variant: "destructive" });
                     }}
                   >
@@ -476,6 +484,7 @@ const Investigation = () => {
                     onClick={(e) => {
                       const el = (e.target as HTMLElement).closest('.bg-white');
                       if (el) el.classList.add('hidden');
+                      setPendingUpdatesCount(prev => Math.max(0, prev - 1));
                       toast({ title: "Change Approved", description: "The new director has been added to the corporate structure." });
                     }}
                   >
@@ -509,6 +518,14 @@ const Investigation = () => {
                 </div>
               </div>
             </motion.div>
+
+            {pendingUpdatesCount === 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center p-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                <CheckCircle2 className="h-12 w-12 text-emerald-400 mb-4" />
+                <h3 className="text-lg font-bold text-slate-800">All Caught Up!</h3>
+                <p className="text-slate-500 text-sm mt-1 max-w-sm">There are no more pending data updates for this entity. The system of record is completely up to date.</p>
+              </motion.div>
+            )}
 
           </div>
         </TabsContent>
