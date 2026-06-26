@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { toast } from "@/components/ui/use-toast";
-import { mediaSources } from "@/lib/media-sample-data";
+import { mediaSources } from "../lib/mock-api";
 
 const reliabilityColor = (r: string) =>
   r === "high" ? "bg-success/10 text-success border-success/20" : "bg-warning/10 text-warning border-warning/20";
@@ -202,3 +202,4 @@ export default function MediaSources() {
     </DashboardLayout>
   );
 }
+

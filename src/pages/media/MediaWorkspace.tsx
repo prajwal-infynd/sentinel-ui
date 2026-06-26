@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { toast } from "@/components/ui/use-toast";
-import { mediaArticles } from "@/lib/media-sample-data";
+import { mediaArticles } from "../lib/mock-api";
 
 const severityBorder = (s: string) =>
   s === "critical" ? "border-l-destructive" : s === "high" ? "border-l-warning" : s === "medium" ? "border-l-primary" : "border-l-muted-foreground";
@@ -164,3 +164,4 @@ export default function MediaWorkspace() {
     </DashboardLayout>
   );
 }
+
