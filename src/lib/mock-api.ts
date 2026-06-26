@@ -62,7 +62,14 @@ mock.onPost("/auth/signup").reply((config) => {
 });
 
 mock.onGet("/admin/users").reply(() => {
-  const safeUsers = mockUsers.map(({ password, ...rest }) => rest);
+  const safeUsers = mockUsers.map((user) => {
+    const { password, ...rest } = user;
+    return {
+      ...rest,
+      role: ROLES[user.roleId as keyof typeof ROLES]?.name,
+      permissions: computePermissions(user)
+    };
+  });
   return [200, safeUsers];
 });
 
