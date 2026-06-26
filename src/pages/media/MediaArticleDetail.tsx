@@ -92,7 +92,7 @@ export default function MediaArticleDetail() {
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                         <Bot className="h-6 w-6 text-primary" />
                       </div>
-                      <h3 className="text-lg font-bold tracking-tight">MiroFish Consensus Engine</h3>
+                      <h3 className="text-lg font-bold tracking-tight">Infyous Consensus Engine</h3>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Live Adversarial Debate Analysis</p>
                     </div>
                     

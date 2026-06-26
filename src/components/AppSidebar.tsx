@@ -1,12 +1,14 @@
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 import {
-  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users
+  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarMenuAction, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
 const mainItems = [
@@ -18,9 +20,23 @@ const mainItems = [
 
 const platformItems = [
   { title: "AI Agents", url: "/agents", icon: Bot },
-  { title: "Data Sources", url: "/architecture", icon: Database },
+  { 
+    title: "Data Sources", 
+    url: "/architecture", 
+    icon: Database,
+    subItems: [
+      { title: "External Data", url: "/architecture/external" },
+      { title: "Custom Data", url: "/architecture/custom" },
+      { title: "Infynd Data", url: "/architecture/infynd" },
+    ]
+  },
   { title: "Policy Layer", url: "/policy", icon: Shield },
+  { title: "AI Governance", url: "/governance", icon: ShieldAlert },
   { title: "Reporting", url: "/reporting", icon: BarChart3 },
+];
+
+const mediaItems = [
+  { title: "Media Engine", url: "/media", icon: Newspaper },
 ];
 
 const systemItems = [
@@ -42,14 +58,39 @@ export function AppSidebar() {
       <SidebarGroupContent>
         <SidebarMenu className={cn(collapsed && "items-center")}>
           {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                <NavLink to={item.url} end activeClassName="bg-sidebar-accent text-sidebar-primary-foreground" className={cn(collapsed && "justify-center")}>
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.title}</span>}
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            <Collapsible key={item.title} asChild defaultOpen={location.pathname.startsWith(item.url) && item.subItems !== undefined}>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive(item.url) && !item.subItems} tooltip={item.title}>
+                  <NavLink to={item.subItems ? item.subItems[0].url : item.url} end={!item.subItems} activeClassName={item.subItems ? "" : "bg-sidebar-accent text-sidebar-primary-foreground"} className={cn(collapsed && "justify-center")}>
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {!collapsed && <span>{item.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+                {item.subItems && !collapsed && (
+                  <>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuAction className="data-[state=open]:rotate-90">
+                        <ChevronRight />
+                        <span className="sr-only">Toggle</span>
+                      </SidebarMenuAction>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {item.subItems.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                              <NavLink to={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </>
+                )}
+              </SidebarMenuItem>
+            </Collapsible>
           ))}
         </SidebarMenu>
       </SidebarGroupContent>
@@ -73,6 +114,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2">
         {renderGroup("Monitoring", mainItems)}
+        {renderGroup("Media", mediaItems)}
         {renderGroup("Platform", platformItems)}
         {renderGroup("System", systemItems)}
       </SidebarContent>

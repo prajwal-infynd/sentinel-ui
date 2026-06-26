@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,8 +11,11 @@ import LiveAlerts from "./pages/LiveAlerts";
 import Investigation from "./pages/Investigation";
 import InvestigationsList from "./pages/InvestigationsList";
 import AIAgents from "./pages/AIAgents";
-import DataArchitecture from "./pages/DataArchitecture";
+import ExternalData from "./pages/data/ExternalData";
+import CustomData from "./pages/data/CustomData";
+import InfyndData from "./pages/data/InfyndData";
 import PolicyConfig from "./pages/PolicyConfig";
+import AIGovernance from "./pages/AIGovernance";
 import Reporting from "./pages/Reporting";
 import DemoClosing from "./pages/DemoClosing";
 import NotFound from "./pages/NotFound";
@@ -49,8 +52,12 @@ const App = () => (
           <Route path="/investigations" element={<InvestigationsList />} />
           <Route path="/investigations/:id" element={<Investigation />} />
           <Route path="/agents" element={<AIAgents />} />
-          <Route path="/architecture" element={<DataArchitecture />} />
+          <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
+            <Route path="/architecture/external" element={<ExternalData />} />
+            <Route path="/architecture/custom" element={<CustomData />} />
+            <Route path="/architecture/infynd" element={<InfyndData />} />
           <Route path="/policy" element={<PolicyConfig />} />
+          <Route path="/governance" element={<AIGovernance />} />
           <Route path="/reporting" element={<Reporting />} />
           <Route path="/closing" element={<DemoClosing />} />
           <Route path="/media" element={<MediaDashboard />} />

@@ -46,7 +46,7 @@ const defaultCases: Case[] = [
 
 type InvestigationsContextType = {
   cases: Case[];
-  addCase: (newCase: Omit<Case, "id" | "timestamp" | "status" | "assignee">) => void;
+  addCase: (newCase: Omit<Case, "id" | "timestamp" | "status" | "assignee">) => string;
   updateCaseStatus: (id: string, status: string) => void;
   assignUser: (id: string, assignee: string) => void;
   getCaseById: (id: string) => Case | undefined;
@@ -64,15 +64,17 @@ export const InvestigationsProvider: React.FC<{ children: React.ReactNode }> = (
     localStorage.setItem('sentinel_cases', JSON.stringify(cases));
   }, [cases]);
 
-  const addCase = (newCaseData: Omit<Case, "id" | "timestamp" | "status" | "assignee">) => {
+  const addCase = (newCaseData: Omit<Case, "id" | "timestamp" | "status" | "assignee">): string => {
+    const id = `ALT-${Math.floor(Math.random() * 1000) + 5000}`;
     const newCase: Case = {
       ...newCaseData,
-      id: `ALT-${Math.floor(Math.random() * 1000) + 5000}`,
+      id,
       status: "Pending Review",
       assignee: "Unassigned",
       timestamp: "Just now"
     };
     setCases(prev => [newCase, ...prev]);
+    return id;
   };
 
   const updateCaseStatus = (id: string, status: string) => {

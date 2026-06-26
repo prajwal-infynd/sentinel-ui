@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Activity, AlertTriangle, Users, Shield, Newspaper, FileWarning, Clock, RefreshCw, TrendingUp, Search } from "lucide-react";
+import { Activity, AlertTriangle, Users, Shield, Newspaper, FileWarning, Clock, RefreshCw, TrendingUp, Search, Brain, ArrowUpRight, UploadCloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,8 @@ import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchDashboardSummary, fetchEntities, updateEntityStatus } from "@/lib/dashboard-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 
 const alertsOverTime = [
@@ -33,6 +35,9 @@ const riskColor = (score: number) =>
   score >= 80 ? "bg-destructive" : score >= 60 ? "bg-warning" : score >= 40 ? "bg-primary" : "bg-success";
 const statusColor = (s: string) =>
   s === "Critical" ? "text-destructive bg-destructive/10" : s === "High Risk" ? "text-warning bg-warning/10" :
+  s === "Dissolved" ? "text-slate-500 bg-slate-200 border-dashed border-slate-400" :
+  s === "Inactive" ? "text-slate-500 bg-slate-100 border border-slate-200" :
+  s === "Active" ? "text-success bg-success/10" :
   s === "Medium Risk" ? "text-primary bg-primary/10" : "text-success bg-success/10";
 
 const Dashboard = () => {
@@ -45,6 +50,21 @@ const Dashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const { data: summary } = useQuery({ queryKey: ["dashboard-summary"], queryFn: fetchDashboardSummary });
   const { data: entities = [] } = useQuery({ queryKey: ["dashboard-entities"], queryFn: fetchEntities });
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
+  const [hasPromptedActivation, setHasPromptedActivation] = useState(() => {
+    return localStorage.getItem("hasPromptedActivation") === "true";
+  });
+
+  useEffect(() => {
+    if (entities && entities.length > 0 && !hasPromptedActivation) {
+      const hasInactive = entities.some((e: any) => e.status === "Inactive");
+      if (hasInactive) {
+        setShowActivationDialog(true);
+        setHasPromptedActivation(true);
+        localStorage.setItem("hasPromptedActivation", "true");
+      }
+    }
+  }, [entities, hasPromptedActivation]);
 
   const filteredEntities = entities.filter((e: any) => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -98,10 +118,25 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3 bg-muted/50 p-1.5 rounded-xl border">
-          <div className="px-3 py-1 flex flex-col items-end">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Active Entities</span>
-            <span className="font-mono text-sm font-bold text-foreground">{summary?.entityCount ?? 0}</span>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {/* Compact Portfolio Health Status */}
+          <div className="flex items-center gap-3 bg-slate-900 border-slate-800 p-1.5 rounded-xl border px-3">
+            <Activity className="h-4 w-4 text-emerald-400" />
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Health</span>
+              <div className="flex items-center gap-2">
+                <div className="w-16 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-emerald-500 h-full w-[98.4%]" />
+                </div>
+                <span className="text-xs font-mono font-bold text-emerald-400">98.4%</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 bg-muted/50 p-1.5 rounded-xl border">
+            <div className="px-3 py-1 flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Active Entities</span>
+              <span className="font-mono text-sm font-bold text-foreground">{summary?.entityCount ?? 0}</span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -261,9 +296,25 @@ const Dashboard = () => {
                 <SelectItem value="Active" className="text-xs">Active</SelectItem>
                 <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
                 <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
+                <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
                 <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
               </SelectContent>
             </Select>
+            <Button 
+              size="sm" 
+              className="h-8 text-xs bg-success text-success-foreground hover:bg-success/90" 
+              onClick={() => statusMutation.mutate({ id: "activate-all", status: "Active" })}
+            >
+              Activate All
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive"
+              className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white" 
+              onClick={() => statusMutation.mutate({ id: "deactivate-all", status: "Inactive" })}
+            >
+              Deactivate All
+            </Button>
           </div>
         </div>
         <Table>
@@ -305,16 +356,17 @@ const Dashboard = () => {
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Muted</span>
                   ) : (
                     <Select
-                      defaultValue={e.status}
+                      value={e.status}
                       onValueChange={(val) => statusMutation.mutate({ id: e.id, status: val })}
                     >
-                      <SelectTrigger className={`h-6 text-[10px] font-semibold px-2 py-0.5 rounded-full border-none shadow-none w-[110px] focus:ring-0 ${statusColor(e.status === "Critical" ? "Critical" : e.status === "High Risk" ? "High Risk" : e.status === "Active" ? "Medium Risk" : "Low Risk")}`}>
+                      <SelectTrigger className={`h-6 text-[10px] font-semibold px-2 py-0.5 rounded-full border-none shadow-none w-[110px] focus:ring-0 ${statusColor(e.status)}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Active" className="text-xs">Active</SelectItem>
                         <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
                         <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
+                        <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
                         <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
                         <SelectItem value="Inactive" className="text-xs">Inactive</SelectItem>
                       </SelectContent>
@@ -351,8 +403,26 @@ const Dashboard = () => {
           </TableBody>
         </Table>
       </motion.div>
-    </div>
-  </DashboardLayout>
+      </div>
+
+      <Dialog open={showActivationDialog} onOpenChange={setShowActivationDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Activate Monitoring</DialogTitle>
+            <DialogDescription>
+              You have loaded entities that are currently <strong>Inactive</strong>. They will not be screened or monitored by the AI agents until they are activated.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button variant="outline" onClick={() => setShowActivationDialog(false)}>Later</Button>
+            <Button onClick={() => {
+              statusMutation.mutate({ id: "activate-all", status: "Active" });
+              setShowActivationDialog(false);
+            }}>Activate All Now</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
   );
 };
 

@@ -90,7 +90,7 @@ const DraggableNode = ({ node, bringToFront }: any) => {
 const PolicyConfig = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const entityName = searchParams.get('entity');
+  const entityName = searchParams.get('entity') || searchParams.get('source');
 
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["policy-config"], queryFn: fetchPolicyConfig });
@@ -247,7 +247,7 @@ const PolicyConfig = () => {
           </div>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">+ Add Policy</Button>
+              <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-full px-5 font-bold shadow-sm shadow-blue-500/20">+ Add Policy</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -275,12 +275,12 @@ const PolicyConfig = () => {
           <div className="flex justify-center py-20"><Loader2 className="animate-spin text-muted-foreground h-8 w-8" /></div>
         ) : !data ? null : (
             <Tabs defaultValue="global" className="w-full">
-              <TabsList className="bg-transparent border-b border-border/50 rounded-none p-0 w-full justify-start overflow-x-auto h-auto gap-4 mb-6">
-                <TabsTrigger value="global" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Global Thresholds</TabsTrigger>
-                <TabsTrigger value="builder" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 gap-2">
+              <TabsList className="bg-transparent border-b border-slate-200 rounded-none p-0 w-full justify-start overflow-x-auto h-auto gap-6 mb-8">
+                <TabsTrigger value="global" className="text-[15px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none py-3 px-1 text-slate-500 hover:text-slate-900 transition-colors">Global Thresholds</TabsTrigger>
+                <TabsTrigger value="builder" className="text-[15px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none py-3 px-1 gap-2 text-slate-500 hover:text-slate-900 transition-colors">
                   <Workflow className="h-4 w-4" /> Visual Rule Builder
                 </TabsTrigger>
-                <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 gap-2">
+                <TabsTrigger value="audit" className="text-[15px] font-bold rounded-none border-b-2 border-transparent data-[state=active]:border-[#2563EB] data-[state=active]:bg-transparent data-[state=active]:text-[#2563EB] data-[state=active]:shadow-none py-3 px-1 gap-2 text-slate-500 hover:text-slate-900 transition-colors">
                   Audit Logs
                 </TabsTrigger>
               </TabsList>
@@ -325,27 +325,27 @@ const PolicyConfig = () => {
             <TabsContent value="global" className="space-y-6">
             {/* Watchlists */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-              className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-6"
+              className="rounded-3xl border border-slate-100 bg-slate-50/50 shadow-sm p-8"
             >
-              <h3 className="text-base font-bold tracking-tight mb-5 flex items-center gap-2"><Shield className="h-5 w-5 text-indigo-500" /> Watchlist Sources</h3>
+              <h3 className="text-lg font-bold tracking-tight mb-6 flex items-center gap-2 text-slate-900"><Shield className="h-5 w-5 text-indigo-500" /> Watchlist Sources</h3>
               <div className="space-y-4">
                 {lists.map((list, i) => (
-                  <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={list.name} className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-white shadow-sm hover:shadow-md hover:border-indigo-500/30 transition-all group">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100">
-                        <Globe className="h-5 w-5" />
+                  <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} key={list.name} className="flex items-center justify-between p-5 rounded-2xl border border-slate-100 bg-white shadow-[0_2px_12px_-4px_rgba(0,0,0,0.06)] hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-5">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100/50">
+                        <Globe className="h-6 w-6" />
                       </div>
-                      <div>
-                        <div className="text-sm font-bold text-foreground tracking-tight">{list.name}</div>
-                        <div className="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5 mt-0.5 uppercase tracking-wider">
+                      <div className="space-y-1">
+                        <div className="text-[16px] font-bold text-slate-900 tracking-tight leading-none">{list.name}</div>
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                           {list.region}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Switch checked={list.enabled} onCheckedChange={() => toggle(i)} className="data-[state=checked]:bg-indigo-600" />
-                      <div className="h-8 w-px bg-border/50 hidden sm:block"></div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive hover:bg-destructive/10 rounded-full" onClick={() => handleDeletePolicy(i)}>
+                    <div className="flex items-center gap-5">
+                      <Switch checked={list.enabled} onCheckedChange={() => toggle(i)} className="data-[state=checked]:bg-[#4F46E5] scale-110" />
+                      <div className="h-8 w-px bg-slate-100 hidden sm:block"></div>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100" onClick={() => handleDeletePolicy(i)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

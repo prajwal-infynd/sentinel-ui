@@ -18,15 +18,15 @@ mock.onGet("/dashboard/summary").reply(200, {
 });
 
 const mockEntities = [
-  { id: "1", name: "Acme Corp", entity_type: "company", jurisdiction: "US", risk_score: 85, latest_signal: "Adverse Media Mention", last_screened_at: new Date().toISOString(), status: "Active" },
-  { id: "2", name: "Global Tech", entity_type: "company", jurisdiction: "UK", risk_score: 42, latest_signal: "PEP Match", last_screened_at: new Date().toISOString(), status: "Active" },
-  { id: "3", name: "John Doe", entity_type: "individual", jurisdiction: "EU", risk_score: 92, latest_signal: "Sanctions List", last_screened_at: new Date().toISOString(), status: "Active" },
-  { id: "4", name: "Helena Rostova", entity_type: "individual", jurisdiction: "UK", risk_score: 82, latest_signal: "PEP Record Updated", last_screened_at: new Date().toISOString(), status: "Active" },
-  { id: "5", name: "Desert Sands Construction", entity_type: "company", jurisdiction: "QA", risk_score: 61, latest_signal: "Adverse Media", last_screened_at: new Date().toISOString(), status: "Active" },
+  { id: "1", name: "Acme Corp", entity_type: "company", jurisdiction: "US", risk_score: 85, latest_signal: "Adverse Media Mention", last_screened_at: new Date().toISOString(), status: "Inactive" },
+  { id: "2", name: "Global Tech", entity_type: "company", jurisdiction: "UK", risk_score: 42, latest_signal: "PEP Match", last_screened_at: new Date().toISOString(), status: "Inactive" },
+  { id: "3", name: "John Doe", entity_type: "individual", jurisdiction: "EU", risk_score: 92, latest_signal: "Sanctions List", last_screened_at: new Date().toISOString(), status: "Inactive" },
+  { id: "4", name: "Helena Rostova", entity_type: "individual", jurisdiction: "UK", risk_score: 82, latest_signal: "PEP Record Updated", last_screened_at: new Date().toISOString(), status: "Inactive" },
+  { id: "5", name: "Desert Sands Construction", entity_type: "company", jurisdiction: "QA", risk_score: 61, latest_signal: "Adverse Media", last_screened_at: new Date().toISOString(), status: "Inactive" },
   { id: "7", name: "Novosibirsk Logistics Ltd", entity_type: "company", jurisdiction: "RU", risk_score: 98, latest_signal: "State-Sponsored Cyber Activity", last_screened_at: new Date().toISOString(), status: "Critical" },
   { id: "8", name: "Sinaloa Agribusiness Corp", entity_type: "company", jurisdiction: "MX", risk_score: 96, latest_signal: "Cartel Front Company", last_screened_at: new Date().toISOString(), status: "Critical" },
-  { id: "9", name: "Dr. Chen Wei", entity_type: "individual", jurisdiction: "HK", risk_score: 88, latest_signal: "IP Theft Allegation", last_screened_at: new Date().toISOString(), status: "Active" },
-  { id: "10", name: "Panama Trust Services", entity_type: "company", jurisdiction: "PA", risk_score: 85, latest_signal: "Panama Papers Associated", last_screened_at: new Date().toISOString(), status: "Active" },
+  { id: "9", name: "Dr. Chen Wei", entity_type: "individual", jurisdiction: "HK", risk_score: 88, latest_signal: "IP Theft Allegation", last_screened_at: new Date().toISOString(), status: "Inactive" },
+  { id: "10", name: "Panama Trust Services", entity_type: "company", jurisdiction: "PA", risk_score: 85, latest_signal: "Panama Papers Associated", last_screened_at: new Date().toISOString(), status: "Inactive" },
 ];
 
 mock.onGet("/portfolio/entities").reply(() => [200, mockEntities]);
@@ -36,6 +36,20 @@ mock.onPatch(/\/portfolio\/entities\/.+\/status/).reply((config) => {
   if (match) {
     const id = match[1];
     const { status } = JSON.parse(config.data);
+    
+    if (id === "activate-all") {
+      mockEntities.forEach(e => {
+        if (e.status === "Inactive") e.status = "Active";
+      });
+      return [200, mockEntities];
+    }
+    if (id === "deactivate-all") {
+      mockEntities.forEach(e => {
+        if (e.status === "Active") e.status = "Inactive";
+      });
+      return [200, mockEntities];
+    }
+
     const entityIndex = mockEntities.findIndex(e => e.id === id);
     if (entityIndex !== -1) {
       mockEntities[entityIndex] = { ...mockEntities[entityIndex], status };
@@ -46,13 +60,15 @@ mock.onPatch(/\/portfolio\/entities\/.+\/status/).reply((config) => {
 });
 
 mock.onGet("/alerts").reply(200, [
-  { id: "a1", title: "Sanctions Match", summary: "Entity matched with OFAC sanctions list.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 95, status: "open", monitored_entities: { name: "John Doe" }, media_articles: { headline: "John Doe added to sanctions list" } },
-  { id: "a2", title: "Adverse Media", summary: "Negative news regarding fraud allegations.", severity: "high", generated_at: new Date(Date.now() - 3600000).toISOString(), confidence_score: 88, status: "investigating", monitored_entities: { name: "Acme Corp" }, media_articles: { headline: "Acme Corp under investigation for fraud" } },
-  { id: "a3", title: "Suspected sanctions evasion network", summary: "Vladimir Sokolov linked to shell company network in Cyprus", severity: "critical", generated_at: new Date(Date.now() - 60000).toISOString(), confidence_score: 91, status: "open", monitored_entities: { name: "Vladimir Sokolov" }, media_articles: { headline: "Cyprus shell companies tied to sanctioned individuals" } },
-  { id: "a5", title: "State-Sponsored Cyber Activity Detected", summary: "Entity identified as a front for Russian intelligence cyber operations targeting financial infrastructure.", severity: "critical", generated_at: new Date(Date.now() - 45000).toISOString(), confidence_score: 98, status: "open", monitored_entities: { name: "Novosibirsk Logistics Ltd" }, media_articles: { headline: "Treasury sanctions cyber warfare fronts" } },
-  { id: "a6", title: "Cartel Front Company Allegations", summary: "Mexican agribusiness flagged for laundering illicit narcotics proceeds through shell networks.", severity: "critical", generated_at: new Date(Date.now() - 120000).toISOString(), confidence_score: 96, status: "investigating", monitored_entities: { name: "Sinaloa Agribusiness Corp" }, media_articles: { headline: "DOJ indicts massive cartel laundering ring" } },
-  { id: "a7", title: "Corporate Espionage / IP Theft", summary: "High-ranking executive accused of transferring proprietary trading algorithms to foreign state.", severity: "high", generated_at: new Date(Date.now() - 86400000).toISOString(), confidence_score: 88, status: "open", monitored_entities: { name: "Dr. Chen Wei" }, media_articles: { headline: "Tech giant executive charged with espionage" } },
-  { id: "a8", title: "Offshore Tax Evasion Leak", summary: "Entity appeared in recent leak of offshore trust structures facilitating widespread tax evasion.", severity: "medium", generated_at: new Date(Date.now() - 172800000).toISOString(), confidence_score: 85, status: "resolved", monitored_entities: { name: "Panama Trust Services" }, media_articles: { headline: "New offshore leak exposes corporate tax havens" } },
+  { id: "a1", category: "Sanctions", title: "Sanctions Match", summary: "Entity matched with OFAC sanctions list.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 95, status: "open", monitored_entities: { name: "John Doe" }, media_articles: { headline: "John Doe added to sanctions list" } },
+  { id: "a2", category: "Adverse Media", title: "Adverse Media", summary: "Negative news regarding fraud allegations.", severity: "high", generated_at: new Date(Date.now() - 3600000).toISOString(), confidence_score: 88, status: "investigating", monitored_entities: { name: "Acme Corp" }, media_articles: { headline: "Acme Corp under investigation for fraud" } },
+  { id: "a3", category: "Sanctions", title: "Suspected sanctions evasion network", summary: "Vladimir Sokolov linked to shell company network in Cyprus", severity: "critical", generated_at: new Date(Date.now() - 60000).toISOString(), confidence_score: 91, status: "open", monitored_entities: { name: "Vladimir Sokolov" }, media_articles: { headline: "Cyprus shell companies tied to sanctioned individuals" } },
+  { id: "a5", category: "Sanctions", title: "State-Sponsored Cyber Activity Detected", summary: "Entity identified as a front for Russian intelligence cyber operations targeting financial infrastructure.", severity: "critical", generated_at: new Date(Date.now() - 45000).toISOString(), confidence_score: 98, status: "open", monitored_entities: { name: "Novosibirsk Logistics Ltd" }, media_articles: { headline: "Treasury sanctions cyber warfare fronts" } },
+  { id: "a6", category: "Adverse Media", title: "Cartel Front Company Allegations", summary: "Mexican agribusiness flagged for laundering illicit narcotics proceeds through shell networks.", severity: "critical", generated_at: new Date(Date.now() - 120000).toISOString(), confidence_score: 96, status: "investigating", monitored_entities: { name: "Sinaloa Agribusiness Corp" }, media_articles: { headline: "DOJ indicts massive cartel laundering ring" } },
+  { id: "a9", category: "Corporate Event", title: "Bankruptcy Filing Detected", summary: "TechNova Corp files for Chapter 11 bankruptcy. Immediate exposure review required.", severity: "high", generated_at: new Date(Date.now() - 200000).toISOString(), confidence_score: 99, status: "open", monitored_entities: { name: "TechNova Corp" }, media_articles: { headline: "TechNova Corp declares bankruptcy amidst financial turmoil" } },
+  { id: "a10", category: "Corporate Event", title: "Company Status Changed: Dissolved", summary: "Global Imports Ltd status changed to Dissolved. Still actively monitored for residual entity activity.", severity: "medium", generated_at: new Date(Date.now() - 250000).toISOString(), confidence_score: 100, status: "open", monitored_entities: { name: "Global Imports Ltd" }, media_articles: { headline: "Corporate Registry Update: Global Imports Ltd Dissolved" } },
+  { id: "a11", category: "Legal", title: "Legal Proceedings Detected", summary: "Regulatory action and class-action lawsuit filed against Acme Corp by the SEC.", severity: "high", generated_at: new Date(Date.now() - 300000).toISOString(), confidence_score: 95, status: "investigating", monitored_entities: { name: "Acme Corp" }, media_articles: { headline: "SEC files charges against Acme Corp executives" } },
+  { id: "a12", category: "Corporate Event", title: "Ownership Change Detected", summary: "Major shareholder change detected for Desert Sands Construction. New UBO identified.", severity: "medium", generated_at: new Date(Date.now() - 500000).toISOString(), confidence_score: 92, status: "open", monitored_entities: { name: "Desert Sands Construction" }, media_articles: { headline: "Desert Sands acquired in majority stake buyout" } },
 ]);
 
 mock.onGet("/agents/runs").reply(200, [

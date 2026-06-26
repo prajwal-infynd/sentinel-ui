@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Search, Filter, Plus, ArrowUpRight, Clock, ShieldAlert,
-  Building, User, AlertTriangle, CheckCircle2, ChevronRight
+  Building, User, AlertTriangle, CheckCircle2, ChevronRight, UploadCloud
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,42 @@ import { toast } from "@/components/ui/use-toast";
 
 const InvestigationsList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { cases, addCase } = useInvestigations();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<"All" | "Assigned to Me" | "Critical">("All");
   const [isManualCaseOpen, setIsManualCaseOpen] = useState(false);
+  const [showNoCaseWarning, setShowNoCaseWarning] = useState(false);
   
   // Form state
   const [newCaseName, setNewCaseName] = useState("");
   const [newCaseScore, setNewCaseScore] = useState("50");
   const [newCaseSignal, setNewCaseSignal] = useState("");
+
+  // Handle incoming investigation requests from Dashboard/Portfolio
+  useEffect(() => {
+    if (location.state?.entity) {
+      const entity = location.state.entity;
+      const entityName = (entity.company || entity.name || "").toLowerCase();
+      
+      if (!entityName) return;
+
+      const existingCase = cases.find(c => c.entity.name.toLowerCase() === entityName);
+
+      if (existingCase) {
+        navigate(`/investigations/${existingCase.id}`, { replace: true, state: { entity } });
+      } else {
+        // Instead of auto-creating, we pre-fill the form and open the dialog
+        setShowNoCaseWarning(true);
+        setNewCaseName(entity.company || entity.name || "Unknown Entity");
+        setNewCaseScore(entity.riskScore?.toString() || "50");
+        setIsManualCaseOpen(true);
+        
+        // Clear state so we don't infinitely re-trigger
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [location.state, cases, navigate, location.pathname]);
 
   const handleRowClick = (caseItem: any) => {
     navigate(`/investigations/${caseItem.id}`, { state: { entity: caseItem.entity } });
@@ -45,6 +72,8 @@ const InvestigationsList = () => {
       }
     });
     
+    
+    setShowNoCaseWarning(false);
     setIsManualCaseOpen(false);
     setNewCaseName("");
     setNewCaseSignal("");
@@ -78,11 +107,54 @@ const InvestigationsList = () => {
             <p className="text-sm text-slate-500">Manage and resolve active compliance alerts and agent escalations.</p>
           </div>
           <div className="flex gap-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="gap-2 bg-white text-indigo-600 border-indigo-200 hover:bg-indigo-50 font-semibold"
+                >
+                  <UploadCloud className="h-4 w-4" /> Bulk Import
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-white p-6 rounded-2xl">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                    <UploadCloud className="h-5 w-5 text-indigo-600" />
+                    Bulk Import Investigations
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-500">Upload your list of investigations to import them in bulk. Supported formats include CSV, XLSX, and JSON.</p>
+                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center bg-slate-50 hover:bg-slate-100 hover:border-indigo-300 transition-colors cursor-pointer" onClick={() => {
+                    toast({ title: "Uploading...", description: "File is being uploaded and processed." });
+                    setTimeout(() => {
+                      toast({ title: "Import Successful", description: "Successfully imported 14 investigations." });
+                    }, 1500);
+                  }}>
+                    <UploadCloud className="h-10 w-10 text-slate-400 mb-3" />
+                    <p className="text-sm font-semibold text-slate-700">Click to select a file</p>
+                    <p className="text-xs text-slate-500 mt-1">or drag and drop it here</p>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <Button variant="outline" className="mr-2">Cancel</Button>
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">Import File</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" className="gap-2 bg-white text-slate-700">
               <Filter className="h-4 w-4" /> Filters
             </Button>
             
-            <Dialog open={isManualCaseOpen} onOpenChange={setIsManualCaseOpen}>
+            <Dialog open={isManualCaseOpen} onOpenChange={(open) => {
+              setIsManualCaseOpen(open);
+              if (!open) {
+                if (showNoCaseWarning) {
+                  navigate(-1);
+                }
+                setShowNoCaseWarning(false);
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md">
                   <Plus className="h-4 w-4" /> Manual Case
@@ -92,6 +164,12 @@ const InvestigationsList = () => {
                 <DialogHeader className="mb-4">
                   <DialogTitle className="text-xl font-bold">Create Manual Case</DialogTitle>
                 </DialogHeader>
+                {showNoCaseWarning && (
+                  <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-sm mb-4 flex items-start gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p><strong>No Active Case Found.</strong> There is no existing investigation for this entity. You can start a manual one below.</p>
+                  </div>
+                )}
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium mb-1 block">Entity Name</label>

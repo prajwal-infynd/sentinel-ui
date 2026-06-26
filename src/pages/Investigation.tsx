@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -61,13 +61,33 @@ const Investigation = () => {
   
   const caseData = id ? getCaseById(id) : null;
   const entity = caseData?.entity || location.state?.entity || {
-    name: "John Doe",
-    entity_type: "individual",
+    name: "Global Tech Inc.",
+    entity_type: "company",
     jurisdiction: "UK",
     latest_signal: "Adverse Media Mention",
     risk_score: 95
   };
   const isCompany = entity.entity_type === "company";
+  
+  // MOCK DATA for Corporate Officers
+  const corporateOfficers = [
+    { id: "o1", name: "Alaric Vanguard", role: "Chief Executive Officer", status: "Active", appointed: "2018-04-12", resigned: null, isPEP: false },
+    { id: "o2", name: "Elena Rostova", role: "Chief Financial Officer", status: "Active", appointed: "2020-11-05", resigned: null, isPEP: true }, // PEP Flagged
+    { id: "o3", name: "Marcus Thorne", role: "Director", status: "Resigned", appointed: "2015-02-14", resigned: "2022-08-30", isPEP: false },
+    { id: "o4", name: "Sylvia Vance", role: "Head of Compliance", status: "Active", appointed: "2021-01-20", resigned: null, isPEP: false },
+  ];
+
+  // MOCK DATA for Timeline History / Elevation Graph
+  const timelineHistory = [
+    { date: "2010-08-12", event: "Company Incorporated (Jurisdiction: UK)", type: "neutral", y: 10 },
+    { date: "2015-02-14", event: "Marcus Thorne Appointed as Director", type: "neutral", y: 20 },
+    { date: "2018-04-12", event: "Alaric Vanguard Appointed as CEO", type: "neutral", y: 30 },
+    { date: "2020-11-05", event: "Elena Rostova Appointed as CFO (PEP Identified)", type: "warning", y: 50 },
+    { date: "2021-03-10", event: "Elena Rostova flagged as High-Risk PEP (Tier 1)", type: "critical", y: 75 },
+    { date: "2022-08-30", event: "Marcus Thorne Resigned as Director", type: "warning", y: 65 },
+    { date: "2023-11-05", event: "OFAC Watchlist Match (Fuzzy)", type: "critical", y: 90 },
+    { date: "2024-03-15", event: "Adverse Media Hit (Fraud Allegation)", type: "critical", y: 95 }
+  ];
   
   const [isSarOpen, setIsSarOpen] = useState(false);
   const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">(
@@ -345,9 +365,155 @@ const Investigation = () => {
           <TabsTrigger value="entity" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Entity Profile</TabsTrigger>
           <TabsTrigger value="timeline" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Timeline</TabsTrigger>
           <TabsTrigger value="reasoning" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">AI Reasoning</TabsTrigger>
-          <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Agent Debate</TabsTrigger>
+          <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Infyous Debate</TabsTrigger>
+          <TabsTrigger value="pending_updates" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 relative">
+            Pending Updates
+            <span className="absolute -top-1 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">2</span>
+          </TabsTrigger>
           <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
         </TabsList>
+
+        </TabsList>
+
+        <TabsContent value="pending_updates">
+          <div className="mt-6 space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-bold">Profile Update Approvals</h2>
+                <p className="text-sm text-slate-500">Review incoming data changes pushed from external data sources before they are merged into the system of record.</p>
+              </div>
+            </div>
+
+            {/* Mock Update 1: Address Change */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="bg-amber-100 text-amber-700 p-2 rounded-lg"><Building className="h-4 w-4" /></div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">Registered Address Change Detected</h3>
+                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                      <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-mono text-[10px]">Source: Companies House API</span>
+                      <span>• 2 hours ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={(e) => {
+                      const el = (e.target as HTMLElement).closest('.bg-white');
+                      if (el) el.classList.add('hidden');
+                      toast({ title: "Change Rejected", description: "The address update has been discarded.", variant: "destructive" });
+                    }}
+                  >
+                    Reject
+                  </Button>
+                  <Button 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    onClick={(e) => {
+                      const el = (e.target as HTMLElement).closest('.bg-white');
+                      if (el) el.classList.add('hidden');
+                      toast({ title: "Change Approved", description: "The company profile address has been updated successfully." });
+                    }}
+                  >
+                    Approve Change
+                  </Button>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-2 gap-8 relative">
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2" />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-slate-200 text-slate-400 p-1.5 rounded-full z-10 shadow-sm">
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Current System of Record (Old Data)</span>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl line-through text-slate-500 decoration-red-400 decoration-2">
+                    124 Baker Street<br />
+                    London, W1U 6TZ<br />
+                    United Kingdom
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Incoming Update (New Data)</span>
+                  <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl text-emerald-900 font-medium">
+                    15 Canary Wharf Boulevard<br />
+                    Suite 400<br />
+                    London, E14 5AB<br />
+                    United Kingdom
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Mock Update 2: New Director */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 text-blue-700 p-2 rounded-lg"><UserPlus className="h-4 w-4" /></div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">New Director Appointment</h3>
+                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                      <span className="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-mono text-[10px]">Source: Global Premium Data Provider</span>
+                      <span>• 5 hours ago</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={(e) => {
+                      const el = (e.target as HTMLElement).closest('.bg-white');
+                      if (el) el.classList.add('hidden');
+                      toast({ title: "Change Rejected", description: "The director appointment has been discarded.", variant: "destructive" });
+                    }}
+                  >
+                    Reject
+                  </Button>
+                  <Button 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    onClick={(e) => {
+                      const el = (e.target as HTMLElement).closest('.bg-white');
+                      if (el) el.classList.add('hidden');
+                      toast({ title: "Change Approved", description: "The new director has been added to the corporate structure." });
+                    }}
+                  >
+                    Approve Change
+                  </Button>
+                </div>
+              </div>
+              <div className="p-6 grid grid-cols-2 gap-8 relative">
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-200 -translate-x-1/2" />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border border-slate-200 text-slate-400 p-1.5 rounded-full z-10 shadow-sm">
+                  <ArrowUpRight className="h-4 w-4" />
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Current System of Record (Old Data)</span>
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500">
+                    <em className="text-xs">No matching director record found.</em>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Incoming Update (New Data)</span>
+                  <div className="p-4 bg-emerald-50/50 border border-emerald-200 rounded-xl text-emerald-900 font-medium">
+                    <div className="flex items-center justify-between mb-2">
+                      <strong>Vladimir Sokolov</strong>
+                      <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200 text-[9px] uppercase tracking-wider">Sanctioned Person</Badge>
+                    </div>
+                    <div className="text-sm">Appointed: Oct 12, 2023</div>
+                    <div className="text-sm">Role: Executive Director</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+          </div>
+        </TabsContent>
 
         <TabsContent value="summary">
           <div className="grid md:grid-cols-2 gap-5 mt-6">
@@ -559,6 +725,58 @@ const Investigation = () => {
             </div>
           </div>
           
+          {/* Conflicting Data Resolution Panel */}
+          {isCompany && (
+            <div className="mt-5 rounded-2xl border border-warning/50 bg-warning/5 shadow-sm p-6 overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-6 opacity-[0.05] pointer-events-none">
+                <ShieldQuestion className="h-32 w-32 text-warning" />
+              </div>
+              
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                <div>
+                  <h3 className="text-base font-bold tracking-tight flex items-center gap-2 text-warning-foreground">
+                    <ShieldQuestion className="h-5 w-5 text-warning" /> Data Conflict Resolution Required
+                  </h3>
+                  <p className="text-xs text-warning-foreground/80 mt-1">Multiple sources are reporting conflicting information about this entity.</p>
+                </div>
+                <Badge variant="outline" className="bg-warning/20 text-warning-foreground border-warning/30 font-mono">1 Unresolved Conflict</Badge>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4 relative z-10">
+                {/* Conflict Option A */}
+                <div className="bg-white rounded-xl border-2 border-indigo-500 shadow-sm p-5 relative overflow-hidden group cursor-pointer hover:bg-indigo-50/30 transition-colors">
+                  <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" /> Infyous Recommended
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Source A</div>
+                  <h4 className="font-semibold text-sm mb-3">UK Companies House Registry</h4>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4">
+                    <div className="text-xs font-mono text-slate-500 mb-1">Incorporation Date</div>
+                    <div className="text-sm font-bold text-slate-900">12 August 2010</div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 text-[10px]">99% Trust Score</Badge>
+                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-8 text-xs" onClick={(e) => { e.stopPropagation(); toast({ title: "Conflict Resolved", description: "UK Companies House set as ground truth." }); }}>Accept as Ground Truth</Button>
+                  </div>
+                </div>
+
+                {/* Conflict Option B */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 relative overflow-hidden group cursor-pointer hover:border-slate-300 transition-colors">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Source B</div>
+                  <h4 className="font-semibold text-sm mb-3">Third-Party Lead DB (Acquired)</h4>
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 mb-4">
+                    <div className="text-xs font-mono text-slate-500 mb-1">Incorporation Date</div>
+                    <div className="text-sm font-bold line-through text-slate-400">05 September 2015</div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[10px]">62% Trust Score</Badge>
+                    <Button size="sm" variant="outline" className="h-8 text-xs text-slate-500" onClick={(e) => { e.stopPropagation(); toast({ title: "Source Dismissed", description: "Conflict removed." }); }}>Dismiss</Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Risk Velocity Chart */}
           <div className="mt-5 rounded-2xl border border-border/50 bg-white shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
@@ -590,26 +808,118 @@ const Investigation = () => {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Directors & Officers Panel */}
+          {isCompany && (
+            <div className="mt-5 rounded-2xl border border-border/50 bg-white shadow-sm p-6 overflow-hidden">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-indigo-500" /> Corporate Officers & Directors
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">Real-time tracking of appointments, resignations, and PEP associations</p>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto rounded-xl border border-border/50">
+                <Table>
+                  <TableHeader className="bg-slate-50/80">
+                    <TableRow className="border-border/50">
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Officer Name</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Role</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Status</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Appointed</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Resigned</TableHead>
+                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Risk Flags</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {corporateOfficers.map((officer) => (
+                      <TableRow key={officer.id} className="border-border/50 hover:bg-slate-50/50">
+                        <TableCell className="font-semibold text-sm">{officer.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{officer.role}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${officer.status === 'Active' ? 'text-success border-success/30 bg-success/5' : 'text-muted-foreground border-border bg-muted/10'}`}>
+                            {officer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm font-mono text-muted-foreground">{officer.appointed}</TableCell>
+                        <TableCell className="text-sm font-mono text-muted-foreground">{officer.resigned || "-"}</TableCell>
+                        <TableCell>
+                          {officer.isPEP ? (
+                            <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-[10px] uppercase tracking-wider gap-1">
+                              <Flag className="h-3 w-3" /> PEP
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">Clear</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
         </TabsContent>
 
         <TabsContent value="timeline">
           <div className="rounded-2xl border border-border/50 bg-white shadow-sm p-6 mt-6">
-            <h3 className="text-base font-bold tracking-tight mb-8">Entity Event Timeline</h3>
+            <h3 className="text-base font-bold tracking-tight mb-8">Corporate History & Event Elevation</h3>
+            
+            {/* Elevation Graph */}
+            {isCompany && (
+              <div className="mb-10 p-4 rounded-xl border border-border/50 bg-slate-50/50">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">Event Elevation Graph</h4>
+                <div className="h-[200px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={timelineHistory} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#64748B' }} dy={10} />
+                      <YAxis hide domain={[0, 100]} />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-white p-3 rounded-xl border border-border/50 shadow-lg w-64">
+                                <div className="text-[10px] font-bold uppercase text-muted-foreground mb-1">{data.date}</div>
+                                <div className="text-xs font-semibold">{data.event}</div>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Line 
+                        type="stepAfter" 
+                        dataKey="y" 
+                        stroke="#4F46E5" 
+                        strokeWidth={2} 
+                        dot={({ cx, cy, payload, index }) => {
+                          const color = payload.type === 'critical' ? '#ef4444' : payload.type === 'warning' ? '#f59e0b' : '#3b82f6';
+                          return (
+                            <circle key={`dot-${index}`} cx={cx} cy={cy} r={5} fill={color} stroke="#fff" strokeWidth={2} />
+                          );
+                        }}
+                        activeDot={{ r: 7 }} 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-6">
-              {[
-                { date: "15 Mar 2024, 14:23", event: "Adverse media hit detected — Financial Times fraud article", severity: "critical" },
-                { date: "12 Mar 2024, 09:15", event: "EU sanctions list update — fuzzy match identified", severity: "high" },
-                { date: "28 Feb 2024, 11:42", event: "PEP association discovered — linked political figure", severity: "high" },
-                { date: "15 Feb 2024, 16:30", event: "Routine screening completed — no new signals", severity: "low" },
-                { date: "01 Feb 2024, 08:00", event: "Entity onboarded for continuous monitoring", severity: "info" },
-              ].map((e, i) => (
+              {timelineHistory.slice().reverse().map((e, i) => (
                 <div key={i} className="flex gap-5 group">
                   <div className="flex flex-col items-center">
                     <div className={`h-4 w-4 rounded-full border-2 border-white shadow-sm z-10 ${
-                      e.severity === "critical" ? "bg-destructive ring-2 ring-destructive/30" : e.severity === "high" ? "bg-warning ring-2 ring-warning/30" :
-                      e.severity === "low" ? "bg-success ring-2 ring-success/30" : "bg-muted-foreground ring-2 ring-muted-foreground/30"
+                      e.type === "critical" ? "bg-destructive ring-2 ring-destructive/30" : e.type === "warning" ? "bg-warning ring-2 ring-warning/30" :
+                      e.type === "success" ? "bg-success ring-2 ring-success/30" : "bg-blue-500 ring-2 ring-blue-500/30"
                     }`} />
-                    {i < 4 && <div className="w-0.5 flex-1 bg-border/80 group-hover:bg-indigo-500/30 transition-colors mt-2 mb-1" />}
+                    {i < timelineHistory.length - 1 && <div className="w-0.5 flex-1 bg-border/80 group-hover:bg-indigo-500/30 transition-colors mt-2 mb-1" />}
                   </div>
                   <div className="pb-6 pt-0.5">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{e.date}</div>
@@ -655,9 +965,9 @@ const Investigation = () => {
             <div className="flex items-center justify-between mb-10 relative z-10">
               <div>
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-3 text-slate-900">
-                  <MessageSquare className="h-6 w-6 text-indigo-600" /> Multi-Agent Adversarial Debate
+                  <MessageSquare className="h-6 w-6 text-indigo-600" /> Infyous Debate Engine
                 </h3>
-                <p className="text-xs font-medium text-slate-500 mt-1">Real-time dialectical reasoning engine</p>
+                <p className="text-xs font-medium text-slate-500 mt-1">Real-time dialectical reasoning by Infyous</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={reevaluateRisk} disabled={isJudgeDeciding} className="text-xs shadow-sm bg-white hover:bg-slate-50">

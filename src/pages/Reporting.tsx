@@ -41,6 +41,19 @@ const Reporting = () => {
             }}>
               <Download className="h-4 w-4 mr-2 text-primary" /> Export PDF
             </Button>
+            <Button variant="outline" className="h-9 hover:border-emerald-500/50 hover:text-emerald-700 transition-colors" onClick={() => {
+              const csvContent = "data:text/csv;charset=utf-8,Date,Entity,Activity,Severity\n2023-10-01,Acme Corp,Risk Escalated to High,High\n2023-10-02,Global Logistics,AI Auto-Resolved False Positive,Low\n2023-10-03,TechNova,Sanctions Match Detected,Critical";
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", "activity_change_report.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              toast({ title: "Exporting CSV", description: "Activity Change Report downloaded successfully." });
+            }}>
+              <FileText className="h-4 w-4 mr-2 text-emerald-600" /> Export CSV
+            </Button>
             <Button variant="outline" className="h-9 hover:border-primary/50 transition-colors" onClick={() => toast({ title: "Board Pack Generated", description: "The board pack has been generated and saved to your files." })}>
               <FileText className="h-4 w-4 mr-2 text-primary" /> Board Pack
             </Button>
@@ -147,6 +160,53 @@ const Reporting = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </motion.div>
+
+            {/* Activity Change Report */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45 }}
+              className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm transition-all hover:border-primary/20 hover:shadow-md mt-5"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> Activity Change Report (Last 30 Days)
+                </h3>
+                <span className="text-xs font-medium text-muted-foreground">Showing significant portfolio risk changes</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/30 text-xs uppercase font-bold text-muted-foreground border-b border-border/50">
+                    <tr>
+                      <th className="px-4 py-3 rounded-tl-lg">Date</th>
+                      <th className="px-4 py-3">Entity</th>
+                      <th className="px-4 py-3">Activity</th>
+                      <th className="px-4 py-3 text-right rounded-tr-lg">Severity</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {[
+                      { date: "Oct 01, 2023", entity: "Acme Corp", activity: "Risk Score Escalated (32 → 85) due to Adverse Media.", severity: "High" },
+                      { date: "Oct 02, 2023", entity: "Global Logistics", activity: "AI Auto-Resolved 3 False Positive matches.", severity: "Low" },
+                      { date: "Oct 03, 2023", entity: "TechNova", activity: "New OFAC Sanctions Match detected.", severity: "Critical" },
+                      { date: "Oct 05, 2023", entity: "Apex Holdings", activity: "Entity Onboarded to Continuous Monitoring.", severity: "Info" },
+                    ].map((row, i) => (
+                      <tr key={i} className="hover:bg-muted/10 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{row.date}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-800">{row.entity}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.activity}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            row.severity === 'Critical' ? 'bg-destructive/10 text-destructive' :
+                            row.severity === 'High' ? 'bg-warning/10 text-warning' :
+                            row.severity === 'Info' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'
+                          }`}>
+                            {row.severity}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </motion.div>
           </>
