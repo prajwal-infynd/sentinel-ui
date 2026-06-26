@@ -36,6 +36,10 @@ const platformItems = [
   { title: "Reporting", url: "/reporting", icon: BarChart3 },
 ];
 
+const mediaItems = [
+  { title: "Media Engine", url: "/media", icon: Newspaper },
+];
+
 const systemItems = [
   { title: "Settings", url: "/settings", icon: Settings, permission: "manage_subscription" },
   { title: "Admin Portal", url: "/admin", icon: Users, permission: "invite_user" },
