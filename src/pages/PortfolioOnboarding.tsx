@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2 } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -101,8 +102,32 @@ const PortfolioOnboarding = () => {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [parsedRows, setParsedRows] = useState<MonitoredEntityImportRow[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"csv" | "json">("csv");
+  const [activeTab, setActiveTab] = useState<"csv" | "json" | "manual">("csv");
   const [isOrchestrating, setIsOrchestrating] = useState(false);
+
+  const [manualEntityName, setManualEntityName] = useState("");
+  const [manualEntityType, setManualEntityType] = useState("");
+  const [manualJurisdiction, setManualJurisdiction] = useState("");
+  
+  const handleAddManualEntity = () => {
+    if (!manualEntityName) {
+      toast({ title: "Name Required", description: "Please provide the entity name.", variant: "destructive" });
+      return;
+    }
+    const newEntity: MonitoredEntityImportRow = {
+      name: manualEntityName,
+      entityType: manualEntityType || "company",
+      jurisdiction: manualJurisdiction || "Unknown",
+      riskScore: 50,
+      externalReference: `MANUAL-${Date.now()}`
+    };
+    setParsedRows(prev => [newEntity, ...prev]);
+    toast({ title: "Entity Added", description: `${manualEntityName} has been added to the queue.` });
+    setManualEntityName("");
+    setManualEntityType("");
+    setManualJurisdiction("");
+    setActiveTab("csv"); // switch back to show preview
+  };
   const [orchestrationStep, setOrchestrationStep] = useState(0);
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
 
@@ -235,6 +260,12 @@ const PortfolioOnboarding = () => {
                 >
                   <FileJson className="h-5 w-5" /> JSON Arrays
                 </button>
+                <button
+                  onClick={() => setActiveTab("manual")}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === "manual" ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                  <Keyboard className="h-5 w-5" /> Manual Entry
+                </button>
               </div>
             </div>
 
@@ -252,6 +283,7 @@ const PortfolioOnboarding = () => {
             />
 
             {/* Premium Drop Zone with Micro-Animations */}
+            {activeTab !== "manual" && (
             <motion.div 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -295,6 +327,36 @@ const PortfolioOnboarding = () => {
                 )}
               </div>
             </motion.div>
+            )}
+
+            {activeTab === "manual" && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                className="w-full bg-white/50 rounded-3xl border border-indigo-100 p-8 text-left"
+              >
+                <h3 className="mb-6 text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <Keyboard className="h-6 w-6 text-indigo-600" />
+                  Manually Add Entity
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Entity Name <span className="text-red-500">*</span></label>
+                    <Input value={manualEntityName} onChange={e => setManualEntityName(e.target.value)} placeholder="e.g. Acme Corp" className="bg-white" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Entity Type</label>
+                    <Input value={manualEntityType} onChange={e => setManualEntityType(e.target.value)} placeholder="e.g. company, individual" className="bg-white" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700 mb-2 block">Jurisdiction / Country</label>
+                    <Input value={manualJurisdiction} onChange={e => setManualJurisdiction(e.target.value)} placeholder="e.g. United Kingdom" className="bg-white" />
+                  </div>
+                </div>
+                <Button onClick={handleAddManualEntity} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 w-full sm:w-auto">
+                  <Plus className="h-4 w-4" /> Add to Import Queue
+                </Button>
+              </motion.div>
+            )}
 
             {/* JSON Schema Trigger Modal */}
             <AnimatePresence>
