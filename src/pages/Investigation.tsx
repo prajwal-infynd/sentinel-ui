@@ -366,9 +366,9 @@ const Investigation = () => {
           <TabsTrigger value="timeline" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Timeline</TabsTrigger>
           <TabsTrigger value="reasoning" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">AI Reasoning</TabsTrigger>
           <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Infyous Debate</TabsTrigger>
-          <TabsTrigger value="pending_updates" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 relative">
+          <TabsTrigger value="pending_updates" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 flex items-center gap-1.5">
             Pending Updates
-            <span className="absolute -top-1 -right-3 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white">2</span>
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">2</span>
           </TabsTrigger>
           <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
         </TabsList>
