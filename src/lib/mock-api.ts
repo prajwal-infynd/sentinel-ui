@@ -5,31 +5,89 @@ import { formatRelativeTime } from "./utils";
 // Initialize mock adapter
 export const mock = new MockAdapter(apiClient, { delayResponse: 500 }); // simulate network delay
 
+// --- AUTH & USERS DATA ---
+let mockUsers = [
+  { id: 1, name: "Admin User", role: "Admin", email: "admin@sentinel.com", password: "password", tokensUsed: "1.2M", cost: "$24.00", status: "Active", permissions: ["Admin", "Approve SARs", "Manage Policies"] },
+  { id: 2, name: "Analyst User", role: "Analyst", email: "analyst@sentinel.com", password: "password", tokensUsed: "850k", cost: "$17.00", status: "Active", permissions: ["View Only", "Run Reports"] },
+  { id: 3, name: "Elena Rodriguez", role: "Admin", email: "elena.r@sentinel.com", password: "password", tokensUsed: "2.1M", cost: "$42.00", status: "Active", permissions: ["Manage Policies", "Override Risk Score"] },
+];
+
+mock.onPost("/auth/login").reply((config) => {
+  const { email, password } = JSON.parse(config.data);
+  const user = mockUsers.find(u => u.email === email && u.password === password);
+  if (user) {
+    const { password: _, ...userWithoutPassword } = user;
+    return [200, { user: userWithoutPassword }];
+  }
+  return [401, { message: "Invalid email or password" }];
+});
+
+mock.onPost("/auth/signup").reply((config) => {
+  const { name, email, password, role } = JSON.parse(config.data);
+  if (mockUsers.some(u => u.email === email)) {
+    return [400, { message: "Email already exists" }];
+  }
+  const newUser = {
+    id: mockUsers.length + 1,
+    name,
+    email,
+    password,
+    role,
+    tokensUsed: "0",
+    cost: "$0.00",
+    status: "Active",
+    permissions: role === "Admin" ? ["Admin", "Manage Policies"] : ["View Only"],
+  };
+  mockUsers.push(newUser);
+  const { password: _, ...userWithoutPassword } = newUser;
+  return [200, { user: userWithoutPassword }];
+});
+
+mock.onGet("/admin/users").reply(() => {
+  const safeUsers = mockUsers.map(({ password, ...rest }) => rest);
+  return [200, safeUsers];
+});
+
+mock.onPatch(/\/admin\/users\/.+\/status/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/status/);
+  if (match) {
+    const id = parseInt(match[1]);
+    const { status } = JSON.parse(config.data);
+    const userIndex = mockUsers.findIndex(u => u.id === id);
+    if (userIndex !== -1) {
+      mockUsers[userIndex].status = status;
+      return [200, { success: true }];
+    }
+  }
+  return [404, { message: "User not found" }];
+});
+
+mock.onDelete(/\/admin\/users\/.+/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)/);
+  if (match) {
+    const id = parseInt(match[1]);
+    mockUsers = mockUsers.filter(u => u.id !== id);
+    return [200, { success: true }];
+  }
+  return [404, { message: "User not found" }];
+});
+
+
 // --- DASHBOARD DATA ---
 let dashboardSummary = {
   organizationName: "Monitoring Workspace",
-  entityCount: 154,
-  alertCount: 42,
-  highRiskAlertCount: 12,
-  articleCount: 12450,
-  openCaseCount: 8,
-  avgRiskScore: 68.4,
-  activeAgentRuns: 3,
+  entityCount: 0,
+  alertCount: 0,
+  highRiskAlertCount: 0,
+  articleCount: 0,
+  openCaseCount: 0,
+  avgRiskScore: 0,
+  activeAgentRuns: 0,
 };
 
 mock.onGet("/dashboard/summary").reply(() => [200, dashboardSummary]);
 
-let mockEntities = [
-  { id: "1", name: "Acme Corp", entity_type: "company", jurisdiction: "US", risk_score: 85, latest_signal: "Adverse Media Mention", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "2", name: "Global Tech", entity_type: "company", jurisdiction: "UK", risk_score: 42, latest_signal: "PEP Match", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "3", name: "John Doe", entity_type: "individual", jurisdiction: "EU", risk_score: 92, latest_signal: "Sanctions List", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "4", name: "Helena Rostova", entity_type: "individual", jurisdiction: "UK", risk_score: 82, latest_signal: "PEP Record Updated", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "5", name: "Desert Sands Construction", entity_type: "company", jurisdiction: "QA", risk_score: 61, latest_signal: "Adverse Media", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "7", name: "Novosibirsk Logistics Ltd", entity_type: "company", jurisdiction: "RU", risk_score: 98, latest_signal: "State-Sponsored Cyber Activity", last_screened_at: new Date().toISOString(), status: "Critical" },
-  { id: "8", name: "Sinaloa Agribusiness Corp", entity_type: "company", jurisdiction: "MX", risk_score: 96, latest_signal: "Cartel Front Company", last_screened_at: new Date().toISOString(), status: "Critical" },
-  { id: "9", name: "Dr. Chen Wei", entity_type: "individual", jurisdiction: "HK", risk_score: 88, latest_signal: "IP Theft Allegation", last_screened_at: new Date().toISOString(), status: "Inactive" },
-  { id: "10", name: "Panama Trust Services", entity_type: "company", jurisdiction: "PA", risk_score: 85, latest_signal: "Panama Papers Associated", last_screened_at: new Date().toISOString(), status: "Inactive" },
-];
+let mockEntities: any[] = [];
 
 mock.onGet("/portfolio/entities").reply(() => [200, mockEntities]);
 

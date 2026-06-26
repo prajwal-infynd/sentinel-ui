@@ -10,6 +10,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, SidebarMenuAction, SidebarHeader, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 
 const mainItems = [
   { title: "Overview", url: "/dashboard", icon: LayoutDashboard },
@@ -49,6 +50,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
+  const { user } = useAuth();
 
   const renderGroup = (label: string, items: typeof mainItems) => (
     <SidebarGroup>
@@ -114,9 +116,9 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="px-2">
         {renderGroup("Monitoring", mainItems)}
-        {renderGroup("Media", mediaItems)}
         {renderGroup("Platform", platformItems)}
-        {renderGroup("System", systemItems)}
+        {renderGroup("Media Engine", mediaItems)}
+        {user?.role === "Admin" && renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>
         {!collapsed ? (

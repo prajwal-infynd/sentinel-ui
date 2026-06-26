@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, Activity, CheckCircle2, Trash2 } from "lucide-react";
+import { Search, Bell, Activity, CheckCircle2, Trash2, User, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { useAuth } from "@/context/AuthContext";
+
 export function GlobalHeader() {
+  const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState([
     { id: 1, title: "Critical Alert: PEP Match", desc: "John Doe matched against OFAC list.", time: "2 min ago", unread: true },
     { id: 2, title: "Agent Completed", desc: "News Crawler finished scanning 1,200 sources.", time: "1 hr ago", unread: true },
@@ -94,12 +97,29 @@ export function GlobalHeader() {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <button
-          type="button"
-          className="flex h-8 min-w-8 items-center justify-center rounded-full bg-primary px-2 text-xs font-semibold text-primary-foreground"
-        >
-          US
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex h-8 min-w-8 items-center justify-center rounded-full bg-indigo-100 px-2 text-xs font-bold text-indigo-700 hover:bg-indigo-200 transition-colors border border-indigo-200 shadow-sm"
+            >
+              {user?.name?.substring(0, 2).toUpperCase() || "US"}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 p-2 rounded-2xl shadow-xl border border-slate-100">
+            <div className="flex flex-col space-y-1 p-2 pb-3 border-b border-slate-100">
+              <span className="font-bold text-sm text-slate-900">{user?.name}</span>
+              <span className="text-xs text-slate-500 truncate">{user?.email}</span>
+              <Badge variant="outline" className="w-fit mt-1 text-[10px] uppercase font-bold bg-slate-50 text-slate-600">{user?.role}</Badge>
+            </div>
+            <div className="pt-2">
+              <DropdownMenuItem onClick={logout} className="text-red-600 focus:bg-red-50 focus:text-red-700 cursor-pointer rounded-xl font-medium">
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+              </DropdownMenuItem>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

@@ -32,52 +32,65 @@ import MediaExplainability from "./pages/media/MediaExplainability";
 import MediaAutomation from "./pages/media/MediaAutomation";
 import Settings from "./pages/Settings";
 import AdminPortal from "./pages/AdminPortal";
+import Landing from "./pages/Landing";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import { InvestigationsProvider } from "./context/InvestigationsContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <InvestigationsProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/demo" element={<DemoEntry />} />
-          <Route path="/portfolio" element={<PortfolioOnboarding />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/alerts" element={<LiveAlerts />} />
-          <Route path="/investigations" element={<InvestigationsList />} />
-          <Route path="/investigations/:id" element={<Investigation />} />
-          <Route path="/agents" element={<AIAgents />} />
-          <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
-            <Route path="/architecture/external" element={<ExternalData />} />
-            <Route path="/architecture/custom" element={<CustomData />} />
-            <Route path="/architecture/infynd" element={<InfyndData />} />
-          <Route path="/policy" element={<PolicyConfig />} />
-          <Route path="/governance" element={<AIGovernance />} />
-          <Route path="/reporting" element={<Reporting />} />
-          <Route path="/closing" element={<DemoClosing />} />
-          <Route path="/media" element={<MediaDashboard />} />
-          <Route path="/media/sources" element={<MediaSources />} />
-          <Route path="/media/pipeline" element={<MediaPipeline />} />
-          <Route path="/media/article/:id" element={<MediaArticleDetail />} />
-          <Route path="/media/entity" element={<MediaEntityView />} />
-          <Route path="/media/signals" element={<MediaSignals />} />
-          <Route path="/media/config" element={<MediaConfig />} />
-          <Route path="/media/alerts" element={<MediaAlerts />} />
-          <Route path="/media/workspace" element={<MediaWorkspace />} />
-          <Route path="/media/explainability" element={<MediaExplainability />} />
-          <Route path="/media/automation" element={<MediaAutomation />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<AdminPortal />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </InvestigationsProvider>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <InvestigationsProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Landing />} />
+            
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/demo" element={<DemoEntry />} />
+              <Route path="/portfolio" element={<PortfolioOnboarding />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/alerts" element={<LiveAlerts />} />
+              <Route path="/investigations" element={<InvestigationsList />} />
+              <Route path="/investigations/:id" element={<Investigation />} />
+              <Route path="/agents" element={<AIAgents />} />
+              <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
+              <Route path="/architecture/external" element={<ExternalData />} />
+              <Route path="/architecture/custom" element={<CustomData />} />
+              <Route path="/architecture/infynd" element={<InfyndData />} />
+              <Route path="/policy" element={<PolicyConfig />} />
+              <Route path="/governance" element={<AIGovernance />} />
+              <Route path="/reporting" element={<Reporting />} />
+              <Route path="/closing" element={<DemoClosing />} />
+              <Route path="/media" element={<MediaDashboard />} />
+              <Route path="/media/sources" element={<MediaSources />} />
+              <Route path="/media/pipeline" element={<MediaPipeline />} />
+              <Route path="/media/article/:id" element={<MediaArticleDetail />} />
+              <Route path="/media/entity" element={<MediaEntityView />} />
+              <Route path="/media/signals" element={<MediaSignals />} />
+              <Route path="/media/config" element={<MediaConfig />} />
+              <Route path="/media/alerts" element={<MediaAlerts />} />
+              <Route path="/media/workspace" element={<MediaWorkspace />} />
+              <Route path="/media/explainability" element={<MediaExplainability />} />
+              <Route path="/media/automation" element={<MediaAutomation />} />
+            </Route>
+
+            <Route element={<ProtectedRoute requireRole="Admin" />}>
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<AdminPortal />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </InvestigationsProvider>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

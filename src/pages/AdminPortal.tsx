@@ -12,14 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAuditLogs } from "@/lib/policy-data";
-const initialUsersData = [
-  { id: 1, name: "Sarah Jenkins", role: "Lead Investigator", email: "sarah.j@sentinel.com", tokensUsed: "1.2M", cost: "$24.00", status: "Active", permissions: ["Admin", "Approve SARs", "Manage Policies"] },
-  { id: 2, name: "Michael Chang", role: "Compliance Analyst", email: "m.chang@sentinel.com", tokensUsed: "850k", cost: "$17.00", status: "Active", permissions: ["View Only", "Run Reports"] },
-  { id: 3, name: "Elena Rodriguez", role: "Risk Manager", email: "elena.r@sentinel.com", tokensUsed: "2.1M", cost: "$42.00", status: "Active", permissions: ["Manage Policies", "Override Risk Score"] },
-  { id: 4, name: "David Kim", role: "Auditor", email: "dkim@sentinel.com", tokensUsed: "320k", cost: "$6.40", status: "Inactive", permissions: ["View Only", "Audit Logs"] },
-  { id: 5, name: "Marcus Chen", role: "Data Scientist", email: "m.chen@sentinel.com", tokensUsed: "4.8M", cost: "$96.00", status: "Active", permissions: ["Manage Agents", "Configure Sources"] },
-];
+import { apiClient } from "@/lib/api-client";
+import { User } from "@/context/AuthContext";
+
+const fetchUsers = async (): Promise<User[]> => {
+  const { data } = await apiClient.get("/admin/users");
+  return data;
+};
 
 const spendData = [
   { date: "Jun 10", spend: 45 },
@@ -40,7 +39,6 @@ const spendData = [
 ];
 
 export default function AdminPortal() {
-  const [users, setUsers] = useState(initialUsersData);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeLogTab, setActiveLogTab] = useState<"policy" | "ai">("policy");
 
@@ -49,27 +47,28 @@ export default function AdminPortal() {
     queryFn: () => fetchAuditLogs() 
   });
 
-  const filteredUsers = users.filter(u => 
+  const { data: users = [], refetch } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: fetchUsers
+  });
+
+  const filteredUsers = users.filter((u: any) => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     u.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const toggleUserStatus = (id: number) => {
-    setUsers(users.map(u => {
-      if (u.id === id) {
-        const newStatus = u.status === 'Active' ? 'Inactive' : 'Active';
-        toast({ title: "User Updated", description: `${u.name} is now ${newStatus}.` });
-        return { ...u, status: newStatus };
-      }
-      return u;
-    }));
+  const toggleUserStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+    await apiClient.patch(`/admin/users/${id}/status`, { status: newStatus });
+    refetch();
+    toast({ title: "User Updated", description: `User is now ${newStatus}.` });
   };
 
-  const deleteUser = (id: number) => {
-    const user = users.find(u => u.id === id);
-    setUsers(users.filter(u => u.id !== id));
-    toast({ title: "User Removed", description: `${user?.name} has been removed from the workspace.`, variant: "destructive" });
+  const deleteUser = async (id: number) => {
+    await apiClient.delete(`/admin/users/${id}`);
+    refetch();
+    toast({ title: "User Removed", description: `User has been removed.`, variant: "destructive" });
   };
   return (
     <DashboardLayout>
@@ -289,11 +288,10 @@ export default function AdminPortal() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => toggleUserStatus(u.id)} className="cursor-pointer font-medium">
-                                  <ShieldOff className="mr-2 h-4 w-4 text-warning" />
-                                  {u.status === 'Active' ? 'Suspend Access' : 'Restore Access'}
+                                <DropdownMenuItem onClick={() => toggleUserStatus(u.id, u.status || 'Active')}>
+                                  {u.status === 'Active' ? <><ShieldOff className="mr-2 h-4 w-4" /> Suspend User</> : <><CheckCircle2 className="mr-2 h-4 w-4" /> Activate User</>}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => deleteUser(u.id)} className="cursor-pointer text-destructive font-medium focus:text-destructive">
+                                <DropdownMenuItem className="cursor-pointer text-destructive font-medium focus:text-destructive" onClick={() => deleteUser(u.id)}>
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Delete User
                                 </DropdownMenuItem>
