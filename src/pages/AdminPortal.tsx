@@ -43,6 +43,13 @@ export default function AdminPortal() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeLogTab, setActiveLogTab] = useState<"policy" | "ai">("policy");
 
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRoleId, setInviteRoleId] = useState(3);
+  const [invitePermissions, setInvitePermissions] = useState<string[]>([]);
+  const [isInviting, setIsInviting] = useState(false);
+
   const { data: globalLogs, isLoading: isLogsLoading } = useQuery({ 
     queryKey: ["global-audit-logs"], 
     queryFn: () => fetchAuditLogs() 
@@ -71,6 +78,39 @@ export default function AdminPortal() {
     refetch();
     toast({ title: "User Removed", description: `User has been removed.`, variant: "destructive" });
   };
+
+  const handleInviteUser = async () => {
+    if (!inviteEmail) {
+      toast({ title: "Email required", description: "Please provide an email address.", variant: "destructive" });
+      return;
+    }
+    setIsInviting(true);
+    try {
+      await apiClient.post("/admin/users/invite", {
+        name: inviteName,
+        email: inviteEmail,
+        roleId: inviteRoleId,
+        allowedPermissions: invitePermissions
+      });
+      toast({ title: "User Invited", description: `An invitation has been sent to ${inviteEmail}.` });
+      setIsInviteOpen(false);
+      setInviteName("");
+      setInviteEmail("");
+      setInviteRoleId(3);
+      setInvitePermissions([]);
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Failed to invite user", description: err.response?.data?.message || "An error occurred", variant: "destructive" });
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const togglePermission = (perm: string) => {
+    setInvitePermissions(prev => 
+      prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+    );
+  };
   return (
     <DashboardLayout>
       <div className="p-6 space-y-8 max-w-7xl mx-auto">
@@ -83,7 +123,7 @@ export default function AdminPortal() {
           </div>
           
           {hasPermission("invite_user") && (
-            <Dialog>
+            <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md">
                   <UserPlus className="h-4 w-4" /> Invite New User
@@ -96,32 +136,43 @@ export default function AdminPortal() {
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>Full Name</Label>
-                    <Input placeholder="e.g. Jane Doe" />
+                    <Input placeholder="e.g. Jane Doe" value={inviteName} onChange={e => setInviteName(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>Email Address</Label>
-                    <Input placeholder="jane@company.com" type="email" />
+                    <Input placeholder="jane@company.com" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label>Role</Label>
-                    <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                      <option>Analyst</option>
-                      <option>Investigator</option>
-                      <option>Admin</option>
+                    <select 
+                      value={inviteRoleId} 
+                      onChange={e => setInviteRoleId(Number(e.target.value))}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value={3}>User / Analyst</option>
+                      <option value={4}>Trial User</option>
+                      {hasPermission("admin:*") && <option value={2}>Owner</option>}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Granular Permissions</Label>
+                    <Label>Additional Granular Permissions</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      {["Approve SARs", "Manage Policies", "Manage Agents", "Override Risk Score", "Audit Logs", "Configure Sources"].map(perm => (
+                      {["invite_user", "manage_subscription", "admin:*"].map(perm => (
                         <label key={perm} className="flex items-center space-x-2 text-sm border p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                          <input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                          <input 
+                            type="checkbox" 
+                            checked={invitePermissions.includes(perm)}
+                            onChange={() => togglePermission(perm)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" 
+                          />
                           <span>{perm}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                  <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">Send Invitation</Button>
+                  <Button disabled={isInviting} onClick={handleInviteUser} className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">
+                    {isInviting ? "Sending..." : "Send Invitation"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>

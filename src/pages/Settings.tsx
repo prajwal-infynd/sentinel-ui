@@ -15,6 +15,23 @@ import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function Settings() {
+  const [config, setConfig] = useState(() => {
+    const saved = localStorage.getItem('sentinel_config');
+    if (saved) return JSON.parse(saved);
+    return {
+      workspaceName: "Sentinel Monitoring Workspace",
+      jurisdiction: "Global / Multi-Jurisdiction",
+      retentionDays: 365,
+      activeAgents: 15,
+      consensusThreshold: 80,
+      emailNotifications: true,
+      realtimeWebhooks: true,
+      webhookUrl: "https://api.internal-crm.com/webhooks/sentinel",
+      require2FA: true,
+      sessionTimeout: true,
+    };
+  });
+
   const [personas, setPersonas] = useState(() => {
     const saved = localStorage.getItem('sentinel_personas');
     if (saved) {
@@ -82,9 +99,10 @@ export default function Settings() {
   };
 
   const handleSave = () => {
+    localStorage.setItem('sentinel_config', JSON.stringify(config));
     toast({
       title: "Settings Saved",
-      description: "Your platform configuration has been updated.",
+      description: "Your platform configuration has been updated and securely stored locally.",
     });
   };
 
@@ -117,9 +135,9 @@ export default function Settings() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label>Active Agents per Scan</Label>
-                        <span className="font-mono font-bold text-primary">15</span>
+                        <span className="font-mono font-bold text-primary">{config.activeAgents}</span>
                       </div>
-                      <Slider defaultValue={[15]} max={100} min={3} step={1} />
+                      <Slider value={[config.activeAgents]} onValueChange={(val) => setConfig({ ...config, activeAgents: val[0] })} max={100} min={3} step={1} />
                       <p className="text-xs text-muted-foreground mt-2">Higher numbers increase API cost but improve consensus accuracy.</p>
                     </div>
                   </CardContent>
@@ -134,9 +152,9 @@ export default function Settings() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label>Required Agreement Threshold</Label>
-                        <span className="font-mono font-bold text-primary">80%</span>
+                        <span className="font-mono font-bold text-primary">{config.consensusThreshold}%</span>
                       </div>
-                      <Slider defaultValue={[80]} max={100} min={51} step={1} />
+                      <Slider value={[config.consensusThreshold]} onValueChange={(val) => setConfig({ ...config, consensusThreshold: val[0] })} max={100} min={51} step={1} />
                       <p className="text-xs text-muted-foreground mt-2">The percentage of agents that must agree to trigger a Critical alert.</p>
                     </div>
                   </CardContent>
@@ -214,15 +232,15 @@ export default function Settings() {
                 <CardContent className="space-y-6 pt-6">
                   <div className="grid gap-3">
                     <Label className="text-muted-foreground font-semibold uppercase text-[11px] tracking-wider">Workspace Name</Label>
-                    <Input defaultValue="Sentinel Monitoring Workspace" className="max-w-md focus-visible:ring-primary" />
+                    <Input value={config.workspaceName} onChange={(e) => setConfig({ ...config, workspaceName: e.target.value })} className="max-w-md focus-visible:ring-primary" />
                   </div>
                   <div className="grid gap-3">
                     <Label className="text-muted-foreground font-semibold uppercase text-[11px] tracking-wider">Default Jurisdiction</Label>
-                    <Input defaultValue="Global / Multi-Jurisdiction" className="max-w-md focus-visible:ring-primary" />
+                    <Input value={config.jurisdiction} onChange={(e) => setConfig({ ...config, jurisdiction: e.target.value })} className="max-w-md focus-visible:ring-primary" />
                   </div>
                   <div className="grid gap-3">
                     <Label className="text-muted-foreground font-semibold uppercase text-[11px] tracking-wider">Data Retention Period (Days)</Label>
-                    <Input type="number" defaultValue="365" className="max-w-[150px] focus-visible:ring-primary" />
+                    <Input type="number" value={config.retentionDays} onChange={(e) => setConfig({ ...config, retentionDays: Number(e.target.value) })} className="max-w-[150px] focus-visible:ring-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -241,18 +259,18 @@ export default function Settings() {
                     <Label className="text-base">Email Notifications</Label>
                     <p className="text-sm text-muted-foreground">Receive daily digests of critical alerts.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch checked={config.emailNotifications} onCheckedChange={(c) => setConfig({ ...config, emailNotifications: c })} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-base">Real-time Webhooks</Label>
                     <p className="text-sm text-muted-foreground">Send critical alerts directly to your internal CRM.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch checked={config.realtimeWebhooks} onCheckedChange={(c) => setConfig({ ...config, realtimeWebhooks: c })} />
                 </div>
                 <div className="grid gap-2 pt-4">
                   <Label>Webhook Payload URL</Label>
-                  <Input defaultValue="https://api.internal-crm.com/webhooks/sentinel" />
+                  <Input value={config.webhookUrl} onChange={(e) => setConfig({ ...config, webhookUrl: e.target.value })} />
                 </div>
               </CardContent>
             </Card>
@@ -270,14 +288,14 @@ export default function Settings() {
                     <Label className="text-base">Require Two-Factor Authentication</Label>
                     <p className="text-sm text-muted-foreground">Enforce 2FA for all analysts in this workspace.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch checked={config.require2FA} onCheckedChange={(c) => setConfig({ ...config, require2FA: c })} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="text-base">Session Timeout</Label>
                     <p className="text-sm text-muted-foreground">Automatically log out inactive users after 30 minutes.</p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch checked={config.sessionTimeout} onCheckedChange={(c) => setConfig({ ...config, sessionTimeout: c })} />
                 </div>
               </CardContent>
             </Card>

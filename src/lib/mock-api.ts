@@ -73,6 +73,28 @@ mock.onGet("/admin/users").reply(() => {
   return [200, safeUsers];
 });
 
+mock.onPost("/admin/users/invite").reply((config) => {
+  const { name, email, roleId, allowedPermissions } = JSON.parse(config.data);
+  if (mockUsers.some(u => u.email === email)) {
+    return [400, { message: "Email already exists" }];
+  }
+  const newUser = {
+    id: mockUsers.length + 1,
+    name: name || email.split('@')[0],
+    email,
+    password: "password", // default password for mock
+    roleId: roleId || 3, // Default to User if not provided
+    allowedPermissions: allowedPermissions || [],
+    deniedPermissions: [],
+    tokensUsed: "0",
+    cost: "$0.00",
+    status: "Active",
+  };
+  mockUsers.push(newUser);
+  const { password: _, ...userWithoutPassword } = newUser;
+  return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId as keyof typeof ROLES]?.name, permissions: computePermissions(newUser) } }];
+});
+
 mock.onPatch(/\/admin\/users\/.+\/status/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/status/);
   if (match) {
