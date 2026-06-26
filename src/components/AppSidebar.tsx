@@ -42,6 +42,9 @@ const mediaItems = [
 
 const systemItems = [
   { title: "Settings", url: "/settings", icon: Settings },
+];
+
+const adminItems = [
   { title: "Admin Portal", url: "/admin", icon: Users },
 ];
 
@@ -118,7 +121,8 @@ export function AppSidebar() {
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
         {renderGroup("Media Engine", mediaItems)}
-        {(hasPermission("admin:*") || hasPermission("invite_user")) && renderGroup("System", systemItems)}
+        {renderGroup("System", systemItems)}
+        {(hasPermission("admin:*") || hasPermission("invite_user")) && renderGroup("Administration", adminItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>
         {!collapsed ? (

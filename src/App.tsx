@@ -78,10 +78,10 @@ const App = () => (
               <Route path="/media/workspace" element={<MediaWorkspace />} />
               <Route path="/media/explainability" element={<MediaExplainability />} />
               <Route path="/media/automation" element={<MediaAutomation />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
 
             <Route element={<ProtectedRoute requirePermission="invite_user" />}>
-              <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPortal />} />
             </Route>
 
