@@ -126,7 +126,6 @@ const PortfolioOnboarding = () => {
     setManualEntityName("");
     setManualEntityType("");
     setManualJurisdiction("");
-    setActiveTab("csv"); // switch back to show preview
   };
   const [orchestrationStep, setOrchestrationStep] = useState(0);
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
