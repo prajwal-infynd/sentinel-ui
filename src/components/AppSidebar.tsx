@@ -36,16 +36,9 @@ const platformItems = [
   { title: "Reporting", url: "/reporting", icon: BarChart3 },
 ];
 
-const mediaItems = [
-  { title: "Media Engine", url: "/media", icon: Newspaper },
-];
-
 const systemItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
-];
-
-const adminItems = [
-  { title: "Admin Portal", url: "/admin", icon: Users },
+  { title: "Settings", url: "/settings", icon: Settings, permission: "manage_subscription" },
+  { title: "Admin Portal", url: "/admin", icon: Users, permission: "invite_user" },
 ];
 
 export function AppSidebar() {
@@ -62,41 +55,46 @@ export function AppSidebar() {
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu className={cn(collapsed && "items-center")}>
-          {items.map((item) => (
-            <Collapsible key={item.title} asChild defaultOpen={location.pathname.startsWith(item.url) && item.subItems !== undefined}>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(item.url) && !item.subItems} tooltip={item.title}>
-                  <NavLink to={item.subItems ? item.subItems[0].url : item.url} end={!item.subItems} activeClassName={item.subItems ? "" : "bg-sidebar-accent text-sidebar-primary-foreground"} className={cn(collapsed && "justify-center")}>
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-                {item.subItems && !collapsed && (
-                  <>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuAction className="data-[state=open]:rotate-90">
-                        <ChevronRight />
-                        <span className="sr-only">Toggle</span>
-                      </SidebarMenuAction>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        {item.subItems.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                              <NavLink to={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </>
-                )}
-              </SidebarMenuItem>
-            </Collapsible>
-          ))}
+          {items.map((item) => {
+            if ((item as any).permission && !hasPermission("admin:*") && !hasPermission((item as any).permission)) {
+              return null;
+            }
+            return (
+              <Collapsible key={item.title} asChild defaultOpen={location.pathname.startsWith(item.url) && (item as any).subItems !== undefined}>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive(item.url) && !(item as any).subItems} tooltip={item.title}>
+                    <NavLink to={(item as any).subItems ? (item as any).subItems[0].url : item.url} end={!(item as any).subItems} activeClassName={(item as any).subItems ? "" : "bg-sidebar-accent text-sidebar-primary-foreground"} className={cn(collapsed && "justify-center")}>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                  {(item as any).subItems && !collapsed && (
+                    <>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuAction className="data-[state=open]:rotate-90">
+                          <ChevronRight />
+                          <span className="sr-only">Toggle</span>
+                        </SidebarMenuAction>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {(item as any).subItems.map((subItem: any) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                <NavLink to={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+            );
+          })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
@@ -121,8 +119,7 @@ export function AppSidebar() {
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
         {renderGroup("Media Engine", mediaItems)}
-        {renderGroup("System", systemItems)}
-        {(hasPermission("admin:*") || hasPermission("invite_user")) && renderGroup("Administration", adminItems)}
+        {(hasPermission("admin:*") || hasPermission("invite_user") || hasPermission("manage_subscription")) && renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>
         {!collapsed ? (

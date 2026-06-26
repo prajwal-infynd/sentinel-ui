@@ -78,6 +78,9 @@ const App = () => (
               <Route path="/media/workspace" element={<MediaWorkspace />} />
               <Route path="/media/explainability" element={<MediaExplainability />} />
               <Route path="/media/automation" element={<MediaAutomation />} />
+            </Route>
+
+            <Route element={<ProtectedRoute requirePermission="manage_subscription" />}>
               <Route path="/settings" element={<Settings />} />
             </Route>
 
