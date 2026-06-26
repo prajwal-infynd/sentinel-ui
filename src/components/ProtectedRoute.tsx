@@ -3,12 +3,12 @@ import { useAuth, UserRole } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
-  requireRole?: UserRole;
+  requirePermission?: string;
   children?: React.ReactNode;
 }
 
-export function ProtectedRoute({ requireRole, children }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
+export function ProtectedRoute({ requirePermission, children }: ProtectedRouteProps) {
+  const { user, isLoading, hasPermission } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,7 +22,7 @@ export function ProtectedRoute({ requireRole, children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireRole && user.role !== requireRole) {
+  if (requirePermission && !hasPermission(requirePermission)) {
     return <Navigate to="/dashboard" replace />;
   }
 

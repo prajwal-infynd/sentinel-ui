@@ -80,7 +80,7 @@ const App = () => (
               <Route path="/media/automation" element={<MediaAutomation />} />
             </Route>
 
-            <Route element={<ProtectedRoute requireRole="Admin" />}>
+            <Route element={<ProtectedRoute requirePermission="invite_user" />}>
               <Route path="/settings" element={<Settings />} />
               <Route path="/admin" element={<AdminPortal />} />
             </Route>
