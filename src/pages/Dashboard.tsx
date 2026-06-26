@@ -317,91 +317,106 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-xs">Entity</TableHead>
-              <TableHead className="text-xs">Type</TableHead>
-              <TableHead className="text-xs">Jurisdiction</TableHead>
-              <TableHead className="text-xs">Risk Score</TableHead>
-              <TableHead className="text-xs">Latest Signal</TableHead>
-              <TableHead className="text-xs">Last Checked</TableHead>
-              <TableHead className="text-xs">Status</TableHead>
-              <TableHead className="text-xs">Owner</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredEntities.map((e: any) => (
-              <TableRow key={e.id} className={`cursor-pointer hover:bg-muted/50 group ${mutedEntities.has(e.id) ? 'opacity-60 bg-muted/20' : ''}`}>
-                <TableCell className="font-medium text-sm">
-                  <div className="flex items-center gap-2">
-                    {e.name}
-                    {mutedEntities.has(e.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Muted</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground capitalize">{e.entity_type}</TableCell>
-                <TableCell className="text-xs">{e.jurisdiction}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className={`h-full rounded-full ${riskColor(Number(e.risk_score))}`} style={{ width: `${Number(e.risk_score)}%` }} />
-                    </div>
-                    <span className="text-xs font-mono">{Number(e.risk_score).toFixed(0)}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-xs max-w-[200px] truncate">{e.latest_signal ?? "Awaiting fresh signal"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground font-mono">{e.last_screened_at ? new Date(e.last_screened_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</TableCell>
-                <TableCell>
-                  {mutedEntities.has(e.id) ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Muted</span>
-                  ) : (
-                    <Select
-                      value={e.status}
-                      onValueChange={(val) => statusMutation.mutate({ id: e.id, status: val })}
-                    >
-                      <SelectTrigger className={`h-6 text-[10px] font-semibold px-2 py-0.5 rounded-full border-none shadow-none w-[110px] focus:ring-0 ${statusColor(e.status)}`}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Active" className="text-xs">Active</SelectItem>
-                        <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
-                        <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
-                        <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
-                        <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
-                        <SelectItem value="Inactive" className="text-xs">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground relative">
-                    <div className="flex items-center justify-between">
-                    <span>Assigned</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
-                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-indigo-600 hover:bg-indigo-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate("/investigations", { state: { entity: e } }); }}>Investigate</button>
-                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-emerald-600 hover:bg-emerald-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate(`/policy?entity=${encodeURIComponent(e.name)}`); }}>Policy</button>
-                      <button className="px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded" onClick={(ev) => { 
-                        ev.stopPropagation(); 
-                        setMutedEntities(prev => {
-                          const next = new Set(prev);
-                          if (next.has(e.id)) {
-                            next.delete(e.id);
-                            toast({ title: "Entity Unmuted", description: `${e.name} has been unmuted.` });
-                          } else {
-                            next.add(e.id);
-                            toast({ title: "Entity Muted", description: `${e.name} will not trigger new alerts for 30 days.` });
-                          }
-                          return next;
-                        });
-                      }}>
-                        {mutedEntities.has(e.id) ? "Unmute" : "Mute"}
-                      </button>
-                    </div>
-                  </div>
-                </TableCell>
+        {filteredEntities.length === 0 ? (
+          <div className="p-20 flex flex-col items-center justify-center text-center bg-slate-50/30">
+            <div className="h-24 w-24 bg-white rounded-3xl flex items-center justify-center mb-6 border border-indigo-100 shadow-md">
+              <UploadCloud className="h-10 w-10 text-indigo-600" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-3">No Entities Monitored</h3>
+            <p className="text-slate-500 max-w-md mx-auto mb-8 font-medium">
+              Your portfolio is currently empty. Sentinel requires entities to monitor before it can run agentic workflows, generate risk insights, and surface media alerts.
+            </p>
+            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 rounded-full font-bold px-8 h-12" onClick={() => navigate("/portfolio")}>
+              Import Portfolio First
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Entity</TableHead>
+                <TableHead className="text-xs">Type</TableHead>
+                <TableHead className="text-xs">Jurisdiction</TableHead>
+                <TableHead className="text-xs">Risk Score</TableHead>
+                <TableHead className="text-xs">Latest Signal</TableHead>
+                <TableHead className="text-xs">Last Checked</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Owner</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredEntities.map((e: any) => (
+                <TableRow key={e.id} className={`cursor-pointer hover:bg-muted/50 group ${mutedEntities.has(e.id) ? 'opacity-60 bg-muted/20' : ''}`}>
+                  <TableCell className="font-medium text-sm">
+                    <div className="flex items-center gap-2">
+                      {e.name}
+                      {mutedEntities.has(e.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Muted</Badge>}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground capitalize">{e.entity_type}</TableCell>
+                  <TableCell className="text-xs">{e.jurisdiction}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div className={`h-full rounded-full ${riskColor(Number(e.risk_score))}`} style={{ width: `${Number(e.risk_score)}%` }} />
+                      </div>
+                      <span className="text-xs font-mono">{Number(e.risk_score).toFixed(0)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate">{e.latest_signal ?? "Awaiting fresh signal"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground font-mono">{e.last_screened_at ? new Date(e.last_screened_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</TableCell>
+                  <TableCell>
+                    {mutedEntities.has(e.id) ? (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Muted</span>
+                    ) : (
+                      <Select
+                        value={e.status}
+                        onValueChange={(val) => statusMutation.mutate({ id: e.id, status: val })}
+                      >
+                        <SelectTrigger className={`h-6 text-[10px] font-semibold px-2 py-0.5 rounded-full border-none shadow-none w-[110px] focus:ring-0 ${statusColor(e.status)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Active" className="text-xs">Active</SelectItem>
+                          <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
+                          <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
+                          <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
+                          <SelectItem value="Dormant" className="text-xs">Dormant</SelectItem>
+                          <SelectItem value="Inactive" className="text-xs">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground relative">
+                      <div className="flex items-center justify-between">
+                      <span>Assigned</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
+                        <button className="px-2 py-1 text-[10px] font-bold uppercase text-indigo-600 hover:bg-indigo-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate("/investigations", { state: { entity: e } }); }}>Investigate</button>
+                        <button className="px-2 py-1 text-[10px] font-bold uppercase text-emerald-600 hover:bg-emerald-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate(`/policy?entity=${encodeURIComponent(e.name)}`); }}>Policy</button>
+                        <button className="px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded" onClick={(ev) => { 
+                          ev.stopPropagation(); 
+                          setMutedEntities(prev => {
+                            const next = new Set(prev);
+                            if (next.has(e.id)) {
+                              next.delete(e.id);
+                              toast({ title: "Entity Unmuted", description: `${e.name} has been unmuted.` });
+                            } else {
+                              next.add(e.id);
+                              toast({ title: "Entity Muted", description: `${e.name} will not trigger new alerts for 30 days.` });
+                            }
+                            return next;
+                          });
+                        }}>
+                          {mutedEntities.has(e.id) ? "Unmute" : "Mute"}
+                        </button>
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </motion.div>
       </div>
 
