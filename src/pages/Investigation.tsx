@@ -373,8 +373,6 @@ const Investigation = () => {
           <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
         </TabsList>
 
-        </TabsList>
-
         <TabsContent value="pending_updates">
           <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between mb-4">
