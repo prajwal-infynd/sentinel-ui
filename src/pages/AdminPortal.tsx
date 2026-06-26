@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { User } from "@/context/AuthContext";
+import { User, useAuth } from "@/context/AuthContext";
 
 const fetchUsers = async (): Promise<User[]> => {
   const { data } = await apiClient.get("/admin/users");
@@ -39,6 +39,7 @@ const spendData = [
 ];
 
 export default function AdminPortal() {
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeLogTab, setActiveLogTab] = useState<"policy" | "ai">("policy");
 
@@ -81,48 +82,50 @@ export default function AdminPortal() {
             </div>
           </div>
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md">
-                <UserPlus className="h-4 w-4" /> Invite New User
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Invite User to Workspace</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <Input placeholder="e.g. Jane Doe" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email Address</Label>
-                  <Input placeholder="jane@company.com" type="email" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                    <option>Analyst</option>
-                    <option>Investigator</option>
-                    <option>Admin</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Granular Permissions</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {["Approve SARs", "Manage Policies", "Manage Agents", "Override Risk Score", "Audit Logs", "Configure Sources"].map(perm => (
-                      <label key={perm} className="flex items-center space-x-2 text-sm border p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
-                        <input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span>{perm}</span>
-                      </label>
-                    ))}
+          {hasPermission("invite_user") && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-md">
+                  <UserPlus className="h-4 w-4" /> Invite New User
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Invite User to Workspace</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input placeholder="e.g. Jane Doe" />
                   </div>
+                  <div className="space-y-2">
+                    <Label>Email Address</Label>
+                    <Input placeholder="jane@company.com" type="email" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Role</Label>
+                    <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                      <option>Analyst</option>
+                      <option>Investigator</option>
+                      <option>Admin</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Granular Permissions</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {["Approve SARs", "Manage Policies", "Manage Agents", "Override Risk Score", "Audit Logs", "Configure Sources"].map(perm => (
+                        <label key={perm} className="flex items-center space-x-2 text-sm border p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                          <input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                          <span>{perm}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">Send Invitation</Button>
                 </div>
-                <Button className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700">Send Invitation</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
         </motion.div>
 
         {/* Overview Stats */}

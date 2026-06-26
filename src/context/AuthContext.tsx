@@ -8,19 +8,21 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  role: UserRole;
+  role: string;
+  roleId?: number;
   tokensUsed?: string;
   cost?: string;
   status?: string;
-  permissions?: string[];
+  computedPermissions?: string[];
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
+  signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,9 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signup = async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
+  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const res = await apiClient.post("/auth/signup", { name, email, password, role });
+      const res = await apiClient.post("/auth/signup", { name, email, password });
       if (res.data.user) {
         setUser(res.data.user);
         localStorage.setItem("sentinel_user", JSON.stringify(res.data.user));
@@ -78,8 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = "/login";
   };
 
+  const hasPermission = (permission: string) => {
+    if (!user?.computedPermissions) return false;
+    return user.computedPermissions.includes("admin:*") || user.computedPermissions.includes(permission);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

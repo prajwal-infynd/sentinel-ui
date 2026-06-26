@@ -50,7 +50,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
-  const { user } = useAuth();
+  const { hasPermission } = useAuth();
 
   const renderGroup = (label: string, items: typeof mainItems) => (
     <SidebarGroup>
@@ -118,7 +118,7 @@ export function AppSidebar() {
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
         {renderGroup("Media Engine", mediaItems)}
-        {user?.role === "Admin" && renderGroup("System", systemItems)}
+        {(hasPermission("admin:*") || hasPermission("invite_user")) && renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>
         {!collapsed ? (

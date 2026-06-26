@@ -17,7 +17,6 @@ export default function Landing() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"Admin" | "Analyst">("Analyst");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // If already logged in, redirect to dashboard
@@ -33,7 +32,7 @@ export default function Landing() {
     if (isLogin) {
       success = await login(email, password);
     } else {
-      success = await signup(name, email, password, role);
+      success = await signup(name, email, password);
     }
     setIsSubmitting(false);
     if (success) {
@@ -184,25 +183,6 @@ export default function Landing() {
                 </div>
 
                 <AnimatePresence mode="popLayout">
-                  {!isLogin && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{ opacity: 1, height: "auto", marginTop: 20 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      className="space-y-2 overflow-hidden"
-                    >
-                      <Label className="text-slate-700 font-bold">Role Profile</Label>
-                      <Select value={role} onValueChange={(val: any) => setRole(val)}>
-                        <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Admin">System Admin (Full Access)</SelectItem>
-                          <SelectItem value="Analyst">Compliance Analyst (View Only)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </motion.div>
-                  )}
                 </AnimatePresence>
 
                 <Button 

@@ -6,24 +6,41 @@ import { formatRelativeTime } from "./utils";
 export const mock = new MockAdapter(apiClient, { delayResponse: 500 }); // simulate network delay
 
 // --- AUTH & USERS DATA ---
+export const ROLES = {
+  1: { id: 1, name: "Super Admin", basePermissions: ["admin:*"] },
+  2: { id: 2, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"] },
+  3: { id: 3, name: "User", basePermissions: ["crud:*"] },
+  4: { id: 4, name: "Trial User", basePermissions: ["manage_subscription", "crud:*"] },
+};
+
 let mockUsers = [
-  { id: 1, name: "Admin User", role: "Admin", email: "admin@sentinel.com", password: "password", tokensUsed: "1.2M", cost: "$24.00", status: "Active", permissions: ["Admin", "Approve SARs", "Manage Policies"] },
-  { id: 2, name: "Analyst User", role: "Analyst", email: "analyst@sentinel.com", password: "password", tokensUsed: "850k", cost: "$17.00", status: "Active", permissions: ["View Only", "Run Reports"] },
-  { id: 3, name: "Elena Rodriguez", role: "Admin", email: "elena.r@sentinel.com", password: "password", tokensUsed: "2.1M", cost: "$42.00", status: "Active", permissions: ["Manage Policies", "Override Risk Score"] },
+  { id: 1, name: "Super Admin User", roleId: 1, email: "superadmin@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
+  { id: 2, name: "Owner User", roleId: 2, email: "owner@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
+  { id: 3, name: "Standard User", roleId: 3, email: "user@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
 ];
+
+const computePermissions = (user: any) => {
+  const role = ROLES[user.roleId as keyof typeof ROLES];
+  if (!role) return [];
+  const permissions = new Set([...role.basePermissions, ...(user.allowedPermissions || [])]);
+  for (const denied of (user.deniedPermissions || [])) {
+    permissions.delete(denied);
+  }
+  return Array.from(permissions);
+};
 
 mock.onPost("/auth/login").reply((config) => {
   const { email, password } = JSON.parse(config.data);
   const user = mockUsers.find(u => u.email === email && u.password === password);
   if (user) {
     const { password: _, ...userWithoutPassword } = user;
-    return [200, { user: userWithoutPassword }];
+    return [200, { user: { ...userWithoutPassword, role: ROLES[user.roleId as keyof typeof ROLES]?.name, computedPermissions: computePermissions(user) } }];
   }
   return [401, { message: "Invalid email or password" }];
 });
 
 mock.onPost("/auth/signup").reply((config) => {
-  const { name, email, password, role } = JSON.parse(config.data);
+  const { name, email, password } = JSON.parse(config.data);
   if (mockUsers.some(u => u.email === email)) {
     return [400, { message: "Email already exists" }];
   }
@@ -32,15 +49,16 @@ mock.onPost("/auth/signup").reply((config) => {
     name,
     email,
     password,
-    role,
+    roleId: 4, // Default to Trial User
+    allowedPermissions: [],
+    deniedPermissions: [],
     tokensUsed: "0",
     cost: "$0.00",
     status: "Active",
-    permissions: role === "Admin" ? ["Admin", "Manage Policies"] : ["View Only"],
   };
   mockUsers.push(newUser);
   const { password: _, ...userWithoutPassword } = newUser;
-  return [200, { user: userWithoutPassword }];
+  return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId as keyof typeof ROLES]?.name, computedPermissions: computePermissions(newUser) } }];
 });
 
 mock.onGet("/admin/users").reply(() => {
