@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import {
-  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert
+  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert, Activity
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -38,6 +38,10 @@ const platformItems = [
 
 const mediaItems = [
   { title: "Media Engine", url: "/media", icon: Newspaper },
+];
+
+const crawlItems = [
+  { title: "Live Crawl Engine", url: "/crawl", icon: Activity },
 ];
 
 const systemItems = [
@@ -123,6 +127,7 @@ export function AppSidebar() {
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
         {renderGroup("Media Engine", mediaItems)}
+        {renderGroup("Crawl Engine", crawlItems)}
         {(hasPermission("admin:*") || hasPermission("invite_user") || hasPermission("manage_subscription")) && renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>

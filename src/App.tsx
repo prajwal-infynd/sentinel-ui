@@ -30,6 +30,7 @@ import MediaAlerts from "./pages/media/MediaAlerts";
 import MediaWorkspace from "./pages/media/MediaWorkspace";
 import MediaExplainability from "./pages/media/MediaExplainability";
 import MediaAutomation from "./pages/media/MediaAutomation";
+import LiveCrawlEngine from "./pages/LiveCrawlEngine";
 import Settings from "./pages/Settings";
 import AdminPortal from "./pages/AdminPortal";
 import Landing from "./pages/Landing";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/media/workspace" element={<MediaWorkspace />} />
               <Route path="/media/explainability" element={<MediaExplainability />} />
               <Route path="/media/automation" element={<MediaAutomation />} />
+              <Route path="/crawl" element={<LiveCrawlEngine />} />
             </Route>
 
             <Route element={<ProtectedRoute requirePermission="manage_subscription" />}>

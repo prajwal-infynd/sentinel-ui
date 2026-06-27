@@ -115,8 +115,7 @@ export const ExternalData = () => {
   const mockFiles = [
     { name: "Historical_SAR_Filings_2023.csv", type: "csv-excel", size: "14.2 MB", date: "2 hrs ago", status: "Active", records: "15,420", reliability: "98%", utilization: ["Global KYB Thresholds Policy", "Investigator Swarm Agent"], schema: ["TransactionID", "Amount", "RiskScore"] },
     { name: "KYB_Compliance_Policy_V4.pdf", type: "pdf", size: "2.1 MB", date: "5 hrs ago", status: "Active", records: "1", reliability: "100%", utilization: ["Document Analysis Rules", "Skeptic Defense Agent"], schema: ["Text Content", "Metadata"] },
-    { name: "Core Banking Customer API", type: "api", size: "Live", date: "1 min ago", status: "Active", records: "8,400,000", reliability: "85%", utilization: ["Real-time Tx Monitoring", "Anomaly Detection Engine"], schema: ["CustomerID", "Balance", "KYBStatus"] },
-    { name: "Web Crawler", type: "api", size: "Live", date: "Just now", status: "Active", records: "12,500,000+", reliability: "72%", utilization: ["Adverse Media Scanning", "OSINT Investigations"], schema: ["URL", "Title", "Content", "DateScraped"] }
+    { name: "Core Banking Customer API", type: "api", size: "Live", date: "1 min ago", status: "Active", records: "8,400,000", reliability: "85%", utilization: ["Real-time Tx Monitoring", "Anomaly Detection Engine"], schema: ["CustomerID", "Balance", "KYBStatus"] }
   ];
 
   const tabs = ["All", "PDF", "CSV/Excel", "Docs", "API"];

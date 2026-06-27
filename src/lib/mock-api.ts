@@ -166,6 +166,22 @@ mock.onPatch(/\/portfolio\/entities\/.+\/status/).reply((config) => {
   return [404, { message: "Entity not found" }];
 });
 
+mock.onPatch(/\/portfolio\/entities\/.+\/kyb-status/).reply((config) => {
+  const match = config.url?.match(/\/portfolio\/entities\/(.+)\/kyb-status/);
+  if (match) {
+    const id = match[1];
+    const { kyb_status } = JSON.parse(config.data);
+    
+    const entityIndex = mockEntities.findIndex(e => e.id === id);
+    if (entityIndex !== -1) {
+      mockEntities[entityIndex].kyb_status = kyb_status;
+      return [200, mockEntities[entityIndex]];
+    }
+    return [404, { error: "Not found" }];
+  }
+  return [400, { error: "Invalid Request" }];
+});
+
 mock.onGet("/alerts").reply(200, [
   { id: "a1", category: "Sanctions", title: "Sanctions Match", summary: "Entity matched with OFAC sanctions list.", severity: "critical", generated_at: new Date().toISOString(), confidence_score: 95, status: "open", monitored_entities: { name: "John Doe" }, media_articles: { headline: "John Doe added to sanctions list" } },
   { id: "a2", category: "Adverse Media", title: "Adverse Media", summary: "Negative news regarding fraud allegations.", severity: "high", generated_at: new Date(Date.now() - 3600000).toISOString(), confidence_score: 88, status: "investigating", monitored_entities: { name: "Acme Corp" }, media_articles: { headline: "Acme Corp under investigation for fraud" } },

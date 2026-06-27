@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus, Search } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { KybMonitorModal } from "@/components/portfolio/KybMonitorModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
@@ -129,6 +130,7 @@ const PortfolioOnboarding = () => {
   };
   const [orchestrationStep, setOrchestrationStep] = useState(0);
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
+  const [selectedKybEntity, setSelectedKybEntity] = useState<any>(null);
 
   const loadMockData = () => {
     setSelectedFileName("demo-portfolio-Q3.csv");
@@ -482,6 +484,7 @@ const PortfolioOnboarding = () => {
                       <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 h-12">Country</TableHead>
                       <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 h-12">Vol. Trend</TableHead>
                       <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 h-12">Initial Risk</TableHead>
+                      <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500 h-12 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -514,6 +517,16 @@ const PortfolioOnboarding = () => {
                           >
                             {r.risk}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-8 gap-1.5 border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-bold"
+                            onClick={() => setSelectedKybEntity(r)}
+                          >
+                            <Search className="h-3.5 w-3.5" /> KYB Monitor
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -567,6 +580,11 @@ const PortfolioOnboarding = () => {
           )}
         </AnimatePresence>
 
+        <KybMonitorModal 
+          open={!!selectedKybEntity} 
+          onOpenChange={(open) => !open && setSelectedKybEntity(null)} 
+          entity={selectedKybEntity} 
+        />
       </div>
     </DashboardLayout>
   );

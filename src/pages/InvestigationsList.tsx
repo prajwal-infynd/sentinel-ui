@@ -142,10 +142,6 @@ const InvestigationsList = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="outline" className="gap-2 bg-white text-slate-700">
-              <Filter className="h-4 w-4" /> Filters
-            </Button>
-            
             <Dialog open={isManualCaseOpen} onOpenChange={(open) => {
               setIsManualCaseOpen(open);
               if (!open) {

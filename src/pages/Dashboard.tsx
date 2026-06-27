@@ -3,13 +3,14 @@ import { motion } from "framer-motion";
 import { Activity, AlertTriangle, Users, Shield, Newspaper, FileWarning, Clock, RefreshCw, TrendingUp, Search, Brain, ArrowUpRight, UploadCloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { KybMonitorModal } from "@/components/portfolio/KybMonitorModal";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchDashboardSummary, fetchEntities, updateEntityStatus } from "@/lib/dashboard-data";
+import { fetchDashboardSummary, fetchEntities, updateEntityStatus, updateKybStatus } from "@/lib/dashboard-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -35,6 +36,8 @@ const riskColor = (score: number) =>
   score >= 80 ? "bg-destructive" : score >= 60 ? "bg-warning" : score >= 40 ? "bg-primary" : "bg-success";
 const statusColor = (s: string) =>
   s === "Critical" ? "text-destructive bg-destructive/10" : s === "High Risk" ? "text-warning bg-warning/10" :
+  s === "Declined" ? "text-red-700 bg-red-100 border border-red-200" :
+  s === "Approved" ? "text-emerald-700 bg-emerald-100 border border-emerald-200" :
   s === "Dissolved" ? "text-slate-500 bg-slate-200 border-dashed border-slate-400" :
   s === "Inactive" ? "text-slate-500 bg-slate-100 border border-slate-200" :
   s === "Active" ? "text-success bg-success/10" :
@@ -54,6 +57,7 @@ const Dashboard = () => {
   const [hasPromptedActivation, setHasPromptedActivation] = useState(() => {
     return localStorage.getItem("hasPromptedActivation") === "true";
   });
+  const [selectedKybEntity, setSelectedKybEntity] = useState<any>(null);
 
   useEffect(() => {
     if (entities && entities.length > 0 && !hasPromptedActivation) {
@@ -82,6 +86,17 @@ const Dashboard = () => {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update entity status", variant: "destructive" });
+    }
+  });
+
+  const kybStatusMutation = useMutation({
+    mutationFn: ({ id, kyb_status }: { id: string; kyb_status: string }) => updateKybStatus(id, kyb_status),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-entities"] });
+      toast({ title: "KYB Decision Recorded", description: `Entity KYB status marked as ${variables.kyb_status}` });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to record KYB decision", variant: "destructive" });
     }
   });
 
@@ -294,6 +309,8 @@ const Dashboard = () => {
               <SelectContent>
                 <SelectItem value="all" className="text-xs">All Statuses</SelectItem>
                 <SelectItem value="Active" className="text-xs">Active</SelectItem>
+                <SelectItem value="Approved" className="text-xs text-emerald-600 font-medium">Approved</SelectItem>
+                <SelectItem value="Declined" className="text-xs text-red-600 font-medium">Declined</SelectItem>
                 <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
                 <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
                 <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
@@ -341,16 +358,24 @@ const Dashboard = () => {
                 <TableHead className="text-xs">Latest Signal</TableHead>
                 <TableHead className="text-xs">Last Checked</TableHead>
                 <TableHead className="text-xs">Status</TableHead>
-                <TableHead className="text-xs">Owner</TableHead>
+                <TableHead className="text-xs text-right w-[280px]">Owner</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEntities.map((e: any) => (
                 <TableRow key={e.id} className={`cursor-pointer hover:bg-muted/50 group ${mutedEntities.has(e.id) ? 'opacity-60 bg-muted/20' : ''}`}>
                   <TableCell className="font-medium text-sm">
-                    <div className="flex items-center gap-2">
-                      {e.name}
-                      {mutedEntities.has(e.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Muted</Badge>}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {e.name}
+                        {mutedEntities.has(e.id) && <Badge variant="secondary" className="text-[9px] px-1.5 py-0">Muted</Badge>}
+                      </div>
+                      {e.kyb_status === "Approved" && (
+                        <div><Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-[9px] font-bold px-1.5 py-0 uppercase tracking-wider shadow-sm">KYB Approved</Badge></div>
+                      )}
+                      {e.kyb_status === "Declined" && (
+                        <div><Badge className="bg-red-100 text-red-700 hover:bg-red-100 border border-red-200 text-[9px] font-bold px-1.5 py-0 uppercase tracking-wider shadow-sm">KYB Declined</Badge></div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground capitalize">{e.entity_type}</TableCell>
@@ -378,6 +403,8 @@ const Dashboard = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Active" className="text-xs">Active</SelectItem>
+                          <SelectItem value="Approved" className="text-xs text-emerald-600 font-medium">Approved</SelectItem>
+                          <SelectItem value="Declined" className="text-xs text-red-600 font-medium">Declined</SelectItem>
                           <SelectItem value="Critical" className="text-xs">Critical</SelectItem>
                           <SelectItem value="High Risk" className="text-xs">High Risk</SelectItem>
                           <SelectItem value="Dissolved" className="text-xs">Dissolved</SelectItem>
@@ -387,12 +414,13 @@ const Dashboard = () => {
                       </Select>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground relative">
-                      <div className="flex items-center justify-between">
-                      <span>Assigned</span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
+                  <TableCell className="text-xs text-muted-foreground relative text-right">
+                      <div className="flex items-center justify-end">
+                      <span className="mr-2 group-hover:opacity-0 transition-opacity">Assigned</span>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur rounded shadow-sm border border-slate-200 px-1 absolute right-2 top-1/2 -translate-y-1/2">
                         <button className="px-2 py-1 text-[10px] font-bold uppercase text-indigo-600 hover:bg-indigo-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate("/investigations", { state: { entity: e } }); }}>Investigate</button>
                         <button className="px-2 py-1 text-[10px] font-bold uppercase text-emerald-600 hover:bg-emerald-50 rounded" onClick={(ev) => { ev.stopPropagation(); navigate(`/policy?entity=${encodeURIComponent(e.name)}`); }}>Policy</button>
+                        <button className="px-2 py-1 text-[10px] font-bold uppercase text-blue-600 hover:bg-blue-50 rounded" onClick={(ev) => { ev.stopPropagation(); setSelectedKybEntity(e); }}>KYB Monitor</button>
                         <button className="px-2 py-1 text-[10px] font-bold uppercase text-slate-500 hover:bg-slate-100 rounded" onClick={(ev) => { 
                           ev.stopPropagation(); 
                           setMutedEntities(prev => {
@@ -437,6 +465,13 @@ const Dashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      <KybMonitorModal 
+        open={!!selectedKybEntity} 
+        onOpenChange={(open) => !open && setSelectedKybEntity(null)} 
+        entity={selectedKybEntity}
+        onUpdateStatus={(id, status) => kybStatusMutation.mutate({ id, kyb_status: status })}
+      />
     </DashboardLayout>
   );
 };

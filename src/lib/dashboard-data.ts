@@ -40,6 +40,11 @@ export async function updateEntityStatus(id: string, status: string) {
   return data;
 }
 
+export async function updateKybStatus(id: string, kyb_status: string) {
+  const { data } = await apiClient.patch(`/portfolio/entities/${id}/kyb-status`, { kyb_status });
+  return data;
+}
+
 export async function importMonitoredEntities(rows: MonitoredEntityImportRow[]) {
   const { data } = await apiClient.post("/portfolio/import", rows);
   return data;
