@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Search, TrendingUp, X, Activity, AlertCircle, ChevronDown, Eye, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -19,12 +19,8 @@ const severityColor = (severity: string) =>
 
 export default function MediaAlerts() {
   const { data: alerts = [] } = useQuery({ queryKey: ["media-live-alerts"], queryFn: () => fetchMediaAlerts(12), refetchInterval: 10000 });
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [previewAlert, setPreviewAlert] = useState<any | null>(null);
-
-  const toggleExpand = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
-  };
+  const navigate = useNavigate();
 
   return (
     <DashboardLayout>
@@ -67,11 +63,10 @@ export default function MediaAlerts() {
 
         <div className="space-y-4">
           {alerts.map((alert, index) => {
-            const isExpanded = expandedId === alert.id;
             return (
               <motion.div key={alert.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 + index * 0.08 }}>
                 <div 
-                  onClick={() => toggleExpand(alert.id)}
+                  onClick={() => navigate(`/investigations/${alert.id}`, { state: { entity: { name: alert.entityName, risk_score: alert.severity === "critical" ? 95 : 75, latest_signal: alert.title } } })}
                   className={`group cursor-pointer relative overflow-hidden rounded-2xl border bg-gradient-to-b from-card to-card/50 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg hover:border-border border-l-4 ${alert.severity === "critical" ? "border-l-destructive hover:border-l-destructive" : alert.severity === "high" ? "border-l-warning hover:border-l-warning" : "border-l-primary hover:border-l-primary"}`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none" />
@@ -86,52 +81,12 @@ export default function MediaAlerts() {
                         <span className="text-[10px] font-mono text-muted-foreground font-bold">{new Date(alert.generatedAt).toLocaleString()}</span>
                       </div>
                       <h3 className="mb-1.5 text-lg font-bold tracking-tight text-foreground group-hover:text-indigo-600 transition-colors">{alert.title}</h3>
-                      <p className={`text-sm text-muted-foreground leading-relaxed max-w-4xl transition-all ${isExpanded ? "line-clamp-none mb-5" : "line-clamp-2"}`}>
+                      <p className={`text-sm text-muted-foreground leading-relaxed max-w-4xl transition-all line-clamp-2`}>
                         {alert.summary}
                       </p>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                            animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-                            exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                              <div className="rounded-xl bg-white border border-border/50 p-4 shadow-sm transition-colors hover:border-indigo-500/30">
-                                <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">Entity Match</div>
-                                <div className="text-sm font-black text-indigo-600">{alert.entityName}</div>
-                              </div>
-                              <div className="rounded-xl bg-white border border-border/50 p-4 shadow-sm transition-colors hover:border-indigo-500/30">
-                                <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">Source Article</div>
-                                <div className="truncate text-sm font-bold text-foreground/80">{alert.articleHeadline}</div>
-                              </div>
-                              <div className="rounded-xl bg-white border border-border/50 p-4 shadow-sm transition-colors hover:border-indigo-500/30">
-                                <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">AI Confidence</div>
-                                <div className="text-xl font-mono font-black text-primary tracking-tighter">{alert.confidenceScore}%</div>
-                              </div>
-                              <div className="rounded-xl bg-white border border-border/50 p-4 shadow-sm transition-colors hover:border-indigo-500/30 flex flex-col justify-center">
-                                <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1.5">Pipeline Status</div>
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2.5 w-2.5 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                                  <div className="text-sm font-bold capitalize text-foreground/90">{alert.status.replace(/_/g, " ")}</div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mt-6 flex items-center gap-3 border-t border-border/50 pt-5">
-                              <Button size="sm" onClick={(e) => { e.stopPropagation(); toast({ title: "Case Opened", description: "Navigating to investigation workspace..." }); }} className="h-9 gap-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"><Search className="h-4 w-4" /> Open Case</Button>
-                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast({ title: "Alert Dismissed", description: "This alert has been marked as a false positive." }); }} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-muted"><X className="h-4 w-4" /> Dismiss</Button>
-                              <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); toast({ title: "Alert Escalated", description: "This alert has been escalated to senior analysts.", variant: "destructive" }); }} className="h-9 gap-2 text-xs font-bold rounded-xl text-destructive border-destructive/30 hover:bg-destructive/5"><TrendingUp className="h-4 w-4" /> Escalate</Button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
                     
-                    <div className="mt-2 shrink-0 flex flex-col gap-2">
+                    <div className="mt-2 shrink-0 flex items-center gap-2">
                       <Button
                         size="icon"
                         variant="ghost"
@@ -144,9 +99,17 @@ export default function MediaAlerts() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <div className={`p-2 rounded-full hover:bg-muted transition-colors ${isExpanded ? "bg-muted" : ""}`}>
-                        <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                      </div>
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/investigations/${alert.id}`, { state: { entity: { name: alert.entityName, risk_score: alert.severity === "critical" ? 95 : 75, latest_signal: alert.title } } });
+                        }}
+                        className="h-9 px-3 gap-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
+                      >
+                        <Search className="h-4 w-4" />
+                        Investigate
+                      </Button>
                     </div>
                   </div>
                 </div>

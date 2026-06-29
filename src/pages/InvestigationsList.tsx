@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useInvestigations } from "@/context/InvestigationsContext";
 import { toast } from "@/components/ui/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const InvestigationsList = () => {
   const navigate = useNavigate();
@@ -107,6 +108,20 @@ const InvestigationsList = () => {
             <p className="text-sm text-slate-500">Manage and resolve active compliance alerts and agent escalations.</p>
           </div>
           <div className="flex gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2 bg-white text-slate-700 font-semibold border-slate-200 hover:bg-slate-50">
+                  <Filter className="h-4 w-4 text-slate-400" /> Filters
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-white p-2">
+                <DropdownMenuRadioGroup value={activeFilter} onValueChange={(val) => setActiveFilter(val as any)}>
+                  <DropdownMenuRadioItem value="All" className="cursor-pointer font-medium">All Investigations</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="Assigned to Me" className="cursor-pointer font-medium">Assigned to Me</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="Critical" className="cursor-pointer font-medium text-red-600">Critical Priority</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Dialog>
               <DialogTrigger asChild>
                 <Button 

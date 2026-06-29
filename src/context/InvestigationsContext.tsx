@@ -18,6 +18,11 @@ export type Case = {
 
 const defaultCases: Case[] = [
   {
+    id: "ALT-KLODEV",
+    entity: { name: "Technologies LTD (Klodev)", entity_type: "company", jurisdiction: "UK", latest_signal: "Privacy Policy Discrepancy", risk_score: 98 },
+    status: "Pending Review", assignee: "Unassigned", timestamp: "Just now"
+  },
+  {
     id: "ALT-4891",
     entity: { name: "John Doe", entity_type: "individual", jurisdiction: "UK", latest_signal: "Adverse Media Mention", risk_score: 95 },
     status: "Pending Review", assignee: "Unassigned", timestamp: "10 mins ago"
@@ -57,7 +62,17 @@ const InvestigationsContext = createContext<InvestigationsContextType | undefine
 export const InvestigationsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cases, setCases] = useState<Case[]>(() => {
     const saved = localStorage.getItem('sentinel_cases');
-    return saved ? JSON.parse(saved) : defaultCases;
+    let loadedCases = saved ? JSON.parse(saved) : defaultCases;
+    
+    // Force inject Klodev case so it's immediately visible without clearing local storage
+    if (!loadedCases.find((c: Case) => c.id === "ALT-KLODEV")) {
+      const klodevCase = defaultCases.find(c => c.id === "ALT-KLODEV");
+      if (klodevCase) {
+        loadedCases = [klodevCase, ...loadedCases];
+      }
+    }
+    
+    return loadedCases;
   });
 
   useEffect(() => {

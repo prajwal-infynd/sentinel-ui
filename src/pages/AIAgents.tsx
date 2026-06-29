@@ -42,6 +42,7 @@ const AIAgents = () => {
   const { data: agents = [] } = useQuery({ queryKey: ["agent-overview"], queryFn: fetchAgentOverview, refetchInterval: 10000 });
   const [pausedAgents, setPausedAgents] = useState<Set<string>>(new Set());
   const [editingAgent, setEditingAgent] = useState<string | null>(null);
+  const [isCreatingAgent, setIsCreatingAgent] = useState(false);
 
   const togglePause = (agentName: string) => {
     setPausedAgents(prev => {
@@ -61,6 +62,11 @@ const AIAgents = () => {
               <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">AI Agent Orchestration</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Live run history, throughput, and confidence across the monitoring agent chain</p>
             </div>
+          </div>
+          <div>
+            <Button onClick={() => setIsCreatingAgent(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+              <Sparkles className="h-4 w-4" /> Build Custom Agent
+            </Button>
           </div>
         </motion.div>
 
@@ -146,7 +152,7 @@ const AIAgents = () => {
                   <div className={`text-[11px] font-medium ${config.color} truncate ${config.bg} px-3 py-2 rounded-lg border ${config.border} flex items-center shadow-sm`}><Clock className="mr-2 h-3.5 w-3.5 opacity-80" />{agent.lastAction}</div>
                   <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Uptime {agent.uptime}</div>
                   <div className="flex items-center gap-3 pt-2">
-                    <Progress value={agent.accuracy} className="h-2 flex-1 bg-slate-100" indicatorClassName={`bg-${config.color.split('-')[1]}-500`} />
+                    <Progress value={agent.accuracy} className="h-2 flex-1 bg-slate-100" />
                     <span className={`text-xs font-black font-mono ${config.color}`}>{agent.accuracy}%</span>
                   </div>
                 </div>
@@ -198,6 +204,22 @@ const AIAgents = () => {
                           defaultValue="Researches leads and drafts personalized sales emails for buildicy.com. Identifies target companies, finds key decision-makers, and creates tailored outreach messages based on company research, recent news, and industry trends." 
                           className="min-h-[140px] resize-y bg-white border-slate-200 focus-visible:ring-indigo-500 text-sm shadow-sm leading-relaxed"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" /> Discovery Frequency Rule
+                        </Label>
+                        <div className="relative group">
+                          <select className="appearance-none flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors group-hover:border-indigo-200 cursor-pointer">
+                            <option value="daily">Daily Continuous Monitoring</option>
+                            <option value="weekly">Weekly Deep Discovery</option>
+                            <option value="realtime">Real-time (High Cost)</option>
+                            <option value="manual">Manual Trigger Only</option>
+                          </select>
+                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -311,7 +333,7 @@ const AIAgents = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-[11px] font-bold text-slate-700 mb-1">2950 Tokens</div>
-                      <Progress value={75} className="h-1.5 w-24 bg-slate-100" indicatorClassName="bg-indigo-500" />
+                      <Progress value={75} className="h-1.5 w-24 bg-slate-100" />
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -358,6 +380,46 @@ const AIAgents = () => {
           <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setEditingAgent(null)}>Cancel</Button>
             <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setEditingAgent(null); toast({ title: "Changes Saved", description: "Agent configuration updated successfully." }); }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isCreatingAgent} onOpenChange={setIsCreatingAgent}>
+        <DialogContent className="max-w-2xl bg-white shadow-xl p-0 overflow-hidden border-slate-200">
+          <DialogHeader className="p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
+            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              <Bot className="h-5 w-5 text-indigo-600" /> Build Custom AI Agent
+            </DialogTitle>
+            <DialogDescription className="mt-1">Design a new autonomous agent to join your orchestration pipeline.</DialogDescription>
+          </DialogHeader>
+          <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-slate-700">Agent Name</Label>
+              <Input placeholder="e.g. Sanctions Evaluator" className="h-11 bg-white border-slate-200 focus-visible:ring-indigo-500" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-slate-700">Specialized Role</Label>
+              <div className="relative group">
+                <select className="appearance-none flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors group-hover:border-indigo-200 cursor-pointer">
+                  <option>Data Extraction</option>
+                  <option>Risk Scoring</option>
+                  <option>Entity Matching</option>
+                  <option>Compliance Analyst</option>
+                  <option>Adverse Media Crawler</option>
+                  <option>Custom Role</option>
+                </select>
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-slate-700">System Prompt</Label>
+              <Textarea placeholder="Define the agent's core instructions, parameters, and outputs..." className="min-h-[120px] bg-white border-slate-200 focus-visible:ring-indigo-500" />
+            </div>
+          </div>
+          <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsCreatingAgent(false)}>Cancel</Button>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setIsCreatingAgent(false); toast({ title: "Agent Provisioned", description: "Your custom agent is now spinning up." }); }}>Deploy Agent</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

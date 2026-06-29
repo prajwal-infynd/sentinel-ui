@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useInvestigations } from "@/context/InvestigationsContext";
+import klodevData from "@/data/klodev.json";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,6 +61,8 @@ const Investigation = () => {
   const { getCaseById, updateCaseStatus, assignUser } = useInvestigations();
   
   const caseData = id ? getCaseById(id) : null;
+  const isKlodev = id === "ALT-KLODEV";
+  const activeData: any = isKlodev ? klodevData : null;
   const entity = caseData?.entity || location.state?.entity || {
     name: "Global Tech Inc.",
     entity_type: "company",
@@ -145,7 +148,7 @@ const Investigation = () => {
       roleColor: "text-slate-800",
       dotColor: "bg-slate-800",
       icon: User,
-      message: customOpinion || "Please review the latest transaction records.",
+      message: <>{customOpinion || "Please review the latest transaction records."}</>,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
@@ -160,7 +163,7 @@ const Investigation = () => {
           roleColor: "text-indigo-700",
           dotColor: "bg-indigo-500",
           icon: Bot,
-          message: customOpinion || `Analyzing the evidence based on my system instructions: "${p.prompt.substring(0, 80)}..." I conclude that this warrants deeper review but aligns with my specialized parameters.`,
+          message: <>{customOpinion || `Analyzing the evidence based on my system instructions: "${p.prompt.substring(0, 80)}..." I conclude that this warrants deeper review but aligns with my specialized parameters.`}</>,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         };
       }
@@ -181,7 +184,7 @@ const Investigation = () => {
         roleColor: "text-blue-700",
         dotColor: "bg-blue-500",
         icon: Brain,
-        message: "Acknowledged human input. Integrating new context into the evidentiary graph. The human insight highlights a crucial nuance missing from the raw text processing.",
+        message: <>{"Acknowledged human input. Integrating new context into the evidentiary graph. The human insight highlights a crucial nuance missing from the raw text processing."}</>,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       }]);
       
@@ -226,17 +229,17 @@ const Investigation = () => {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <Badge className={`${Number(entity.risk_score) >= 80 ? 'bg-destructive/10 text-destructive border-destructive/20' : Number(entity.risk_score) >= 60 ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest shadow-sm`}>
-                {Number(entity.risk_score) >= 80 ? 'CRITICAL' : Number(entity.risk_score) >= 60 ? 'HIGH RISK' : 'ELEVATED'}
+              <Badge className={`${Number(activeData ? activeData.riskScore : entity.risk_score) >= 80 ? 'bg-destructive/10 text-destructive border-destructive/20' : Number(activeData ? activeData.riskScore : entity.risk_score) >= 60 ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest shadow-sm`}>
+                {Number(activeData ? activeData.riskScore : entity.risk_score) >= 80 ? 'CRITICAL' : Number(activeData ? activeData.riskScore : entity.risk_score) >= 60 ? 'HIGH RISK' : 'ELEVATED'}
               </Badge>
-              <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">ALT-4891</span>
+              <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{activeData ? activeData.investigationId : "ALT-4891"}</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight mb-2 text-foreground">{entity.latest_signal || "Adverse media hit — suspected fraud exposure"}</h1>
+            <h1 className="text-2xl font-bold tracking-tight mb-2 text-foreground">{activeData ? activeData.triggerEvent : (entity.latest_signal || "Adverse media hit — suspected fraud exposure")}</h1>
             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground">
-              <span className="flex items-center gap-1.5">{isCompany ? <Building className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />} {entity.name}</span>
-              <span className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> {entity.jurisdiction}</span>
-              <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> 2024-03-15 14:23 UTC</span>
-              <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> Sentinel AI Source</span>
+              <span className="flex items-center gap-1.5">{isCompany ? <Building className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />} {activeData ? activeData.masterEntityProfile.fullName : entity.name}</span>
+              <span className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> {activeData ? activeData.masterEntityProfile.jurisdiction : entity.jurisdiction}</span>
+              <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> {activeData ? activeData.timestamp : "2024-03-15 14:23 UTC"}</span>
+              <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> {activeData ? activeData.source : "Sentinel AI Source"}</span>
             </div>
           </div>
           <div className="flex items-center gap-5">
@@ -281,78 +284,6 @@ const Investigation = () => {
               </DialogContent>
             </Dialog>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
-                  onClick={() => {
-                    setCaseStatus("approving");
-                    setTimeout(() => {
-                      setCaseStatus("approved");
-                      if (id) updateCaseStatus(id, "Approved");
-                      toast({ title: "Case Approved", description: "This case has been marked as approved." });
-                    }, 1200);
-                  }}
-                  disabled={caseStatus !== "pending"}
-                  className={`h-9 gap-2 text-xs font-bold rounded-xl shadow-md transition-all duration-300 w-full ${
-                    caseStatus === "approved" ? "bg-success hover:bg-success text-white" : "bg-indigo-600 hover:bg-indigo-700 text-white"
-                  }`}
-                >
-                  <AnimatePresence mode="wait">
-                    {caseStatus === "pending" && (
-                      <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" /> Approve Case
-                      </motion.div>
-                    )}
-                    {caseStatus === "approving" && (
-                      <motion.div key="approving" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Processing...
-                      </motion.div>
-                    )}
-                    {caseStatus === "approved" && (
-                      <motion.div key="approved" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4" /> Approved
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Button>
-                {caseStatus === "pending" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setCaseStatus("dismissed");
-                      if (id) updateCaseStatus(id, "Dismissed");
-                      toast({ title: "Case Dismissed", description: "This case has been dismissed.", variant: "destructive" });
-                    }}
-                    className="h-9 px-2 border-destructive/20 text-destructive hover:bg-destructive/10"
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <div className="w-1/2">
-                  <Select onValueChange={(val) => {
-                    if (id) assignUser(id, val);
-                    toast({ title: "Assigned", description: `Case assigned to ${val}` });
-                  }}>
-                    <SelectTrigger className="h-9 rounded-xl text-xs font-bold bg-white hover:bg-muted">
-                      <SelectValue placeholder={<div className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Assign</div>} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Admin">Admin (You)</SelectItem>
-                      <SelectItem value="Sarah K.">Sarah K.</SelectItem>
-                      <SelectItem value="Michael R.">Michael R.</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setIsSarOpen(true)} className="h-9 gap-2 text-xs font-bold rounded-xl hover:bg-indigo-50 hover:text-indigo-600 border-indigo-200 text-indigo-700 w-1/2 group relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <FileSignature className="h-4 w-4" /> Auto-SAR
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </motion.div>
@@ -366,7 +297,7 @@ const Investigation = () => {
           <TabsTrigger value="entity" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Entity Profile</TabsTrigger>
           <TabsTrigger value="timeline" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Timeline</TabsTrigger>
           <TabsTrigger value="reasoning" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">AI Reasoning</TabsTrigger>
-          <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Infyous Debate</TabsTrigger>
+          <TabsTrigger value="debate" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Sentinel Debate</TabsTrigger>
           <TabsTrigger value="pending_updates" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1 flex items-center gap-1.5">
             Pending Updates
             {pendingUpdatesCount > 0 && (
@@ -379,7 +310,22 @@ const Investigation = () => {
         </TabsList>
 
         <TabsContent value="pending_updates">
-          <div className="mt-6 space-y-6">
+          <div className="mt-6 relative">
+            {/* Coming Soon Overlay */}
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] rounded-2xl">
+              <div className="bg-white border border-slate-200 px-6 py-4 rounded-2xl shadow-xl flex flex-col items-center text-center max-w-sm">
+                <div className="h-12 w-12 bg-indigo-100 rounded-full flex items-center justify-center mb-3">
+                  <Sparkles className="h-6 w-6 text-indigo-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">Coming Soon</h3>
+                <p className="text-sm text-slate-500">
+                  The Profile Update Approvals module is currently in development. You will soon be able to review and merge external data changes directly.
+                </p>
+              </div>
+            </div>
+
+            {/* Blurred Content */}
+            <div className="space-y-6 blur-[4px] pointer-events-none opacity-60 select-none">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-lg font-bold">Profile Update Approvals</h2>
@@ -527,6 +473,7 @@ const Investigation = () => {
               </motion.div>
             )}
 
+            </div>
           </div>
         </TabsContent>
 
@@ -535,13 +482,17 @@ const Investigation = () => {
             <div className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-5 space-y-5">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Brain className="h-5 w-5 text-indigo-500" /> AI-Generated Summary</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Sentinel AI analysis of recent signals for <span className="font-bold text-foreground">{entity.name}</span> indicates a {entity.latest_signal?.toLowerCase() || 'potential risk exposure'}. 
-                {isCompany ? " The corporate entity's recent activities have matched against key regulatory flags, triggering a heightened risk profile." : " The individual has been identified across multiple data points suggesting involvement in monitored activities."}
+                {activeData ? activeData.summary.aiGeneratedSummary : (
+                  <>
+                    Sentinel AI analysis of recent signals for <span className="font-bold text-foreground">{entity.name}</span> indicates a {entity.latest_signal?.toLowerCase() || 'potential risk exposure'}. 
+                    {isCompany ? " The corporate entity's recent activities have matched against key regulatory flags, triggering a heightened risk profile." : " The individual has been identified across multiple data points suggesting involvement in monitored activities."}
+                  </>
+                )}
               </p>
               <div className="space-y-3 pt-2">
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Matched Fields</h4>
                 <div className="flex flex-wrap gap-2">
-                  {["Full name match", "DOB confirmed", "UK jurisdiction", "Known associate"].map(f => (
+                  {(activeData ? activeData.summary.matchedFields : ["Full name match", "DOB confirmed", "UK jurisdiction", "Known associate"]).map((f: string) => (
                     <Badge key={f} variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-white">{f}</Badge>
                   ))}
                 </div>
@@ -550,26 +501,35 @@ const Investigation = () => {
             <div className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-5 space-y-5">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Suggested Actions</h3>
               <div className="space-y-3">
-                {[
-                  { action: "Escalate to Senior Analyst", priority: "Recommended", color: "bg-warning/10 text-warning border border-warning/20" },
-                  { action: "Request enhanced due diligence", priority: "Required", color: "bg-destructive/10 text-destructive border border-destructive/20" },
-                  { action: "File SAR consideration", priority: "Under Review", color: "bg-primary/10 text-primary border border-primary/20" },
-                  { action: "Notify relationship manager", priority: "Optional", color: "bg-muted text-muted-foreground border border-border/50" },
-                ].map(a => (
-                  <div key={a.action} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border/50 shadow-sm hover:border-indigo-500/20 transition-colors">
-                    <span className="text-sm font-semibold">{a.action}</span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${a.color}`}>{a.priority}</span>
-                  </div>
-                ))}
+                {(activeData?.summary?.suggestedActions || [
+                  { action: "Escalate to Senior Analyst", priority: "Recommended" },
+                  { action: "Request enhanced due diligence", priority: "Required" },
+                  { action: "File SAR consideration", priority: "Under Review" },
+                  { action: "Notify relationship manager", priority: "Optional" },
+                ]).map((a: any) => {
+                  let color = "bg-muted text-muted-foreground border border-border/50";
+                  const p = (a.priority || "").toLowerCase();
+                  if (p === "recommended") color = "bg-warning/10 text-warning border border-warning/20";
+                  else if (p === "required") color = "bg-destructive/10 text-destructive border border-destructive/20";
+                  else if (p === "under review") color = "bg-primary/10 text-primary border border-primary/20";
+                  else if (p === "optional") color = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                  
+                  return (
+                    <div key={a.action} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border/50 shadow-sm hover:border-indigo-500/20 transition-colors">
+                      <span className="text-sm font-semibold">{a.action}</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${color}`}>{a.priority}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         </TabsContent>
 
         <TabsContent value="network">
-          <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-6 mt-6 relative overflow-hidden h-[500px]">
+          <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-6 mt-6 relative overflow-hidden h-[600px]">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-50/50 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute inset-0 opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none mix-blend-overlay"></div>
+            <div className="absolute inset-0 opacity-10 bg-black/5 pointer-events-none mix-blend-overlay"></div>
             
             <div className="flex justify-between items-center mb-6 relative z-10">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Network className="h-5 w-5 text-indigo-500" /> Dynamic Knowledge Graph</h3>
@@ -579,86 +539,189 @@ const Investigation = () => {
               </div>
             </div>
 
-            {/* Mock Graph Visual */}
-            <div className="relative w-full h-[400px] flex items-center justify-center z-10">
-              {/* Connecting Lines */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                <path d="M 400 200 L 250 100" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-                <path d="M 400 200 L 250 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                <path d="M 400 200 L 550 100" stroke="#ef4444" strokeWidth="3" fill="none" />
-                <path d="M 400 200 L 550 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                <path d="M 250 300 L 150 250" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                <path d="M 550 100 L 700 150" stroke="#ef4444" strokeWidth="3" fill="none" />
-              </svg>
+            {/* Dynamic Graph Visual */}
+            {activeData && activeData.networkGraph ? (
+              <div className="relative w-full h-[500px] flex items-center justify-center z-10">
+                {(() => {
+                  const nodes = activeData.networkGraph.nodes;
+                  const links = activeData.networkGraph.links || activeData.networkGraph.edges || [];
+                  const centerX = 450;
+                  const centerY = 250;
+                  const radius = 220;
+                  
+                  const positions: Record<string, {x: number, y: number}> = {};
+                  if (nodes.length > 0) {
+                    positions[nodes[0].id] = { x: centerX, y: centerY };
+                    const rest = nodes.slice(1);
+                    rest.forEach((node: any, i: number) => {
+                      const angle = (i / rest.length) * 2 * Math.PI - Math.PI / 2;
+                      positions[node.id] = {
+                        x: centerX + Math.cos(angle) * radius,
+                        y: centerY + Math.sin(angle) * radius
+                      };
+                    });
+                  }
 
-              {/* Central Node */}
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '200px', left: '400px' }}>
-                <div className="h-20 w-20 rounded-full bg-indigo-100 border-4 border-indigo-500 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {isCompany ? <Building className="h-8 w-8 text-indigo-700" /> : <User className="h-8 w-8 text-indigo-700" />}
-                </div>
-                <div className="mt-3 bg-white px-3 py-1.5 rounded-lg shadow-md border border-border/50 text-center w-max">
-                  <div className="text-xs font-bold text-foreground">{entity.name}</div>
-                  <div className="text-[10px] font-mono text-muted-foreground">Primary Subject</div>
-                </div>
-              </motion.div>
+                  return (
+                    <>
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                        {links.map((link: any, i: number) => {
+                          const sourcePos = positions[link.source];
+                          const targetPos = positions[link.target];
+                          if (!sourcePos || !targetPos) return null;
+                          return (
+                            <line 
+                              key={`line-${i}`}
+                              x1={sourcePos.x} 
+                              y1={sourcePos.y} 
+                              x2={targetPos.x} 
+                              y2={targetPos.y} 
+                              stroke="currentColor" 
+                              className="text-indigo-200 stroke-2" 
+                              strokeDasharray="4 4" 
+                            />
+                          );
+                        })}
+                      </svg>
+                      
+                      {/* Relationship Labels */}
+                      {links.map((link: any, i: number) => {
+                        const sourcePos = positions[link.source];
+                        const targetPos = positions[link.target];
+                        if (!sourcePos || !targetPos || !link.relationship) return null;
+                        
+                        const midX = (sourcePos.x + targetPos.x) / 2;
+                        const midY = (sourcePos.y + targetPos.y) / 2;
+                        
+                        return (
+                          <div 
+                            key={`label-${i}`}
+                            className="absolute z-10 flex items-center justify-center pointer-events-none"
+                            style={{ top: midY + 'px', left: midX + 'px', transform: 'translate(-50%, -50%)' }}
+                          >
+                            <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-indigo-100 text-[9px] font-bold text-indigo-700 max-w-[160px] truncate">
+                              {link.relationship}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
+                      {nodes.map((node: any, i: number) => {
+                        const pos = positions[node.id];
+                        if (!pos) return null;
+                        const isCenter = i === 0;
+                        const isPerson = node.type === "Person";
+                        
+                        return (
+                          <motion.div 
+                            key={node.id}
+                            initial={{ scale: 0, x: "-50%", y: "-50%" }} 
+                            animate={{ scale: 1, x: "-50%", y: "-50%" }} 
+                            transition={{ delay: i * 0.1 }} 
+                            className="absolute z-20 flex flex-col items-center group cursor-pointer" 
+                            style={{ top: pos.y + 'px', left: pos.x + 'px' }}
+                          >
+                            {isCenter && (
+                              <>
+                                <div className="absolute inset-0 rounded-full border border-indigo-500/30 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                                <div className="absolute inset-0 rounded-full border border-indigo-500/20 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '1.5s' }}></div>
+                              </>
+                            )}
+                            <div className={`relative h-16 w-16 rounded-full ${isCenter ? 'bg-indigo-600 border-4 border-indigo-200 shadow-[0_0_20px_rgba(79,70,229,0.6)]' : isPerson ? 'bg-amber-100 border-2 border-amber-400 shadow-md' : 'bg-white border-2 border-slate-300 shadow-md'} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                              {isCenter ? <Building2 className="h-7 w-7 text-white" /> : isPerson ? <User className="h-7 w-7 text-amber-600" /> : <Building2 className="h-7 w-7 text-slate-500" />}
+                            </div>
+                            <div className="mt-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-border/50 text-center w-max max-w-[140px] group-hover:border-indigo-300 transition-colors">
+                              <div className={`text-[11px] font-black truncate ${isPerson ? 'text-amber-700' : 'text-slate-800'}`}>{node.label}</div>
+                              <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">{node.type}</div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="relative w-full h-[400px] flex items-center justify-center z-10">
+                {/* Connecting Lines */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  <path d="M 400 200 L 250 100" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="4 4" fill="none" />
+                  <path d="M 400 200 L 250 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
+                  <path d="M 400 200 L 550 100" stroke="#ef4444" strokeWidth="3" fill="none" />
+                  <path d="M 400 200 L 550 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
+                  <path d="M 250 300 L 150 250" stroke="#CBD5E1" strokeWidth="2" fill="none" />
+                  <path d="M 550 100 L 700 150" stroke="#ef4444" strokeWidth="3" fill="none" />
+                </svg>
 
-              {/* Connected Nodes */}
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '250px' }}>
-                <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Building className="h-6 w-6 text-slate-500" />
-                </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                  <div className="text-[10px] font-bold">Doe Consulting Ltd</div>
-                </div>
-              </motion.div>
+                {/* Central Node */}
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '200px', left: '400px' }}>
+                  <div className="h-20 w-20 rounded-full bg-indigo-100 border-4 border-indigo-500 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {isCompany ? <Building className="h-8 w-8 text-indigo-700" /> : <User className="h-8 w-8 text-indigo-700" />}
+                  </div>
+                  <div className="mt-3 bg-white px-3 py-1.5 rounded-lg shadow-md border border-border/50 text-center w-max">
+                    <div className="text-xs font-bold text-foreground">{entity.name}</div>
+                    <div className="text-[10px] font-mono text-muted-foreground">Primary Subject</div>
+                  </div>
+                </motion.div>
 
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.2 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '250px' }}>
-                <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Wallet className="h-6 w-6 text-slate-500" />
-                </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                  <div className="text-[10px] font-bold">Acct: *4912</div>
-                </div>
-              </motion.div>
+                {/* Connected Nodes */}
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '250px' }}>
+                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building className="h-6 w-6 text-slate-500" />
+                  </div>
+                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                    <div className="text-[10px] font-bold">Doe Consulting Ltd</div>
+                  </div>
+                </motion.div>
 
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.3 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '550px' }}>
-                <div className="h-16 w-16 rounded-full bg-destructive/10 border-4 border-destructive shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform animate-pulse">
-                  <Globe className="h-7 w-7 text-destructive" />
-                </div>
-                <div className="mt-2 bg-white px-2 py-1 rounded shadow-sm border border-destructive/30 text-center w-max">
-                  <div className="text-[10px] font-bold text-destructive">BVI Holdings Ltd</div>
-                  <div className="text-[8px] font-mono text-muted-foreground uppercase">Shell Company</div>
-                </div>
-              </motion.div>
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.2 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '250px' }}>
+                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Wallet className="h-6 w-6 text-slate-500" />
+                  </div>
+                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                    <div className="text-[10px] font-bold">Acct: *4912</div>
+                  </div>
+                </motion.div>
 
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.4 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '550px' }}>
-                <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <UserPlus className="h-6 w-6 text-slate-500" />
-                </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                  <div className="text-[10px] font-bold">Jane Smith</div>
-                </div>
-              </motion.div>
-              
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.5 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '150px', left: '700px' }}>
-                <div className="h-14 w-14 rounded-full bg-destructive/10 border-2 border-destructive/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Landmark className="h-6 w-6 text-destructive/80" />
-                </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                  <div className="text-[10px] font-bold text-destructive">Swiss Bank Acct</div>
-                </div>
-              </motion.div>
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.3 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '550px' }}>
+                  <div className="h-16 w-16 rounded-full bg-destructive/10 border-4 border-destructive shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform animate-pulse">
+                    <Globe className="h-7 w-7 text-destructive" />
+                  </div>
+                  <div className="mt-2 bg-white px-2 py-1 rounded shadow-sm border border-destructive/30 text-center w-max">
+                    <div className="text-[10px] font-bold text-destructive">BVI Holdings Ltd</div>
+                    <div className="text-[8px] font-mono text-muted-foreground uppercase">Shell Company</div>
+                  </div>
+                </motion.div>
 
-              <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.6 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '250px', left: '150px' }}>
-                <div className="h-14 w-14 rounded-full bg-warning/10 border-2 border-warning/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Hash className="h-6 w-6 text-warning/80" />
-                </div>
-                <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                  <div className="text-[10px] font-bold text-warning-foreground">Crypto Wallet</div>
-                  <div className="text-[8px] font-mono text-muted-foreground uppercase">BTC Network</div>
-                </div>
-              </motion.div>
-            </div>
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.4 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '550px' }}>
+                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <UserPlus className="h-6 w-6 text-slate-500" />
+                  </div>
+                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                    <div className="text-[10px] font-bold">Jane Smith</div>
+                  </div>
+                </motion.div>
+                
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.5 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '150px', left: '700px' }}>
+                  <div className="h-14 w-14 rounded-full bg-destructive/10 border-2 border-destructive/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Landmark className="h-6 w-6 text-destructive/80" />
+                  </div>
+                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                    <div className="text-[10px] font-bold text-destructive">Swiss Bank Acct</div>
+                  </div>
+                </motion.div>
+
+                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.6 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '250px', left: '150px' }}>
+                  <div className="h-14 w-14 rounded-full bg-warning/10 border-2 border-warning/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Hash className="h-6 w-6 text-warning/80" />
+                  </div>
+                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
+                    <div className="text-[10px] font-bold text-warning-foreground">Crypto Wallet</div>
+                    <div className="text-[8px] font-mono text-muted-foreground uppercase">BTC Network</div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -677,24 +740,52 @@ const Investigation = () => {
               <h3 className="text-base font-bold tracking-tight mb-4 flex items-center gap-2 relative z-10"><FileText className="h-5 w-5 text-indigo-500" /> Source Evidence</h3>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4 relative z-10">Sentinel Intelligence Network</div>
               <div className="prose prose-sm text-sm text-muted-foreground max-w-none space-y-4 relative z-10">
-                <p>Recent sweeps have identified <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">{entity.name}</mark> ({entity.jurisdiction}) in connection with {entity.latest_signal || "elevated risk activities"}.</p>
-                <p>Analysts are monitoring transaction patterns and relevant network associations to determine full exposure.</p>
+                {activeData ? (
+                  <p>{activeData.sourceEvidence.description}</p>
+                ) : (
+                  <>
+                    <p>Recent sweeps have identified <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">{entity.name}</mark> ({entity.jurisdiction}) in connection with {entity.latest_signal || "elevated risk activities"}.</p>
+                    <p>Analysts are monitoring transaction patterns and relevant network associations to determine full exposure.</p>
+                  </>
+                )}
               </div>
             </div>
             
             <div className="rounded-2xl border border-border/50 bg-white shadow-sm p-6 hover:border-indigo-500/30 transition-colors">
               <h3 className="text-base font-bold tracking-tight mb-5 flex items-center gap-2"><Shield className="h-5 w-5 text-indigo-500" /> Sanctions Match</h3>
               <div className="space-y-4 text-sm">
-                <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Source: OFAC SDN List</div>
-                  <div className="font-semibold text-foreground/80">No direct match found</div>
-                </div>
-                <div className="p-4 rounded-xl bg-warning/5 border border-warning/30 shadow-sm relative overflow-hidden">
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-warning" />
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-warning-foreground/70 mb-1.5">Source: EU Consolidated List</div>
-                  <div className="font-bold text-foreground">Fuzzy match — 72% similarity</div>
-                  <div className="text-xs text-muted-foreground mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block">Entity: "Johan Doe" — ref. EU-2024-1847</div>
-                </div>
+                {activeData ? (
+                  activeData.sourceEvidence.sanctionsMatch && activeData.sourceEvidence.sanctionsMatch.length > 0 ? (
+                    activeData.sourceEvidence.sanctionsMatch.map((match: any, idx: number) => (
+                      <div key={idx} className="p-4 rounded-xl bg-warning/5 border border-warning/30 shadow-sm relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-warning" />
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-warning-foreground/70 mb-1.5">Source: {match.source || "External Database"}</div>
+                        <div className="font-bold text-foreground">{match.result || "Fuzzy Match"}</div>
+                        {match.details && <div className="text-xs text-muted-foreground mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block">{match.details}</div>}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 shadow-sm relative overflow-hidden">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 mb-1.5">Global Sanctions Lists</div>
+                      <div className="font-bold text-slate-800">No matches found</div>
+                      <div className="text-xs text-emerald-600 mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block">Entity cleared across OFAC, EU, UN, and HMT databases.</div>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Source: OFAC SDN List</div>
+                      <div className="font-semibold text-foreground/80">No direct match found</div>
+                    </div>
+                    <div className="p-4 rounded-xl bg-warning/5 border border-warning/30 shadow-sm relative overflow-hidden">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-warning" />
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-warning-foreground/70 mb-1.5">Source: EU Consolidated List</div>
+                      <div className="font-bold text-foreground">Fuzzy match — 72% similarity</div>
+                      <div className="text-xs text-muted-foreground mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block">Entity: "Johan Doe" — ref. EU-2024-1847</div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -707,14 +798,21 @@ const Investigation = () => {
             <div className="md:col-span-2 rounded-2xl border border-border/50 bg-white shadow-sm p-6">
               <h3 className="text-base font-bold tracking-tight mb-6">Master Entity Profile</h3>
               <div className="grid sm:grid-cols-2 gap-6">
-                {[
+                {(activeData ? [
+                  ["Company Name", activeData.masterEntityProfile.fullName],
+                  ["Aliases", activeData.masterEntityProfile.aliases.join(", ")],
+                  ["Incorporation Date", activeData.masterEntityProfile.dateOfBirth || "N/A"],
+                  ["Jurisdiction", activeData.masterEntityProfile.jurisdiction],
+                  ["Identifiers", activeData.masterEntityProfile.identifiers.map((i:any) => `${i.type}: ${i.value}`).join(" | ")],
+                  ["Linked Jurisdictions", activeData.masterEntityProfile.linkedJurisdictions.join(", ")]
+                ] : [
                   [isCompany ? "Company Name" : "Full Name", entity.name],
                   ["Aliases", isCompany ? "None registered" : "J. Doe, Johan Doe, JMD"],
                   [isCompany ? "Incorporation Date" : "Date of Birth", isCompany ? "12 August 2010" : "22 March 1985"],
                   ["Jurisdiction", entity.jurisdiction],
                   ["Identifiers", isCompany ? "Reg No: 18492048" : "Passport: GB-8842991"],
                   ["Linked Jurisdictions", `${entity.jurisdiction}, BVI, UAE, Switzerland`],
-                ].map(([label, value]) => (
+                ]).map(([label, value]) => (
                   <div key={label} className="group">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">{label}</div>
                     <div className="text-sm font-semibold text-foreground bg-muted/30 px-3 py-2 rounded-lg border border-border/50 group-hover:border-indigo-500/30 transition-colors">{value}</div>
@@ -725,12 +823,17 @@ const Investigation = () => {
             <div className="rounded-2xl border border-border/50 bg-gradient-to-b from-card to-card/50 shadow-sm p-6">
               <h3 className="text-base font-bold tracking-tight mb-6">Risk Indicators</h3>
               <div className="space-y-4">
-                {[
+                {(activeData ? [
+                  { label: "Sanctions Lists", count: activeData.masterEntityProfile.riskIndicators.sanctionsLists || 0, color: "text-success bg-success/10 border-success/20" },
+                  { label: "PEP Associations", count: activeData.masterEntityProfile.riskIndicators.pepAssociations || 0, color: "text-success bg-success/10 border-success/20" },
+                  { label: "Adverse Media", count: activeData.masterEntityProfile.riskIndicators.adverseMedia || 0, color: "text-destructive bg-destructive/10 border-destructive/20" },
+                  { label: "Watchlist Memberships", count: activeData.masterEntityProfile.riskIndicators.watchlistMemberships || 0, color: "text-success bg-success/10 border-success/20" },
+                ] : [
                   { label: "Sanctions Lists", count: 0, color: "text-success bg-success/10 border-success/20" },
                   { label: "PEP Associations", count: 1, color: "text-warning bg-warning/10 border-warning/20" },
                   { label: "Adverse Media", count: 3, color: "text-destructive bg-destructive/10 border-destructive/20" },
                   { label: "Watchlist Memberships", count: 2, color: "text-warning bg-warning/10 border-warning/20" },
-                ].map(r => (
+                ]).map(r => (
                   <div key={r.label} className="flex items-center justify-between p-3 rounded-xl bg-white border border-border/50 shadow-sm">
                     <span className="text-sm font-semibold">{r.label}</span>
                     <span className={`font-mono font-black px-2.5 py-1 rounded-md border ${r.color}`}>{r.count}</span>
@@ -741,7 +844,7 @@ const Investigation = () => {
           </div>
           
           {/* Conflicting Data Resolution Panel */}
-          {isCompany && (
+          {(!activeData && isCompany) && (
             <div className="mt-5 rounded-2xl border border-warning/50 bg-warning/5 shadow-sm p-6 overflow-hidden relative">
               <div className="absolute top-0 right-0 p-6 opacity-[0.05] pointer-events-none">
                 <ShieldQuestion className="h-32 w-32 text-warning" />
@@ -761,7 +864,7 @@ const Investigation = () => {
                 {/* Conflict Option A */}
                 <div className="bg-white rounded-xl border-2 border-indigo-500 shadow-sm p-5 relative overflow-hidden group cursor-pointer hover:bg-indigo-50/30 transition-colors">
                   <div className="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" /> Infyous Recommended
+                    <Sparkles className="h-3 w-3" /> Sentinel Recommended
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Source A</div>
                   <h4 className="font-semibold text-sm mb-3">UK Companies House Registry</h4>
@@ -793,7 +896,8 @@ const Investigation = () => {
           )}
           
           {/* Risk Velocity Chart */}
-          <div className="mt-5 rounded-2xl border border-border/50 bg-white shadow-sm p-6">
+          {!activeData && (
+            <div className="mt-5 rounded-2xl border border-border/50 bg-white shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h3 className="text-base font-bold tracking-tight flex items-center gap-2">
@@ -823,6 +927,7 @@ const Investigation = () => {
               </ResponsiveContainer>
             </div>
           </div>
+          )}
 
           {/* Directors & Officers Panel */}
           {isCompany && (
@@ -838,40 +943,61 @@ const Investigation = () => {
               
               <div className="overflow-x-auto rounded-xl border border-border/50">
                 <Table>
-                  <TableHeader className="bg-slate-50/80">
-                    <TableRow className="border-border/50">
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Officer Name</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Role</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Status</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Appointed</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Resigned</TableHead>
-                      <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Risk Flags</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {corporateOfficers.map((officer) => (
-                      <TableRow key={officer.id} className="border-border/50 hover:bg-slate-50/50">
-                        <TableCell className="font-semibold text-sm">{officer.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{officer.role}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${officer.status === 'Active' ? 'text-success border-success/30 bg-success/5' : 'text-muted-foreground border-border bg-muted/10'}`}>
-                            {officer.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm font-mono text-muted-foreground">{officer.appointed}</TableCell>
-                        <TableCell className="text-sm font-mono text-muted-foreground">{officer.resigned || "-"}</TableCell>
-                        <TableCell>
-                          {officer.isPEP ? (
-                            <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-[10px] uppercase tracking-wider gap-1">
-                              <Flag className="h-3 w-3" /> PEP
+                  {activeData && activeData.masterEntityProfile.keyPersonnel ? (
+                    <>
+                      <TableHeader className="bg-slate-50/80">
+                        <TableRow className="border-border/50">
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Officer Name</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Role</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {activeData.masterEntityProfile.keyPersonnel.map((person: any, idx: number) => (
+                          <TableRow key={idx} className="border-border/50 hover:bg-slate-50/50">
+                            <TableCell className="font-semibold text-sm">{person.name}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{person.role}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </>
+                  ) : (
+                    <>
+                      <TableHeader className="bg-slate-50/80">
+                        <TableRow className="border-border/50">
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Officer Name</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Role</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Status</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Appointed</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Resigned</TableHead>
+                          <TableHead className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold py-3 h-auto">Risk Flags</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                      {corporateOfficers.map((officer) => (
+                        <TableRow key={officer.id} className="border-border/50 hover:bg-slate-50/50">
+                          <TableCell className="font-semibold text-sm">{officer.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{officer.role}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-[10px] uppercase tracking-wider ${officer.status === 'Active' ? 'text-success border-success/30 bg-success/5' : 'text-muted-foreground border-border bg-muted/10'}`}>
+                              {officer.status}
                             </Badge>
-                          ) : (
-                            <span className="text-muted-foreground text-xs italic">Clear</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
+                          </TableCell>
+                          <TableCell className="text-sm font-mono text-muted-foreground">{officer.appointed}</TableCell>
+                          <TableCell className="text-sm font-mono text-muted-foreground">{officer.resigned || "-"}</TableCell>
+                          <TableCell>
+                            {officer.isPEP ? (
+                              <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-[10px] uppercase tracking-wider gap-1">
+                                <Flag className="h-3 w-3" /> PEP
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs italic">Clear</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      </TableBody>
+                    </>
+                  )}
                 </Table>
               </div>
             </div>
@@ -884,7 +1010,7 @@ const Investigation = () => {
             <h3 className="text-base font-bold tracking-tight mb-8">Corporate History & Event Elevation</h3>
             
             {/* Elevation Graph */}
-            {isCompany && (
+            {(!activeData && isCompany) && (
               <div className="mb-10 p-4 rounded-xl border border-border/50 bg-slate-50/50">
                 <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4">Event Elevation Graph</h4>
                 <div className="h-[200px] w-full">
@@ -926,23 +1052,46 @@ const Investigation = () => {
               </div>
             )}
 
-            <div className="space-y-6">
-              {timelineHistory.slice().reverse().map((e, i) => (
-                <div key={i} className="flex gap-5 group">
-                  <div className="flex flex-col items-center">
-                    <div className={`h-4 w-4 rounded-full border-2 border-white shadow-sm z-10 ${
-                      e.type === "critical" ? "bg-destructive ring-2 ring-destructive/30" : e.type === "warning" ? "bg-warning ring-2 ring-warning/30" :
-                      e.type === "success" ? "bg-success ring-2 ring-success/30" : "bg-blue-500 ring-2 ring-blue-500/30"
-                    }`} />
-                    {i < timelineHistory.length - 1 && <div className="w-0.5 flex-1 bg-border/80 group-hover:bg-indigo-500/30 transition-colors mt-2 mb-1" />}
-                  </div>
-                  <div className="pb-6 pt-0.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{e.date}</div>
-                    <div className="text-sm font-semibold text-foreground group-hover:text-indigo-600 transition-colors">{e.event}</div>
-                  </div>
+            {activeData ? (
+              activeData.immutableLedger && activeData.immutableLedger.length > 0 ? (
+                <div className="space-y-6">
+                  {activeData.immutableLedger.map((e: any, i: number) => (
+                    <div key={i} className="flex gap-5 group">
+                      <div className="flex flex-col items-center">
+                        <div className="h-4 w-4 rounded-full border-2 border-white shadow-sm z-10 bg-indigo-500 ring-2 ring-indigo-500/30" />
+                        {i < activeData.immutableLedger.length - 1 && <div className="w-0.5 flex-1 bg-border/80 group-hover:bg-indigo-500/30 transition-colors mt-2 mb-1" />}
+                      </div>
+                      <div className="pb-6 pt-0.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{e.timestamp || e.date}</div>
+                        <div className="text-sm font-semibold text-foreground group-hover:text-indigo-600 transition-colors">{e.event || e.description || e.action}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="p-8 text-center rounded-xl border border-dashed border-border/60 bg-muted/20 mt-4">
+                  <div className="text-muted-foreground text-sm font-medium">No historical events recorded on the ledger.</div>
+                </div>
+              )
+            ) : (
+              <div className="space-y-6">
+                {timelineHistory.slice().reverse().map((e, i) => (
+                  <div key={i} className="flex gap-5 group">
+                    <div className="flex flex-col items-center">
+                      <div className={`h-4 w-4 rounded-full border-2 border-white shadow-sm z-10 ${
+                        e.type === "critical" ? "bg-destructive ring-2 ring-destructive/30" : e.type === "warning" ? "bg-warning ring-2 ring-warning/30" :
+                        e.type === "success" ? "bg-success ring-2 ring-success/30" : "bg-blue-500 ring-2 ring-blue-500/30"
+                      }`} />
+                      {i < timelineHistory.length - 1 && <div className="w-0.5 flex-1 bg-border/80 group-hover:bg-indigo-500/30 transition-colors mt-2 mb-1" />}
+                    </div>
+                    <div className="pb-6 pt-0.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">{e.date}</div>
+                      <div className="text-sm font-semibold text-foreground group-hover:text-indigo-600 transition-colors">{e.event}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -953,13 +1102,13 @@ const Investigation = () => {
             </div>
             <h3 className="text-base font-bold tracking-tight flex items-center gap-2 relative z-10"><Brain className="h-5 w-5 text-indigo-500" /> AI Reasoning Chain</h3>
             <div className="space-y-6 relative z-10">
-              {[
+              {(activeData ? activeData.aiReasoningChain.map((s:any) => ({ step: s.title, detail: s.details })) : [
                 { step: "Sources Checked", detail: "OFAC SDN, EU Consolidated, UN Sanctions, UK HMT, 2,847 media sources" },
                 { step: "Entities Extracted", detail: "3 named entities from FT article matched against portfolio: John Doe (94%), BVI Holdings (67%), J. Doe Associates (45%)" },
                 { step: "Matching Confidence", detail: "Primary entity: 94% confidence based on full name, DOB, and jurisdiction alignment" },
                 { step: "Risk Signals Detected", detail: "Fraud investigation, SFO involvement, offshore transaction patterns, shell company structures" },
                 { step: "Severity Rationale", detail: "Classified as CRITICAL due to: active law enforcement investigation, high confidence match, and potential SAR obligation" },
-              ].map((s, i) => (
+              ]).map((s: any, i: number) => (
                 <div key={i} className="flex gap-5 items-start group p-4 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border/50">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 font-black shadow-sm shrink-0 border border-indigo-500/20 group-hover:scale-110 transition-transform">{i + 1}</div>
                   <div className="pt-1.5">
@@ -980,9 +1129,9 @@ const Investigation = () => {
             <div className="flex items-center justify-between mb-10 relative z-10">
               <div>
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-3 text-slate-900">
-                  <MessageSquare className="h-6 w-6 text-indigo-600" /> Infyous Debate Engine
+                  <MessageSquare className="h-6 w-6 text-indigo-600" /> Sentinel Debate Engine
                 </h3>
-                <p className="text-xs font-medium text-slate-500 mt-1">Real-time dialectical reasoning by Infyous</p>
+                <p className="text-xs font-medium text-slate-500 mt-1">Real-time dialectical reasoning by Sentinel</p>
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={reevaluateRisk} disabled={isJudgeDeciding} className="text-xs shadow-sm bg-white hover:bg-slate-50">
@@ -1033,9 +1182,9 @@ const Investigation = () => {
                       <span className="text-xs font-mono text-slate-400">{msg.timestamp}</span>
                     </div>
                     
-                    <p className="text-sm text-slate-700 leading-relaxed relative z-10">
+                    <div className="text-sm text-slate-700 leading-relaxed relative z-10">
                       {msg.message}
-                    </p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -1075,7 +1224,7 @@ const Investigation = () => {
                   </div>
 
                   <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+                    <div className="absolute inset-0 bg-black/5 opacity-20 mix-blend-overlay pointer-events-none" />
                     
                     <div className="flex items-center justify-between mb-5 relative z-10">
                       <div className="flex items-center gap-4">

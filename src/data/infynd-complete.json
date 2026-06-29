@@ -1,0 +1,5 @@
+{ name: "Apple Inc", entityType: "Public", jurisdiction: "US", riskScore: 12, externalReference: "apple.com", notes: "American multinational technology company" },
++    { name: "B & M Retail Limited", entityType: "Public", jurisdiction: "Jersey", riskScore: 45, externalReference: "bandmretail.com", notes: "British multinational variety store" },
++    { name: "Bodycote PLC", entityType: "Public", jurisdiction: "UK", riskScore: 28, externalReference: "bodycote.com", notes: "Supplier of heat treatments" },
++    { name: "BP plc", entityType: "Public", jurisdiction: "UK", riskScore: 88, externalReference: "bp.com", notes: "British multinational oil and gas 'supermajor'" },
++    { name: "Caledonia Investments plc", entityType: "Public", jurisdiction: "UK", riskScore: 15, externalReference: "caledonia.com", notes: "Self-managed investment trust company" }

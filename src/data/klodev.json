@@ -1,0 +1,144 @@
+{
+  "domains": [
+      "klodev.com"
+  ],
+  "investigationId": "ALT-KLODEV",
+  "entityId": "ENT-KLO",
+  "status": "In Progress",
+  "priority": "CRITICAL",
+  "riskScore": 98,
+  "triggerEvent": "Privacy Policy Discrepancy",
+  "source": "Provided Scraped Data Text Analysis",
+  "timestamp": "Just now",
+  "isAutoSar": false,
+  "assignee": "System",
+  "masterEntityProfile": {
+    "fullName": "Technologies LTD",
+    "aliases": [
+      "Klodev",
+      "Klodev engages limited",
+      "ProminentContact LTD",
+      "InFynd"
+    ],
+    "dateOfBirth": null,
+    "jurisdiction": "UK",
+    "linkedJurisdictions": [
+      "UK",
+      "India"
+    ],
+    "legalType": "Private Limited Company",
+    "address": "Corporate Office: B-11 caledon square, Avinashi Rd, Peelamedu, Coimbatore, Tamil Nadu 641004 (India) | Registered Office: Lily Hill House, Lily Hill Road, Bracknell, England, RG12 2SJ",
+    "website": "https://www.klodev.com/",
+    "phone": "+91 80561 58581",
+    "status": "ACTIVE",
+    "identifiers": [
+      {
+        "type": "Stated Company Number",
+        "value": "8056158581"
+      },
+      {
+        "type": "ICO Registration Number",
+        "value": "ZA599278"
+      },
+      {
+        "type": "Support Email",
+        "value": "support@klodev.com"
+      },
+      {
+        "type": "Compliance Email",
+        "value": "compliance@prominentcontact.com"
+      }
+    ],
+    "aboutCompany": {
+      "brief": "Klodev provides cloud engineering (AWS, Azure), AI automation, data management (SQL, NoSQL), Zoho implementations, remote staffing, and specialized software like a Prison Management System.",
+      "fullRiskAssessment": "Textual analysis identifies a severe documentation discrepancy within the privacy policy: the listed UK Company Number (8056158581) is identical to the international voice contact number listed for the Indian corporate office (+91 80561 58581). The text also explicitly links the Klodev domain to ProminentContact LTD and InFynd."
+    },
+    "financials": {
+      "revenue": null,
+      "currency": null,
+      "employees": null,
+      "fiscalYear": null,
+      "dataSource": "Provided text contains zero financial metrics"
+    },
+    "keyPersonnel": [
+      {
+        "name": "Chris Reid",
+        "role": "Head of Sales, InFynd"
+      }
+    ],
+    "keyCompetitors": [],
+    "riskIndicators": {
+      "sanctionsLists": 0,
+      "pepAssociations": 0,
+      "adverseMedia": 1,
+      "watchlistMemberships": 0
+    }
+  },
+  "summary": {
+    "aiGeneratedSummary": "Deterministic text extraction maps an operational link between Klodev, ProminentContact LTD, and InFynd. A clear typographical entry error exists where the corporate phone number string was duplicated into the legal Company Number field of the privacy policy statement.",
+    "matchedFields": [
+      "Stated Legal Name",
+      "Corporate Addresses",
+      "Contact Channels"
+    ],
+    "suggestedActions": []
+  },
+  "sourceEvidence": {
+    "description": "Analysis extracted entirely from the provided homePage content text and privacy-policy page transcript metadata.",
+    "sanctionsMatch": []
+  },
+  "aiReasoningChain": [
+    {
+      "step": 1,
+      "title": "Text Parsing",
+      "details": "Isolated core entity terms, identifying 'Technologies LTD', 'ProminentContact LTD', and 'InFynd' within the identical privacy framework."
+    },
+    {
+      "step": 2,
+      "title": "String Cross-Matching",
+      "details": "Identified exact mathematical duplication between the phone field '8056158581' and the company number field '8056158581'."
+    },
+    {
+      "step": 3,
+      "title": "Relationship Extraction",
+      "details": "Mapped concrete B2B relationships exclusively using the explicit client text names inside the customer testimonials block."
+    }
+  ],
+  "networkGraph": {
+    "nodes": [
+      { "id": "E-1", "label": "Klodev (Technologies LTD)", "type": "Company" },
+      { "id": "E-2", "label": "ProminentContact LTD", "type": "Company" },
+      { "id": "E-3", "label": "InFynd", "type": "Company" },
+      { "id": "E-4", "label": "no2bounce", "type": "Company" },
+      { "id": "E-5", "label": "Datavester", "type": "Company" },
+      { "id": "P-1", "label": "Chris Reid", "type": "Person" },
+      { "id": "P-2", "label": "Vino", "type": "Person" },
+      { "id": "P-3", "label": "Joseph", "type": "Person" }
+    ],
+    "links": [
+      { "source": "E-1", "target": "E-2", "relationship": "Shared Privacy Framework / Operational Trade Alliance" },
+      { "source": "E-2", "target": "E-3", "relationship": "Trading as Entity" },
+      { "source": "P-1", "target": "E-3", "relationship": "Head of Sales" },
+      { "source": "E-1", "target": "E-4", "relationship": "AWS Infrastructure Provider" },
+      { "source": "P-2", "target": "E-4", "relationship": "Operations Head" },
+      { "source": "E-1", "target": "E-5", "relationship": "Azure Implementation Provider" },
+      { "source": "P-3", "target": "E-5", "relationship": "Business Lead" }
+    ]
+  },
+  "sentinelDebate": [],
+  "pendingUpdates": {
+    "count": 0,
+    "updates": []
+  },
+  "relatedCases": [],
+  "attachments": [],
+  "analystComments": [
+    {
+      "commentId": "CMT-001",
+      "author": "Extraction Module",
+      "text": "Flagged absolute string duplication: UK Company Number listed in Section 1 matches Indian office telephone number completely.",
+      "timestamp": "Just now"
+    }
+  ],
+  "immutableLedger": []
+}

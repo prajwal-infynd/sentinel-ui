@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import {
-  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert, Activity
+  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert, Activity, Brain
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -13,8 +13,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 const mainItems = [
-  { title: "Overview", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Portfolio", url: "/portfolio", icon: Briefcase },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Monitoring", url: "/portfolio", icon: Briefcase },
   { title: "Live Alerts", url: "/alerts", icon: AlertTriangle },
   { title: "Investigations", url: "/investigations", icon: Search },
 ];
@@ -37,7 +37,7 @@ const platformItems = [
 ];
 
 const mediaItems = [
-  { title: "Media Engine", url: "/media", icon: Newspaper },
+  { title: "Data Engine", url: "/media", icon: Newspaper },
 ];
 
 const crawlItems = [
@@ -126,7 +126,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
-        {renderGroup("Media Engine", mediaItems)}
+        {renderGroup("Data Engine", mediaItems)}
         {renderGroup("Crawl Engine", crawlItems)}
         {(hasPermission("admin:*") || hasPermission("invite_user") || hasPermission("manage_subscription")) && renderGroup("System", systemItems)}
       </SidebarContent>

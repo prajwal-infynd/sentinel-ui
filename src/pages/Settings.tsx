@@ -87,7 +87,7 @@ export default function Settings() {
     setNewPersonaRole("");
     setNewPersonaPrompt("");
     setNewPersonaColor("text-indigo-600");
-    toast({ title: "Persona Added", description: `Added ${newPersonaRole} to the Infyous Engine.` });
+    toast({ title: "Persona Added", description: `Added ${newPersonaRole} to the Sentinel Engine.` });
   };
 
   const handlePromptChange = (id: number, newPrompt: string) => {
@@ -117,7 +117,7 @@ export default function Settings() {
         <Tabs defaultValue="general" className="space-y-6 w-full">
           <TabsList className="flex flex-wrap h-auto gap-1.5 bg-muted/50 border border-border p-1.5 rounded-xl shadow-inner w-full justify-start">
             <TabsTrigger value="general" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><SettingsIcon className="h-4 w-4" /> <span className="hidden md:inline font-medium">General</span></TabsTrigger>
-            <TabsTrigger value="swarm" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all py-2 px-3"><Cpu className="h-4 w-4" /> <span className="hidden md:inline font-semibold">Infyous Engine</span></TabsTrigger>
+            <TabsTrigger value="swarm" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-sm transition-all py-2 px-3"><Cpu className="h-4 w-4" /> <span className="hidden md:inline font-semibold">Sentinel Engine</span></TabsTrigger>
             <TabsTrigger value="notifications" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Bell className="h-4 w-4" /> <span className="hidden md:inline font-medium">Alerts</span></TabsTrigger>
             <TabsTrigger value="security" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Shield className="h-4 w-4" /> <span className="hidden md:inline font-medium">Security</span></TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all py-2 px-3"><Key className="h-4 w-4" /> <span className="hidden md:inline font-medium">API Keys</span></TabsTrigger>

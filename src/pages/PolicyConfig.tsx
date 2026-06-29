@@ -93,7 +93,11 @@ const PolicyConfig = () => {
   const entityName = searchParams.get('entity') || searchParams.get('source');
 
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["policy-config"], queryFn: fetchPolicyConfig });
+  const { data, isLoading } = useQuery({ 
+    queryKey: ["policy-config", entityName], 
+    queryFn: () => fetchPolicyConfig(entityName!),
+    enabled: !!entityName
+  });
 
   const [lists, setLists] = useState<Watchlist[]>([]);
   const [confidence, setConfidence] = useState([75]);

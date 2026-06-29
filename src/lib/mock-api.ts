@@ -123,7 +123,7 @@ mock.onDelete(/\/admin\/users\/.+/).reply((config) => {
 // --- DASHBOARD DATA ---
 let dashboardSummary = {
   organizationName: "Monitoring Workspace",
-  entityCount: 0,
+  entityCount: 5,
   alertCount: 0,
   highRiskAlertCount: 0,
   articleCount: 0,
@@ -134,7 +134,58 @@ let dashboardSummary = {
 
 mock.onGet("/dashboard/summary").reply(() => [200, dashboardSummary]);
 
-let mockEntities: any[] = [];
+let mockEntities: any[] = [
+  {
+    id: "ENT-AAPL",
+    name: "Apple Inc",
+    entity_type: "company",
+    jurisdiction: "US",
+    risk_score: 12,
+    latest_signal: "No new signals",
+    last_screened_at: new Date().toISOString(),
+    status: "Active"
+  },
+  {
+    id: "ENT-BMR",
+    name: "B & M Retail Limited",
+    entity_type: "company",
+    jurisdiction: "Jersey",
+    risk_score: 45,
+    latest_signal: "Routine check",
+    last_screened_at: new Date().toISOString(),
+    status: "Active"
+  },
+  {
+    id: "ENT-BOY",
+    name: "Bodycote PLC",
+    entity_type: "company",
+    jurisdiction: "UK",
+    risk_score: 28,
+    latest_signal: "No new signals",
+    last_screened_at: new Date().toISOString(),
+    status: "Active"
+  },
+  {
+    id: "ENT-BP",
+    name: "BP plc",
+    entity_type: "company",
+    jurisdiction: "UK",
+    risk_score: 88,
+    latest_signal: "Adverse media - environmental",
+    last_screened_at: new Date().toISOString(),
+    status: "Active"
+  },
+  {
+    id: "ENT-CLDN",
+    name: "Caledonia Investments plc",
+    entity_type: "company",
+    jurisdiction: "UK",
+    risk_score: 15,
+    latest_signal: "Routine check",
+    last_screened_at: new Date().toISOString(),
+    status: "Active"
+  }
+];
 
 mock.onGet("/portfolio/entities").reply(() => [200, mockEntities]);
 
@@ -437,10 +488,11 @@ mock.onPost("/policy/rollback").reply((config) => {
 
 // --- PORTFOLIO ONBOARDING DATA ---
 mock.onGet("/portfolio/sample-preview").reply(200, [
-  { id: "CUST-00142", name: "John Doe", type: "Individual", dob: "1985-03-22", country: "United Kingdom", regNo: "—", risk: "High", onboarded: "2023-01-15" },
-  { id: "CUST-00389", name: "Al Noor Trading LLC", type: "Company", dob: "2011-06-10", country: "UAE", regNo: "DXB-2011-4827", risk: "Critical", onboarded: "2022-09-01" },
-  { id: "CUST-01204", name: "Maria Petrov", type: "Individual", dob: "1978-11-30", country: "Russia", regNo: "—", risk: "Medium", onboarded: "2023-06-20" },
-  { id: "CUST-00671", name: "Eastern Capital Partners", type: "Company", dob: "2015-02-14", country: "Singapore", regNo: "SG-201504821K", risk: "Medium", onboarded: "2023-03-10" },
+  { id: "ENT-AAPL", name: "Apple Inc", type: "Public", dob: "1976-04-01", country: "US", risk: "Low", onboarded: "Pending" },
+  { id: "ENT-BMR", name: "B & M Retail Limited", type: "Public", dob: "1978-03-14", country: "Jersey", risk: "Medium", onboarded: "Pending" },
+  { id: "ENT-BOY", name: "Bodycote PLC", type: "Public", dob: "1923-01-01", country: "UK", risk: "Low", onboarded: "Pending" },
+  { id: "ENT-BP", name: "BP plc", type: "Public", dob: "1909-04-14", country: "UK", risk: "Critical", onboarded: "Pending" },
+  { id: "ENT-CLDN", name: "Caledonia Investments plc", type: "Public", dob: "1928-01-01", country: "UK", risk: "Low", onboarded: "Pending" }
 ]);
 
 // --- MASTER DATA INDEX ---

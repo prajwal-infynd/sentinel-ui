@@ -215,8 +215,8 @@ export default function Landing() {
               {isLogin && (
                 <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 text-center">
                   <strong>Demo Accounts:</strong><br/>
-                  Admin: admin@sentinel.com / password<br/>
-                  Analyst: analyst@sentinel.com / password
+                  Super Admin: superadmin@sentinel.com / password<br/>
+                  User: user@sentinel.com / password
                 </div>
               )}
             </div>

@@ -54,7 +54,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/demo" element={<DemoEntry />} />
-              <Route path="/portfolio" element={<PortfolioOnboarding />} />
+              <Route path="/portfolio" element={<PortfolioOnboarding key="force-reset-2" />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/alerts" element={<LiveAlerts />} />
               <Route path="/investigations" element={<InvestigationsList />} />

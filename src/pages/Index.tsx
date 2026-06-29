@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 
 const stats = [
@@ -30,7 +30,23 @@ const flowNodes = [
 const Index = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithPassword, signUpWithPassword, signInWithGoogle, user, loading } = useAuth();
+  const { login, signup, user, isLoading: loading } = useAuth();
+  
+  const signInWithPassword = async (email: string, pass: string) => {
+    const success = await login(email, pass);
+    return { error: success ? null : "Invalid credentials" };
+  };
+  
+  const signUpWithPassword = async (email: string, pass: string, name: string) => {
+    const success = await signup(name, email, pass);
+    return { error: success ? null : "Registration failed" };
+  };
+  
+  const signInWithGoogle = async () => {
+    toast({ title: "Coming Soon", description: "Google sign-in is not yet enabled." });
+    return { error: null };
+  };
+
   const [signInEmail, setSignInEmail] = useState("testuser@example.com");
   const [signInPassword, setSignInPassword] = useState("Sentinel_Test_Password_2026!@#");
   const [signUpName, setSignUpName] = useState("");
