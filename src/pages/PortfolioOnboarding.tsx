@@ -214,21 +214,19 @@ const PortfolioOnboarding = () => {
 
       const initiateCorporateRegistryScreening = async (normalizedDomain: string, externalRef: string) => {
         try {
-          const endpointUrl = "https://croftzgo.com/api/v1/screening";
-          const CROFTZ_KEY = "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
+          const endpointUrl = "/croftz-api/api/v1/corporate-registry-screening";
+          const CROFTZ_KEY = import.meta.env.VITE_CROFTZ_API_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
 
           // ── Build form payload ──
           const formData = new URLSearchParams();
-          formData.append('name', normalizedDomain);
-          formData.append('entityType', 'company');
-          formData.append('exactMatch', 'false');
-          formData.append('fuzzinessThreshold', '100');
-          formData.append('monitor', 'false');
-          formData.append('countryCodes', '');
-          formData.append('metadata', '');
-          formData.append('birthYear', '');
-          formData.append('monitoringDuration', '60');
-          formData.append('monitoringRenew', 'false');
+          formData.append("name", normalizedDomain);
+          formData.append("entityType", "company");
+          formData.append("exactMatch", "false");
+          formData.append("fuzzinessThreshold", "100");
+          formData.append("monitor", "false");
+          formData.append("countryCodes", "");
+          formData.append("monitoringDuration", "60");
+          formData.append("monitoringRenew", "false");
 
           // ── LOG: Full request details ──
           console.group(`%c[Croftz] POST Request → ${normalizedDomain}`, 'color: #2563eb; font-weight: bold; font-size: 13px;');
@@ -282,8 +280,53 @@ const PortfolioOnboarding = () => {
           }
           console.groupEnd();
 
-          // ── Extract results directly from POST response ──
-          if (postBody.screeningResults?.length > 0) {
+          // ── Extract screeningUid and fetch details via GET ──
+          let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
+          if (!screeningUid && postBody.screeningResults?.length > 0) {
+            screeningUid = postBody.screeningResults[0].screeningUid || postBody.screeningResults[0].id;
+          }
+          if (!screeningUid && postBody.data?.length > 0) {
+            screeningUid = postBody.data[0].screeningUid;
+          }
+
+          if (screeningUid) {
+            console.group(`%c[Croftz] GET Request → ${screeningUid}`, 'color: #2563eb; font-weight: bold; font-size: 13px;');
+            const getEndpointUrl = `${endpointUrl}?crScreeningUid=${screeningUid}`;
+            console.log('URL:', getEndpointUrl);
+            
+            const getResp = await fetch(getEndpointUrl, {
+              method: "GET",
+              headers: {
+                "x-api-key": CROFTZ_KEY
+              }
+            });
+
+            console.group(`%c[Croftz] GET Response ← ${getResp.status} ${getResp.statusText}`, getResp.ok ? 'color: #16a34a; font-weight: bold;' : 'color: #dc2626; font-weight: bold;');
+            if (!getResp.ok) {
+              const errText = await getResp.text();
+              console.log('Error Body (raw text):', errText);
+              console.groupEnd();
+              throw new Error("Croftz GET returned " + getResp.status + ": " + errText);
+            }
+
+            const getData = await getResp.json();
+            console.log('Full GET Response JSON:', JSON.parse(JSON.stringify(getData)));
+            console.groupEnd();
+            console.groupEnd(); // close request group
+
+            const getBody = getData.response || getData;
+            
+            // Extract results from GET response
+            const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
+
+            setImportedDataRows(prev => prev.map(row =>
+              row.externalReference === externalRef
+                ? { ...row, identifiers: { ...row.identifiers, corporateRegistry: results } }
+                : row
+            ));
+            toast({ title: "✅ Screening Complete", description: `Risk data loaded for ${normalizedDomain}.` });
+          } else if (postBody.screeningResults?.length > 0) {
+            console.warn('[Croftz] No screeningUid found, falling back to POST response results');
             const results = postBody.screeningResults[0].results;
             setImportedDataRows(prev => prev.map(row =>
               row.externalReference === externalRef
@@ -310,11 +353,11 @@ const PortfolioOnboarding = () => {
         payload.company_name = crawlerCompanyName;
       }
       
-      const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "http://173.249.56.10:1234/api/v1/crawler/extract-company-info";
+      const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "/api/v1/crawler/extract-company-info";
 
-      // 2-minute timeout — crawler does heavy scraping, needs time
+      // 5-minute timeout — crawler does heavy scraping, needs time
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const timeoutId = setTimeout(() => controller.abort(), 300000);
 
       const response = await fetch(crawlerUrl, {
         method: "POST",
@@ -401,13 +444,22 @@ const PortfolioOnboarding = () => {
           const e = extractedList[idx];
 
           // ── Store the full crawler payload as rawIdentifiers on the row ──
+          const rawPhone = String(e.phone || e.clearbitPhone || "");
+          const cleanPhone = rawPhone ? rawPhone.split("|")[0].trim() : null;
+
+          const rawWebsite = String(e.website || e.url || e.clearbitDomain || "");
+          const cleanWebsite = rawWebsite ? rawWebsite.split("|")[0].trim() : null;
+
+          const rawAddress = String(e.address || e.clearbitGeo || e.ipCountry || "");
+          const cleanAddress = rawAddress ? rawAddress.split("|")[0].trim() : null;
+
           const crawlerIdentifiers = {
-            website: e.website || e.clearbitDomain,
-            phone: e.phone || e.clearbitPhone,
-            address: e.address || e.clearbitGeo,
-            legalType: e.legalType || e.clearbitType,
+            website: cleanWebsite,
+            phone: cleanPhone,
+            address: cleanAddress,
+            legalType: e.legalType || e.clearbitType || "Corporate Entity",
             duns: e.duns,
-            aboutCompany: e.aboutCompany || { brief: e.description },
+            aboutCompany: e.aboutCompany || { brief: e.description || e.homeContent?.substring(0, 300) + "..." },
             keyPersonnel: e.keyPersonnel || [],
             keyCompetitors: e.keyCompetitors || [],
             financials: e.financials || {},
@@ -440,6 +492,9 @@ const PortfolioOnboarding = () => {
       }
     } finally {
       setIsCrawling(false);
+      setIsCrawlerDialogOpen(false);
+      setCrawlerCompanyName("");
+      setCrawlerCompanyDomain("");
     }
   };
   
@@ -564,7 +619,7 @@ const PortfolioOnboarding = () => {
         flag: getFlag(row.jurisdiction || row.nationality || ""),
         initial: cleanName.charAt(0).toUpperCase(),
         externalReference: row.externalReference,
-        rawIdentifiers: row.identifiers || {}
+        rawIdentifiers: { ...(row.rawIdentifiers || {}), ...(row.identifiers || {}) }
       };
     });
   }, [importedDataRows, sampleRows]);
@@ -1178,7 +1233,7 @@ const PortfolioOnboarding = () => {
               : null;
             const liveModalData = selectedCompany360 && liveRow ? {
               ...selectedCompany360,
-              rawIdentifiers: liveRow.identifiers || {}
+              rawIdentifiers: { ...(liveRow.rawIdentifiers || {}), ...(liveRow.identifiers || {}) }
             } : selectedCompany360;
             return (
               <Company360Modal
