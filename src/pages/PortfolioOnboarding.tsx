@@ -870,6 +870,22 @@ const PortfolioOnboarding = () => {
                     <SelectItem value="Low" className="text-[13px] font-medium">Low</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {(searchQuery !== "" || riskFilter !== "all-risks" || ratingFilter !== "all-ratings" || exposureFilter !== "all-exposures" || alertFilter !== "all-severities") && (
+                  <Button 
+                    variant="ghost" 
+                    className="h-9 px-3 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-[13px] font-medium ml-auto rounded-lg"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setRiskFilter("all-risks");
+                      setRatingFilter("all-ratings");
+                      setExposureFilter("all-exposures");
+                      setAlertFilter("all-severities");
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                )}
               </div>
 
               {/* Table */}

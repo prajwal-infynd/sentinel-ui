@@ -1,6 +1,258 @@
 {
   "masterEntityProfiles": [
     {
+      "fullName": "Apple Inc",
+      "aliases": ["Apple", "Apple Computer, Inc.", "Apple Computer Company"],
+      "dateOfBirth": "1976-04-01T00:00:00Z",
+      "jurisdiction": "US",
+      "linkedJurisdictions": ["US", "China"],
+      "legalType": "Public",
+      "address": "One Apple Park Way, Cupertino, California, 95014",
+      "website": "apple.com",
+      "phone": "(408) 996-1010",
+      "status": "ACTIVE",
+      "identifiers": [
+        { "type": "Ticker", "value": "AAPL" },
+        { "type": "DUNS", "value": null }
+      ],
+      "aboutCompany": {
+        "brief": "American multinational technology company headquartered in Cupertino, California, known for consumer electronics, software and online services.",
+        "fullRiskAssessment": "Apple Inc. is an American multinational technology company headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, software and online services. Founded in 1976 as Apple Computer Company by Steve Jobs, Steve Wozniak and Ronald Wayne, the company was incorporated by Jobs and Wozniak as Apple Computer, Inc. the following year. Its current name was adopted in 2007 as the company expanded its focus from computers to consumer electronics. Apple is one of the Big Tech companies. The company was founded to market Wozniak's Apple I personal computer. Its successor, the Apple II, became one of the first successful mass-produced microcomputers. Apple introduced the Lisa in 1983 and the Macintosh in 1984 as some of the first computers to use a graphical user interface and a mouse. By 1985, internal conflicts led to Jobs leaving the company to form NeXT and Wozniak withdrawing to other ventures; John Sculley was CEO for over a decade. In the 1990s, Apple lost considerable market share in the PC industry to the lower-priced Wintel duopoly of Intel-powered PC clones running Windows."
+      },
+      "financials": {
+        "revenue": 111180000000,
+        "currency": "USD",
+        "employees": 166000,
+        "fiscalYear": "Mar 2026",
+        "sector": "Computers, Peripherals, and Software",
+        "dataSource": "Provided source data"
+      },
+      "keyPersonnel": [
+        { "name": "Tim Cook", "role": "CEO" },
+        { "name": "Katherine Adams", "role": "Senior Vice President, Government Affairs" },
+        { "name": "Eddy Cue", "role": "Senior Vice President, Services and Health" },
+        { "name": "Craig Federighi", "role": "Senior Vice President, Software Engineering" },
+        { "name": "Greg \"Joz\" Joswiak", "role": "Senior Vice President, Worldwide Marketing" },
+        { "name": "Sabih Khan", "role": "Chief Operating Officer" },
+        { "name": "Jennifer Newstead", "role": "Senior Vice President and General Counsel" },
+        { "name": "Deirdre O'Brien", "role": "Senior Vice President, Retail + People" },
+        { "name": "Kevan Parekh", "role": "Senior Vice President and Chief Financial Officer" },
+        { "name": "Johny Srouji", "role": "Senior Vice President, Hardware Technologies" },
+        { "name": "John Ternus", "role": "Senior Vice President, Hardware Engineering" },
+        { "name": "Molly Anderson", "role": "Vice President, Industrial Design" },
+        { "name": "Mike Fenger", "role": "Vice President, Worldwide Sales" },
+        { "name": "Steve Lemay", "role": "Vice President, Human Interface Design" },
+        { "name": "Luca Maestri", "role": "Vice President, Corporate Services" },
+        { "name": "Isabel Ge Mahe", "role": "Vice President and Managing Director of Greater China" },
+        { "name": "Tor Myhren", "role": "Vice President, Marketing Communications" },
+        { "name": "Adrian Perica", "role": "Vice President, Corporate Development" },
+        { "name": "Kristin Huguet Quayle", "role": "Vice President, Worldwide Communications" },
+        { "name": "Phil Schiller", "role": "Apple Fellow" }
+      ],
+      "keyCompetitors": [
+        { "name": "Samsung", "duns": "N/A", "tier": null },
+        { "name": "Google", "duns": "N/A", "tier": null },
+        { "name": "Microsoft", "duns": "N/A", "tier": null },
+        { "name": "Huawei", "duns": "N/A", "tier": null },
+        { "name": "Dell", "duns": "N/A", "tier": null },
+        { "name": "HP", "duns": "N/A", "tier": null }
+      ]
+    },
+    {
+      "fullName": "B & M Retail Limited",
+      "aliases": ["B&M", "B&M European Value Retail S.A."],
+      "dateOfBirth": "1978-03-14T00:00:00Z",
+      "jurisdiction": "Jersey",
+      "linkedJurisdictions": ["Jersey", "UK", "France"],
+      "legalType": "Public",
+      "address": "26, New Street, St Helier, Jersey, JE2 3RA",
+      "website": "bandmretail.com",
+      "phone": "+44 1534 507000",
+      "status": "ACTIVE",
+      "identifiers": [
+        { "type": "Ticker", "value": "BME" },
+        { "type": "DUNS", "value": null }
+      ],
+      "aboutCompany": {
+        "brief": "British multinational variety store and garden centre chain founded in 1978, based in Liverpool, England.",
+        "fullRiskAssessment": "B & M Retail Limited, trading as B&M, is a British multinational variety store and garden centre chain founded in 1978 and based in Liverpool, England. It is listed on the London Stock Exchange, and is a constituent of the FTSE 250 Index. B&M is part of the Jersey-based B&M European Value Retail S.A., which owns Heron Foods and operates the B&M stores in France."
+      },
+      "financials": {
+        "revenue": 1510000000,
+        "currency": "GBP",
+        "employees": 39100,
+        "fiscalYear": "Mar 2026",
+        "sector": "Consumer",
+        "dataSource": "Provided source data"
+      },
+      "keyPersonnel": [
+        { "name": "Tjeerd Jegen", "role": "Chief Executive Officer" },
+        { "name": "Peter Waterhouse", "role": "Interim Chief Financial Officer" },
+        { "name": "Simon Hathway", "role": "Group Trading Director" },
+        { "name": "Jen Lawrence", "role": "Group People Director" },
+        { "name": "Sharon Hammond", "role": "Supply Chain Director" },
+        { "name": "Jon Parry", "role": "Retail and Supply Director" },
+        { "name": "Alex Simpson", "role": "General Counsel" },
+        { "name": "Anthony Giron", "role": "France – Managing Director" },
+        { "name": "Tony Dobbs", "role": "Heron Foods – Managing Director" },
+        { "name": "Suzie Williams", "role": "Group I.T Director" }
+      ],
+      "keyCompetitors": [
+        { "name": "Anzu", "duns": "N/A", "tier": null },
+        { "name": "Frameplay", "duns": "N/A", "tier": null },
+        { "name": "Adverty", "duns": "N/A", "tier": null }
+      ]
+    },
+    {
+      "fullName": "Bodycote PLC",
+      "aliases": ["Bodycote plc", "Bodycote"],
+      "dateOfBirth": "1923-01-01T00:00:00Z",
+      "jurisdiction": "UK",
+      "linkedJurisdictions": ["UK"],
+      "legalType": "Public",
+      "address": "Springwood Court, Springwood Close, Tytherington Business Park, Macclesfield, Cheshire, SK10 2XF, United Kingdom",
+      "website": "bodycote.com",
+      "phone": "+44 (0)1625 505300",
+      "status": "ACTIVE",
+      "identifiers": [
+        { "type": "Ticker", "value": "BOY" },
+        { "type": "DUNS", "value": null }
+      ],
+      "aboutCompany": {
+        "brief": "Supplier of heat treatments, metal joining, hot isostatic pressing and coating services, based in Macclesfield, UK.",
+        "fullRiskAssessment": "Bodycote plc is a supplier of heat treatments, metal joining, hot isostatic pressing and coating services. Based in Macclesfield, United Kingdom, it is listed on the London Stock Exchange and is a constituent of the FTSE 250 Index."
+      },
+      "financials": {
+        "revenue": 179050000,
+        "currency": "GBP",
+        "employees": 3920,
+        "fiscalYear": "Dec 2025",
+        "sector": "Machine industry",
+        "dataSource": "Provided source data"
+      },
+      "keyPersonnel": [
+        { "name": "Jim Fairbairn", "role": "Chief Executive Officer" },
+        { "name": "Ben Fidler", "role": "Chief Financial Officer" },
+        { "name": "Daniel Dayan", "role": "Non-Executive Chair" },
+        { "name": "Lili Chahbazi", "role": "Senior Independent Director" },
+        { "name": "Kevin Boyd", "role": "Non-Executive Director" },
+        { "name": "Emmanuelle Dubu", "role": "Non-Executive Director" },
+        { "name": "Cynthia Gordon", "role": "Non-Executive Director" },
+        { "name": "Beatriz García-Cos Muntañola", "role": "Non-Executive Director" },
+        { "name": "Alison Broughton", "role": "Company Secretary" }
+      ],
+      "keyCompetitors": [
+        { "name": "Vinci", "duns": "N/A", "tier": null },
+        { "name": "Eiffage", "duns": "N/A", "tier": null },
+        { "name": "Orange", "duns": "N/A", "tier": null },
+        { "name": "Vivendi", "duns": "N/A", "tier": null }
+      ]
+    },
+    {
+      "fullName": "BP plc",
+      "aliases": ["BP p.l.c.", "BP", "British Petroleum", "Anglo-Persian Oil Company", "Anglo-Iranian Oil Company", "BP Amoco p.l.c."],
+      "dateOfBirth": "1909-04-14T00:00:00Z",
+      "jurisdiction": "UK",
+      "linkedJurisdictions": ["UK", "Iran", "US"],
+      "legalType": "Public",
+      "address": "1 St James's Square, London, SW1Y 4PD, UK",
+      "website": "bp.com",
+      "phone": "+44 (0)20 7496 4000",
+      "status": "ACTIVE",
+      "identifiers": [
+        { "type": "Ticker", "value": "BP" },
+        { "type": "DUNS", "value": null }
+      ],
+      "aboutCompany": {
+        "brief": "British multinational oil and gas 'supermajor' headquartered in London, vertically integrated across the oil and gas industry.",
+        "fullRiskAssessment": "BP p.l.c. is a British multinational oil and gas company headquartered in London, England. It is one of the oil and gas \"supermajors\" and one of the world's largest companies measured by revenues and profits. It is a vertically integrated company operating in all areas of the oil and gas industry, including exploration and extraction, refining, distribution and marketing, power generation, and trading. BP's origins date back to the founding of the Anglo-Persian Oil Company in 1909, established as a subsidiary of the Burmah Oil Company to exploit oil discoveries in Iran. In 1935, it became the Anglo-Iranian Oil Company and in 1954, adopted the name British Petroleum. BP acquired majority control of Standard Oil of Ohio in 1978. Formerly majority state-owned, the British government privatised the company in stages between 1979 and 1987. BP merged with Amoco in 1998, becoming BP Amoco p.l.c., and acquired ARCO, Burmah Castrol and Aral AG shortly thereafter. The company's name was shortened to BP p.l.c. in 2001."
+      },
+      "financials": {
+        "revenue": 51830000000,
+        "currency": "GBP",
+        "employees": 93700,
+        "fiscalYear": "Mar 2026",
+        "sector": "Energy",
+        "dataSource": "Provided source data"
+      },
+      "keyPersonnel": [
+        { "name": "Meg O'Neill", "role": "Chief Executive Officer (CEO)" },
+        { "name": "Carol Howle", "role": "Deputy Chief Executive Officer" },
+        { "name": "Kate Thomson", "role": "Chief Financial Officer" },
+        { "name": "Gordon Birrell", "role": "Executive Vice President (EVP), Production & Operations" },
+        { "name": "Kerry Dryburgh", "role": "Executive Vice President (EVP), People, Culture & Communications and Chief Human Resources and Communications Officer" },
+        { "name": "Emeka Emembolu", "role": "Executive Vice President (EVP), Technology" },
+        { "name": "William Lin", "role": "Executive Vice President (EVP), Gas & Low Carbon Energy" },
+        { "name": "Mike Sosso", "role": "Executive Vice President (EVP), Legal" }
+      ],
+      "keyCompetitors": [
+        { "name": "RIT Capital Partners", "duns": "N/A", "tier": null },
+        { "name": "Scottish Mortgage", "duns": "N/A", "tier": null }
+      ]
+    },
+    {
+      "fullName": "Caledonia Investments plc",
+      "aliases": ["Caledonia Investments", "Caledonia"],
+      "dateOfBirth": "1928-01-01T00:00:00Z",
+      "jurisdiction": "UK",
+      "linkedJurisdictions": ["UK"],
+      "legalType": "Public",
+      "address": "Cayzer House, 30 Buckingham Gate, London SW1E 6NN",
+      "website": "caledonia.com",
+      "phone": "020 7802 8080",
+      "status": "ACTIVE",
+      "identifiers": [
+        { "type": "Ticker", "value": "CLDN" },
+        { "type": "DUNS", "value": null }
+      ],
+      "aboutCompany": {
+        "brief": "Self-managed investment trust company based in London, listed on the London Stock Exchange and a constituent of the FTSE 250 Index.",
+        "fullRiskAssessment": "Caledonia Investments plc is a self-managed investment trust company based in London, England. It is listed on the London Stock Exchange and is a constituent of the FTSE 250 Index."
+      },
+      "financials": {
+        "revenue": 10900000,
+        "currency": "GBP",
+        "employees": 82,
+        "fiscalYear": "Mar 2026",
+        "sector": "Capital market",
+        "dataSource": "Provided source data"
+      },
+      "keyPersonnel": [
+        { "name": "Mat Masters", "role": "CEO" },
+        { "name": "Rob Memmott", "role": "CFO" },
+        { "name": "Richard Webster", "role": "Company Secretary" },
+        { "name": "Jamie Cayzer-Colvin", "role": "Head of Funds" },
+        { "name": "Ben Archer", "role": "Co-Head of Public Companies" },
+        { "name": "Alan Murran", "role": "Co-Head of Public Companies" },
+        { "name": "Tom Leader", "role": "Head of Private Capital" },
+        { "name": "Eloise Fox", "role": "Director, Funds" },
+        { "name": "Min Ong", "role": "Director, Funds" },
+        { "name": "Rachel Mak", "role": "Director, Funds (Research)" },
+        { "name": "Henry Morris", "role": "Director, Public Companies" },
+        { "name": "Lucy Adams", "role": "Director, Public Companies" },
+        { "name": "Oliver Botes", "role": "Investment Director, Public Companies" },
+        { "name": "Chris Hodges", "role": "Director, Private Capital" },
+        { "name": "Tim Lewis", "role": "Director, Private Capital" },
+        { "name": "Theo Tizard", "role": "Director, Private Capital" },
+        { "name": "Sophie Bell", "role": "Head of Origination, Private Capital" },
+        { "name": "James Lander", "role": "Investment Director, Private Capital" },
+        { "name": "Daniel Lock", "role": "Investment Director, Private Capital" },
+        { "name": "Rachel Pillsbury", "role": "Director of Data & Analytics, Private Capital" },
+        { "name": "Andy Grove", "role": "Director of IT" },
+        { "name": "Tejal Patel", "role": "Head of Financial Planning & Analysis" },
+        { "name": "Lisa Arrighi", "role": "Head of Tax" },
+        { "name": "Caroline May", "role": "Group Financial Controller & Head of Treasury" },
+        { "name": "Malcolm Hamilton", "role": "Head of Risk" },
+        { "name": "Amy McNeill", "role": "HR Manager" },
+        { "name": "Verity Cox", "role": "Deputy Company Secretary" }
+      ],
+      "keyCompetitors": [
+        { "name": "Steelite", "duns": "N/A", "tier": null },
+        { "name": "Dudson", "duns": "N/A", "tier": null },
+        { "name": "Villeroy & Boch", "duns": "N/A", "tier": null }
+      ]
+    },
+    {
       "fullName": "AutoCanada Inc.",
       "aliases": [
         "AutoCanada"
