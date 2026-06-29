@@ -5,7 +5,6 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAlerts, startInvestigation } from "@/lib/dashboard-data";
 import { useNavigate } from "react-router-dom";
-import { useInvestigations } from "@/context/InvestigationsContext";
 import { toast } from "@/components/ui/use-toast";
 
 const severityDot = (s: string) => {
@@ -46,7 +45,6 @@ const LiveAlerts = () => {
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [viewingAlertId, setViewingAlertId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { addCase } = useInvestigations();
 
   // Gather unique sentiments that actually appear in current alerts
   const liveSentiments = useMemo(() => {

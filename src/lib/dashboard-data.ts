@@ -70,6 +70,11 @@ export async function fetchInvestigationSnapshot() {
   return data;
 }
 
+export async function agentPortfolioEnrich(crawlerData: any) {
+  const { data } = await apiClient.post("/agent/portfolio-enrich", { crawlerData });
+  return data as { result: any };
+}
+
 export async function startAdverseMediaScreening(name: string, crawlData: any) {
   const { data } = await apiClient.post("/screening/adverse-media", { name, crawlData });
   return data as { screeningId: string; alertCount: number; alerts: any[] };

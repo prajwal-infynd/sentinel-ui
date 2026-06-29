@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
-import { importMonitoredEntities, fetchSamplePreview, startAdverseMediaScreening, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
+import { importMonitoredEntities, fetchSamplePreview, startAdverseMediaScreening, agentPortfolioEnrich, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
 import { runMediaAgent } from "@/lib/media-agent-data";
 import { Company360Modal } from "@/components/Company360Modal";
 
@@ -377,76 +377,14 @@ const PortfolioOnboarding = () => {
       const crawlerData = await crawlerResp.json();
       console.log("CRAWLER PAYLOAD RECEIVED:", crawlerData);
 
-      // Automatically download the JSON payload
-      const blob = new Blob([JSON.stringify(crawlerData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${(crawlerCompanyName || crawlerCompanyDomain || "company").replace(/[^a-z0-9]/gi, '_').toLowerCase()}-crawler-payload.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      // ── Step 2: Agent Studio Enrichment ──
+      // ── Step 2 & 3: Agent Studio Enrichment (via backend — key never exposed to browser) ──
       toast({
         title: "Step 2/3: Agent Analysis",
-        description: `Sending extracted data to Agent Studio for enrichment...`,
+        description: "Sending extracted data to Agent Studio for enrichment...",
       });
 
-      const agentStudioUrl = import.meta.env.VITE_AGENT_STUDIO_API_URL || "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
-      const agentStudioKey = import.meta.env.VITE_AGENT_STUDIO_API_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a9048072-0b88-4a63-9783-15672fbbaa7f_EhvvQ_Zvd6cXx0lfwgtDq6yQKHwlJ6jbQKZ_xvkMLG0";
-
-      const agentPostResp = await fetch(agentStudioUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": agentStudioKey
-        },
-        body: JSON.stringify({
-          message: JSON.stringify(crawlerData),
-          tracking: true
-        })
-      });
-
-      if (!agentPostResp.ok) throw new Error("Agent Studio returned " + agentPostResp.status);
-      const agentPostData = await agentPostResp.json();
-      const trackId = agentPostData.tracking_id;
-      if (!trackId) throw new Error("No tracking ID received from Agent Studio");
-
-      // ── Step 3: Poll Agent Studio ──
-      let agentFinalResult: any = null;
-      let polling = true;
-      let retries = 0;
-      while (polling && retries < 40) { // 80 seconds max
-        await new Promise(r => setTimeout(r, 2000));
-        const pollResp = await fetch(`https://devstudio.27x.ai/api/v1/agents/chat/status/${trackId}`, {
-          headers: { "x-api-key": agentStudioKey }
-        });
-        if (pollResp.ok) {
-          const pollData = await pollResp.json();
-          if (pollData.status === "completed" || pollData.status === "complete") {
-            const reply = pollData.result?.reply;
-            if (typeof reply === "string") {
-              try {
-                const cleanReply = reply.replace(/```json/gi, '').replace(/```/g, '').trim();
-                agentFinalResult = JSON.parse(cleanReply);
-              } catch (e) {
-                console.error("Agent Studio reply parsing failed", e);
-                agentFinalResult = pollData.result?.data || pollData.result;
-              }
-            } else {
-              agentFinalResult = pollData.result?.data || pollData.result;
-            }
-            polling = false;
-          } else if (pollData.status === "error" || pollData.status === "failed") {
-            throw new Error("Agent Studio processing failed");
-          }
-        }
-        retries++;
-      }
-
-      if (!agentFinalResult) throw new Error("Agent Studio timed out");
+      const { result: agentFinalResult } = await agentPortfolioEnrich(crawlerData);
+      if (!agentFinalResult) throw new Error("Agent Studio returned empty result");
       console.log("AGENT STUDIO FINAL RESULT:", agentFinalResult);
 
       // ── Close dialog IMMEDIATELY ──
@@ -488,12 +426,13 @@ const PortfolioOnboarding = () => {
         }];
       }
       
-      // Merge with previous
+      // Merge with previous (must return new state AND capture for later use)
       let updatedEntities: MonitoredEntityImportRow[] = [];
       setImportedDataRows(prev => {
         const combined = [...newEntities, ...prev];
         const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
         updatedEntities = unique;
+        return unique;
       });
 
       // Kick off adverse media screening with the company's full name
