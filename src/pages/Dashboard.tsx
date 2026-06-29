@@ -231,17 +231,9 @@ const Dashboard = () => {
                       </span>
                     </div>
                     
-                    <p className="text-[13px] text-slate-700 leading-relaxed mb-3">
+                    <p className="text-[13px] text-slate-700 leading-relaxed">
                       <span className="font-semibold">{alert.type}</span> — {alert.description}
                     </p>
-                    
-                    <div className="bg-indigo-50/50 rounded-lg p-3 border border-indigo-100/50 flex items-start gap-2">
-                      <Sparkles className="h-3.5 w-3.5 text-indigo-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-[12.5px] italic text-indigo-700/80">
-                        <span className="font-semibold mr-1">AI Action:</span>
-                        {alert.aiAction}
-                      </p>
-                    </div>
                   </div>
                 ))}
               </div>
