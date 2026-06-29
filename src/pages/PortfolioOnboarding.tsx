@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
-import { importMonitoredEntities, fetchSamplePreview, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
+import { importMonitoredEntities, fetchSamplePreview, startAdverseMediaScreening, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
 import { runMediaAgent } from "@/lib/media-agent-data";
 import { Company360Modal } from "@/components/Company360Modal";
 
@@ -477,8 +477,32 @@ const PortfolioOnboarding = () => {
         const combined = [...newEntities, ...prev];
         const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
         updatedEntities = unique;
-        return unique;
       });
+
+      // Kick off adverse media screening with the company's full name
+      if (extractedList && extractedList.length > 0) {
+        const firstExtracted = extractedList[0];
+        const profile = firstExtracted.masterEntityProfile || firstExtracted;
+        const companyFullName = (
+          profile.fullName ||
+          profile.name ||
+          profile.companyName ||
+          crawlerCompanyName ||
+          crawlerCompanyDomain ||
+          "Unknown"
+        ).split("|")[0].trim();
+
+        startAdverseMediaScreening(companyFullName, crawlerData)
+          .then(({ alertCount }) => {
+            if (alertCount > 0) {
+              toast({
+                title: `Adverse Media Found`,
+                description: `${alertCount} alert(s) detected for ${companyFullName}. Check the Alerts page.`
+              });
+            }
+          })
+          .catch(err => console.warn("[Adverse Media] Screening unavailable:", err));
+      }
 
       if (extractedList && extractedList.length > 0) {
         newEntities.forEach((entity, idx) => {
