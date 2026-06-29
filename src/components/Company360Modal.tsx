@@ -109,47 +109,36 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
           if (!postResp.ok) throw new Error(`POST failed: ${postResp.status}`);
           const postData = await postResp.json();
-          console.log("[Company360Modal] Croftz POST Response:", JSON.parse(JSON.stringify(postData)));
           const postBody = postData.response || postData;
 
-          // ✅ The POST response returns data[] directly — use first result
-          // Shape: { response: { success, screening: { rowUid }, data: [ { name, companyNumber, jurisdictionCode, ... } ] } }
-          if (postBody.data?.length > 0) {
-            // Map Croftz data[] record to the shape the modal expects
-            const rec = postBody.data[0];
-            const mappedData = {
-              name: rec.name,
-              companyNumber: rec.companyNumber,
-              jurisdictionCode: rec.jurisdictionCode,
-              incorporationDate: rec.incorporationDate,
-              companyType: rec.companyType,
-              currentStatus: rec.currentStatus,
-              sourcePublisher: rec.sourcePublisher,
-              sourceUrl: rec.sourceUrl || rec.registryUrl || rec.opencorporatesUrl,
-              opencorporatesUrl: rec.opencorporatesUrl,
-              registeredAddressInFull: rec.registeredAddressInFull,
-              industryCodes: rec.industryCodes,
-              inactive: rec.inactive,
-            };
-            console.log("[Company360Modal] Setting localCroftzData from POST:", mappedData);
-            setLocalCroftzData(mappedData);
-            return;
+          // ── Extract screeningUid from POST response ──
+          let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
+          if (!screeningUid && postBody.screeningResults?.length > 0) {
+            screeningUid = postBody.screeningResults[0].screeningUid || postBody.screeningResults[0].id;
+          }
+          if (!screeningUid && postBody.data?.length > 0) {
+            screeningUid = postBody.data[0].screeningUid;
           }
 
-          // Fallback: try GET with screeningUid if no data[] in POST
-          const screeningUid = postBody.screening?.rowUid || postBody.screeningUid;
           if (screeningUid) {
-            console.log("[Company360Modal] Falling back to GET with UID:", screeningUid);
+            // ── GET Request to fetch full results ──
             const getResp = await fetch(`${endpointUrl}?crScreeningUid=${screeningUid}`, {
               headers: { "x-api-key": CROFTZ_KEY }
             });
+            
             if (getResp.ok) {
               const getData = await getResp.json();
-              console.log("[Company360Modal] Croftz GET Response:", JSON.parse(JSON.stringify(getData)));
               const getBody = getData.response || getData;
-              const rec2 = getBody.data?.[0];
-              if (rec2) {
-                const mappedData2 = {
+              
+              // Extract exactly like PortfolioOnboarding
+              const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
+              
+              // If we didn't find the results object, fallback to data[0] for registry fields
+              if (results && !results.data && (results.risk_score !== undefined || results.categories)) {
+                setLocalCroftzData(results);
+              } else if (getBody.data && getBody.data.length > 0) {
+                const rec2 = getBody.data[0];
+                setLocalCroftzData({
                   name: rec2.name,
                   companyNumber: rec2.companyNumber,
                   jurisdictionCode: rec2.jurisdictionCode,
@@ -160,13 +149,35 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                   sourceUrl: rec2.sourceUrl || rec2.registryUrl || rec2.opencorporatesUrl,
                   opencorporatesUrl: rec2.opencorporatesUrl,
                   registeredAddressInFull: rec2.registeredAddressInFull,
-                };
-                console.log("[Company360Modal] Setting localCroftzData from GET:", mappedData2);
-                setLocalCroftzData(mappedData2);
+                  inactive: rec2.inactive,
+                  industryCodes: rec2.industryCodes
+                });
               } else {
-                console.warn("[Company360Modal] GET returned no data[]");
+                 setLocalCroftzData(results);
               }
+            } else {
+               throw new Error(`GET failed: ${getResp.status}`);
             }
+          } else if (postBody.screeningResults?.length > 0) {
+             setLocalCroftzData(postBody.screeningResults[0].results);
+          } else if (postBody.data?.length > 0) {
+             const rec = postBody.data[0];
+             setLocalCroftzData({
+                  name: rec.name,
+                  companyNumber: rec.companyNumber,
+                  jurisdictionCode: rec.jurisdictionCode,
+                  incorporationDate: rec.incorporationDate,
+                  companyType: rec.companyType,
+                  currentStatus: rec.currentStatus,
+                  sourcePublisher: rec.sourcePublisher,
+                  sourceUrl: rec.sourceUrl || rec.registryUrl || rec.opencorporatesUrl,
+                  opencorporatesUrl: rec.opencorporatesUrl,
+                  registeredAddressInFull: rec.registeredAddressInFull,
+                  inactive: rec.inactive,
+                  industryCodes: rec.industryCodes
+             });
+          } else {
+             throw new Error("No screeningUid or data returned");
           }
         } catch (e) {
           console.error("Croftz fetch error", e);
@@ -426,45 +437,98 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             )}
 
             {/* Categories & Countries */}
-            {(categories.length > 0 || countries.length > 0) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {categories.length > 0 && (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <AlertCircle className="w-3.5 h-3.5" /> Risk Categories
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat: string, i: number) => (
-                        <span key={i} className={`border px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wide ${getCategoryColor(cat)}`}>
-                          {cat}
-                        </span>
-                      ))}
+            {(() => {
+              if (isFetchingCroftz) {
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" /> Risk Categories
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        <Skeleton className="h-6 w-20 rounded-lg" />
+                        <Skeleton className="h-6 w-24 rounded-lg" />
+                        <Skeleton className="h-6 w-16 rounded-lg" />
+                      </div>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5" /> Flagged Jurisdictions
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        <Skeleton className="h-6 w-16 rounded-lg" />
+                        <Skeleton className="h-6 w-12 rounded-lg" />
+                      </div>
                     </div>
                   </div>
-                )}
-                {countries.length > 0 && (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5" /> Flagged Jurisdictions
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {countries.map((c: string, i: number) => (
-                        <span key={i} className="bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-                          {c}
-                        </span>
-                      ))}
+                );
+              }
+
+              if (categories.length === 0 && countries.length === 0) return null;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {categories.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" /> Risk Categories
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map((cat: string, i: number) => (
+                          <span key={i} className={`border px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wide ${getCategoryColor(cat)}`}>
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                  {countries.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5" /> Flagged Jurisdictions
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {countries.map((c: string, i: number) => (
+                          <span key={i} className="bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Adverse Media */}
-            {adverseMedia && sentimentColors && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                  <Newspaper className="w-3.5 h-3.5" /> Adverse Media Analysis
-                </h3>
+            {(() => {
+              if (isFetchingCroftz) {
+                return (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                      <Newspaper className="w-3.5 h-3.5" /> Adverse Media Analysis
+                    </h3>
+                    <div className="flex flex-wrap gap-4 mb-4">
+                      <Skeleton className="h-8 w-24 rounded-xl" />
+                      <Skeleton className="h-8 w-20 rounded-xl" />
+                      <Skeleton className="h-8 w-32 rounded-xl" />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                      <Skeleton className="h-6 w-16 rounded-full" />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (!adverseMedia || !sentimentColors) return null;
+
+              return (
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                    <Newspaper className="w-3.5 h-3.5" /> Adverse Media Analysis
+                  </h3>
                 <div className="flex flex-wrap gap-4 mb-4">
                   {hasValue(adverseMedia.sentiment) && (
                     <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${sentimentColors.bg}`}>
@@ -491,8 +555,11 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                     </div>
                   </div>
                 )}
+                  </div>
+                )}
               </div>
-            )}
+              );
+            })()}
 
             {/* Source Details */}
             {sourceDetails.length > 0 && (
