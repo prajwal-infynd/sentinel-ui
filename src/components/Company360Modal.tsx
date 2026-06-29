@@ -250,35 +250,6 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               <div className="text-[12px] text-slate-500 mt-0.5">Match Status: <span className="font-semibold text-slate-700">{matchStatus}</span></div>
             )}
           </div>
-          {isFetchingCroftz ? (
-                <div className="bg-white border rounded-2xl p-5 shadow-sm border-slate-200 flex flex-col justify-between">
-                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5" /> Risk Assessment
-                  </h3>
-                  <div className="mb-4">
-                    <div className="flex items-end gap-2 mb-1">
-                      <Skeleton className="h-10 w-16" />
-                      <div className="text-[12px] text-slate-400 mb-1">/100</div>
-                    </div>
-                    <Skeleton className="w-full h-2 rounded-full" />
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <Skeleton className="h-3 w-20 mb-1" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-3 w-16 mb-1" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </div>
-                </div>
-              ) : riskScore !== null && riskColors && (
-            <div className={`flex flex-col items-center px-4 py-2 rounded-xl border ${riskColors.bg} ${riskColors.border}`}>
-              <div className={`text-2xl font-black ${riskColors.text}`}>{riskScore}</div>
-              <div className={`text-[10px] font-bold uppercase tracking-wider ${riskColors.text}`}>Risk Score</div>
-            </div>
-          )}
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-y-auto">
@@ -310,7 +281,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
               {/* Company Identity */}
-              <div className="md:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+              <div className="md:col-span-3 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow shrink-0">
                     {companyName?.charAt(0) || "?"}
@@ -344,48 +315,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                 </div>
               </div>
 
-              {/* Risk Panel */}
-              {isFetchingCroftz ? (
-                <div className="bg-white border rounded-2xl p-5 shadow-sm border-slate-200 flex flex-col justify-between">
-                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5" /> Risk Assessment
-                  </h3>
-                  <div className="mb-4">
-                    <div className="flex items-end gap-2 mb-1">
-                      <Skeleton className="h-10 w-16" />
-                      <div className="text-[12px] text-slate-400 mb-1">/100</div>
-                    </div>
-                    <Skeleton className="w-full h-2 rounded-full" />
-                  </div>
-                  <div className="space-y-3">
-                    <div>
-                      <Skeleton className="h-3 w-20 mb-1" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                    <div>
-                      <Skeleton className="h-3 w-16 mb-1" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </div>
-                </div>
-              ) : riskScore !== null && riskColors && (
-                <div className={`bg-white border rounded-2xl p-5 shadow-sm ${riskColors.border}`}>
-                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5" /> Risk Assessment
-                  </h3>
-                  <div className="mb-4">
-                    <div className="flex items-end gap-2 mb-1">
-                      <div className={`text-4xl font-black ${riskColors.text}`}>{riskScore}</div>
-                      <div className="text-[12px] text-slate-400 mb-1">/100</div>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div className={`h-2 rounded-full ${riskColors.bar}`} style={{ width: `${riskScore}%` }} />
-                    </div>
-                  </div>
-                  {hasValue(riskTitle) && <InfoField label="Risk Title" value={riskTitle} />}
-                  {hasValue(riskDecision) && <InfoField label="Decision" value={riskDecision} />}
-                </div>
-              )}
+
             </div>
 
             {/* Corporate Registry */}
