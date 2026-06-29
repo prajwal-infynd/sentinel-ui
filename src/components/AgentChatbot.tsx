@@ -64,7 +64,7 @@ export const AgentChatbot = ({ contextData }: AgentChatbotProps) => {
     }
 
     try {
-      const response = await fetch("http://localhost:3002/api/chat", {
+      const response = await fetch("https://sentinelapi.27x.ai/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
