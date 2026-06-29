@@ -579,4 +579,34 @@ router.post("/chat", async (req, res) => {
   }
 });
 
+// --- Crawler Proxy ---
+router.post("/v1/crawler/extract-company-info", async (req, res) => {
+  try {
+    const { domains, company_name } = req.body;
+    
+    const payload: any = { domains };
+    if (company_name) {
+      payload.company_name = company_name;
+    }
+    
+    const response = await fetch("http://173.249.56.10:1234/api/v1/crawler/extract-company-info", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Failed to fetch from crawler API" });
+    }
+    
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Error proxying crawler request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
