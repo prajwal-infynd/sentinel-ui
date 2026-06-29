@@ -1001,8 +1001,7 @@ const PortfolioOnboarding = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-200/80">
-                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 pl-6">S.No</TableHead>
-                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Company</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 pl-6">Company</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Country</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Industry</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">
@@ -1040,7 +1039,7 @@ const PortfolioOnboarding = () => {
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-48 text-center">
+                          <TableCell colSpan={7} className="h-48 text-center">
                             <div className="flex flex-col items-center justify-center text-slate-500">
                               <Database className="h-8 w-8 text-slate-300 mb-3" />
                               <p className="text-[14px] font-medium text-slate-600 mb-1">No entities to monitor</p>
@@ -1051,10 +1050,9 @@ const PortfolioOnboarding = () => {
                       ) : (
                         paginatedData.map((row) => (
                           <TableRow key={row.id} className="hover:bg-slate-50/60 border-b border-slate-100/80 transition-colors group">
-                            <TableCell className="py-4 pl-6 text-[12.5px] font-semibold text-slate-400">{row.id}</TableCell>
                             
                             {/* Company */}
-                            <TableCell className="py-4 cursor-pointer" onClick={() => setSelectedCompany360(row)}>
+                            <TableCell className="py-4 pl-6 cursor-pointer" onClick={() => setSelectedCompany360(row)}>
                               <div className="flex items-center gap-3">
                                 <div className="w-7 h-7 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
                                   {row.initial}
