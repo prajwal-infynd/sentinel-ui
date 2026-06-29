@@ -338,14 +338,13 @@ const PortfolioOnboarding = () => {
       if (crawlerCompanyName) {
         payload.company_name = crawlerCompanyName;
       }
-      
       const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "/api/v1/crawler/extract-company-info";
 
       // 5-minute timeout — crawler does heavy scraping, needs time
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 300000);
 
-      const response = await fetch(crawlerUrl, {
+      const crawlerResp = await fetch(crawlerUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -354,63 +353,112 @@ const PortfolioOnboarding = () => {
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`Crawler API error: ${response.statusText}`);
+      if (!crawlerResp.ok) {
+        throw new Error(`Crawler API error: ${crawlerResp.statusText}`);
       }
 
-      const data = await response.json();
-      
-      console.log("CRAWLER PAYLOAD RECEIVED:", data);
-      
+      const crawlerData = await crawlerResp.json();
+      console.log("CRAWLER PAYLOAD RECEIVED:", crawlerData);
+
       // Automatically download the JSON payload
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(crawlerData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${(crawlerCompanyName || crawlerCompanyDomain || "company").replace(/[^a-z0-9]/gi, '_').toLowerCase()}-payload.json`;
+      a.download = `${(crawlerCompanyName || crawlerCompanyDomain || "company").replace(/[^a-z0-9]/gi, '_').toLowerCase()}-crawler-payload.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
-      // ── Close dialog IMMEDIATELY — don't make user wait ──
+
+      // ── Step 2: Agent Studio Enrichment ──
+      toast({
+        title: "Step 2/3: Agent Analysis",
+        description: `Sending extracted data to Agent Studio for enrichment...`,
+      });
+
+      const agentStudioUrl = import.meta.env.VITE_AGENT_STUDIO_API_URL || "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
+      const agentStudioKey = import.meta.env.VITE_AGENT_STUDIO_API_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a9048072-0b88-4a63-9783-15672fbbaa7f_EhvvQ_Zvd6cXx0lfwgtDq6yQKHwlJ6jbQKZ_xvkMLG0";
+
+      const agentPostResp = await fetch(agentStudioUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": agentStudioKey
+        },
+        body: JSON.stringify({
+          message: JSON.stringify(crawlerData),
+          tracking: true
+        })
+      });
+
+      if (!agentPostResp.ok) throw new Error("Agent Studio returned " + agentPostResp.status);
+      const agentPostData = await agentPostResp.json();
+      const trackId = agentPostData.tracking_id;
+      if (!trackId) throw new Error("No tracking ID received from Agent Studio");
+
+      // ── Step 3: Poll Agent Studio ──
+      let agentFinalResult: any = null;
+      let polling = true;
+      let retries = 0;
+      while (polling && retries < 40) { // 80 seconds max
+        await new Promise(r => setTimeout(r, 2000));
+        const pollResp = await fetch(`https://devstudio.27x.ai/api/v1/agents/chat/status/${trackId}`, {
+          headers: { "x-api-key": agentStudioKey }
+        });
+        if (pollResp.ok) {
+          const pollData = await pollResp.json();
+          if (pollData.status === "completed" || pollData.status === "complete") {
+            const reply = pollData.result?.reply;
+            if (typeof reply === "string") {
+              try {
+                const cleanReply = reply.replace(/```json/gi, '').replace(/```/g, '').trim();
+                agentFinalResult = JSON.parse(cleanReply);
+              } catch (e) {
+                console.error("Agent Studio reply parsing failed", e);
+                agentFinalResult = pollData.result?.data || pollData.result;
+              }
+            } else {
+              agentFinalResult = pollData.result?.data || pollData.result;
+            }
+            polling = false;
+          } else if (pollData.status === "error" || pollData.status === "failed") {
+            throw new Error("Agent Studio processing failed");
+          }
+        }
+        retries++;
+      }
+
+      if (!agentFinalResult) throw new Error("Agent Studio timed out");
+      console.log("AGENT STUDIO FINAL RESULT:", agentFinalResult);
+
+      // ── Close dialog IMMEDIATELY ──
       setIsCrawlerDialogOpen(false);
       setCrawlerCompanyName("");
       setCrawlerCompanyDomain("");
 
       toast({
-        title: "Crawler Finished",
-        description: `Extracted data for ${crawlerCompanyName || crawlerCompanyDomain}. Running screening in background...`
+        title: "Step 3/3: Risk Screening",
+        description: `Agent enrichment complete. Initiating Croftz registry screening...`
       });
 
       let newEntities: MonitoredEntityImportRow[] = [];
-      const extractedList = Array.isArray(data.data) ? data.data : (Array.isArray(data.entities) ? data.entities : null);
+      
+      // Ensure agentFinalResult is an array, or wrap it
+      const extractedList = Array.isArray(agentFinalResult) ? agentFinalResult : 
+                           (agentFinalResult.entities ? agentFinalResult.entities : 
+                           (agentFinalResult.data ? agentFinalResult.data : [agentFinalResult]));
       
       if (extractedList && extractedList.length > 0) {
         newEntities = extractedList.map((e: any, idx: number) => {
-          // Support the actual API payload structure
-          if (e.normalizedDomain || e.ipCountry) {
-            // Use the cleanest name: clearbitName is most reliable from crawler
-            const entityName = (e.clearbitName || e.nameFromTitle || crawlerCompanyName || crawlerCompanyDomain || e.companyName || "Unknown Entity").split("|")[0].trim();
-            return {
-              name: entityName,
-              entityType: "company",
-              jurisdiction: e.ipCountry || e.clearbitGeo?.country || "Unknown",
-              riskScore: 25,
-              externalReference: e.normalizedDomain || `CRAWL-${Date.now()}-${idx}`,
-              notes: e.description || ""
-            };
-          }
-          
-          // Support the mock payload structure
-          const profile = e.masterEntityProfile || {};
+          const profile = e.masterEntityProfile || e;
           return {
-            name: profile.fullName || crawlerCompanyName || crawlerCompanyDomain || "Unknown Entity",
+            name: profile.fullName || profile.name || profile.companyName || crawlerCompanyName || crawlerCompanyDomain || "Unknown Entity",
             entityType: "company",
-            jurisdiction: profile.jurisdiction || "Unknown",
-            riskScore: profile.financials?.revenue ? 45 : 20,
-            externalReference: `CRAWL-${Date.now()}-${idx}`,
-            notes: profile.aboutCompany?.brief || ""
+            jurisdiction: profile.jurisdiction || profile.ipCountry || "Unknown",
+            riskScore: profile.financials?.revenue ? 45 : 20, // default placeholder
+            externalReference: profile.normalizedDomain || profile.website || `CRAWL-${Date.now()}-${idx}`,
+            notes: profile.aboutCompany?.brief || profile.description || ""
           };
         });
       } else {
@@ -423,53 +471,62 @@ const PortfolioOnboarding = () => {
         }];
       }
       
-      setImportedDataRows(prev => [...newEntities, ...prev]);
+      // Merge with previous
+      let updatedEntities: MonitoredEntityImportRow[] = [];
+      setImportedDataRows(prev => {
+        const combined = [...newEntities, ...prev];
+        const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
+        updatedEntities = unique;
+        return unique;
+      });
 
       if (extractedList && extractedList.length > 0) {
         newEntities.forEach((entity, idx) => {
           const e = extractedList[idx];
+          const profile = e.masterEntityProfile || e;
 
-          // ── Store the full crawler payload as rawIdentifiers on the row ──
-          const rawPhone = String(e.phone || e.clearbitPhone || "");
+          const rawPhone = String(profile.phone || profile.clearbitPhone || "");
           const cleanPhone = rawPhone ? rawPhone.split("|")[0].trim() : null;
 
-          const rawWebsite = String(e.website || e.url || e.clearbitDomain || "");
+          const rawWebsite = String(profile.website || profile.url || profile.clearbitDomain || profile.normalizedDomain || "");
           const cleanWebsite = rawWebsite ? rawWebsite.split("|")[0].trim() : null;
 
-          const rawAddress = String(e.address || e.clearbitGeo || e.ipCountry || "");
+          const rawAddress = String(profile.address || profile.clearbitGeo || profile.ipCountry || "");
           const cleanAddress = rawAddress ? rawAddress.split("|")[0].trim() : null;
 
           const crawlerIdentifiers = {
             website: cleanWebsite,
             phone: cleanPhone,
             address: cleanAddress,
-            legalType: e.legalType || e.clearbitType || "Corporate Entity",
-            duns: e.duns,
-            aboutCompany: e.aboutCompany || { brief: e.description || e.homeContent?.substring(0, 300) + "..." },
-            keyPersonnel: e.keyPersonnel || [],
-            keyCompetitors: e.keyCompetitors || [],
-            financials: e.financials || {},
+            legalType: profile.legalType || profile.clearbitType || "Corporate Entity",
+            duns: profile.duns,
+            aboutCompany: profile.aboutCompany || { brief: profile.description || profile.homeContent?.substring(0, 300) + "..." },
+            keyPersonnel: profile.keyPersonnel || [],
+            keyCompetitors: profile.keyCompetitors || [],
+            financials: profile.financials || {},
+            riskIndicators: profile.riskIndicators || {},
+            sourceEvidence: profile.sourceEvidence || {},
+            summary: profile.summary || {}
           };
 
+          // Update the rawIdentifiers for the specific row
+          setImportedDataRows(currentRows => 
+            currentRows.map(row => 
+              row.externalReference === entity.externalReference 
+                ? { ...row, rawIdentifiers: crawlerIdentifiers } 
+                : row
+            )
+          );
+
           // ── Pass ONLY e.normalizedDomain to Croftz POST ──
-          const normalizedDomain = e.normalizedDomain;
+          const normalizedDomain = profile.normalizedDomain || cleanWebsite;
           if (normalizedDomain && entity.externalReference) {
             console.log(`[Croftz] Using normalizedDomain: "${normalizedDomain}" for externalRef: "${entity.externalReference}"`);
             initiateCorporateRegistryScreening(normalizedDomain, entity.externalReference);
           } else {
-            console.warn(`[Croftz] No normalizedDomain found in crawler response for entity at index ${idx}. Skipping screening.`, e);
-            toast({ title: "No Domain Found", description: `Could not extract normalizedDomain from crawler for ${entity.name}. Screening skipped.`, variant: "destructive" });
+            console.warn(`[Croftz] No normalizedDomain found in agent response for entity at index ${idx}. Skipping screening.`, e);
+            toast({ title: "No Domain Found", description: `Could not extract normalizedDomain for ${entity.name}. Screening skipped.`, variant: "destructive" });
           }
-          
-          return { ...entity, rawIdentifiers: crawlerIdentifiers };
-        });
-        
-        // Update the state with fully assembled entities
-        setImportedDataRows(prev => {
-          const combined = [...updatedEntities, ...prev];
-          // Deduplicate
-          const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
-          return unique;
         });
 
         // Persist to backend node-cache
