@@ -4,51 +4,18 @@ import path from "path";
 import NodeCache from "node-cache";
 import crypto from "crypto";
 
-const myCache = new NodeCache({ stdTTL: 0 }); // no expiry for MVP
+// In-memory only (MVP) — everything starts fresh on each server restart.
+const myCache = new NodeCache({ stdTTL: 0 }); // no expiry while the process runs
 
-// ── File-backed persistence (survives server restarts) ──────────────────────
-const DATA_DIR = path.join(process.cwd(), "data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
-const ALERTS_FILE = path.join(DATA_DIR, "croftz_alerts.json");
-const SCREENINGS_FILE = path.join(DATA_DIR, "screenings.json");
-const INVESTIGATIONS_FILE = path.join(DATA_DIR, "investigations.json");
-
-function loadJSON<T>(file: string, fallback: T): T {
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return fallback; }
-}
-function saveJSON(file: string, data: any) {
-  try { fs.writeFileSync(file, JSON.stringify(data, null, 2)); } catch (e) { console.error("[persist] write failed:", e); }
-}
-
-// Warm the cache from disk on startup
-const _alerts = loadJSON<any[]>(ALERTS_FILE, []);
-if (_alerts.length) myCache.set("croftz_alerts", _alerts);
-
-const _screenings = loadJSON<Record<string, any>>(SCREENINGS_FILE, {});
-Object.entries(_screenings).forEach(([k, v]) => myCache.set(`screening_${k}`, v));
-
-const _investigations = loadJSON<Record<string, any>>(INVESTIGATIONS_FILE, {});
-Object.entries(_investigations).forEach(([k, v]) => myCache.set(`investigation_${k}`, v));
-
-// Wrappers: write to cache + sync to disk atomically
 function setCroftzAlerts(alerts: any[]) {
   myCache.set("croftz_alerts", alerts);
-  saveJSON(ALERTS_FILE, alerts);
 }
 function setScreening(screeningId: string, data: any) {
   myCache.set(`screening_${screeningId}`, data);
-  const all = loadJSON<Record<string, any>>(SCREENINGS_FILE, {});
-  all[screeningId] = data;
-  saveJSON(SCREENINGS_FILE, all);
 }
 function setInvestigation(investigationId: string, data: any) {
   myCache.set(`investigation_${investigationId}`, data);
-  const all = loadJSON<Record<string, any>>(INVESTIGATIONS_FILE, {});
-  all[investigationId] = data;
-  saveJSON(INVESTIGATIONS_FILE, all);
 }
-// ────────────────────────────────────────────────────────────────────────────
 
 const CROFTZ_KEY = "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
 const AGENT_CHAT_URL = "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
@@ -58,75 +25,114 @@ const AGENT_POLL_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c606a23d-d21e-4
 const PORTFOLIO_AGENT_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a9048072-0b88-4a63-9783-15672fbbaa7f_EhvvQ_Zvd6cXx0lfwgtDq6yQKHwlJ6jbQKZ_xvkMLG0";
 const SCRAPE_URL = "http://173.249.56.10:3000/page-source";
 
+// Statuses that devstudio may return when a job finishes
+const DONE_STATUSES = new Set(["completed", "complete", "success", "done", "finished"]);
+const FAIL_STATUSES = new Set(["failed", "error", "cancelled", "canceled"]);
+
+function parseAgentReply(raw: any): any {
+  let reply = raw?.result?.reply ?? raw?.result?.data ?? raw?.result ?? raw?.data?.reply ?? raw?.data;
+  if (typeof reply === "string") {
+    try { reply = JSON.parse(reply.replace(/```json/gi, "").replace(/```/g, "").trim()); } catch {}
+  }
+  return reply;
+}
+
+// Max time a devstudio job may stay "processing" before we treat it as a stuck zombie.
+// Real jobs finish in 30-90s; this generous cap only catches jobs devstudio never transitions
+// (e.g. updated_at stays null / agent hung). Anchored to devstudio's own created_at when present.
+const MAX_JOB_AGE_MS = 8 * 60 * 1000; // 8 minutes
+
+async function pollAgentStatus(trackingId: string, key: string, label: string): Promise<any> {
+  const pollUrl = `https://devstudio.27x.ai/api/v1/agents/chat/status/${trackingId}`;
+  const pollStart = Date.now();
+  while (true) {
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const pollResp = await fetch(pollUrl, { headers: { "x-api-key": key } });
+      const pollData = await pollResp.json();
+      const st = String(pollData.status ?? "").toLowerCase();
+      console.log(`[${label}] poll status=${st} step=${pollData.current_step ?? "?"} trackingId=${trackingId}`);
+      if (DONE_STATUSES.has(st)) return pollData;
+      if (FAIL_STATUSES.has(st)) throw new Error(`Agent ${label} failed: ${st}`);
+
+      // Staleness guard: anchor age to devstudio's created_at if available, else to our poll start.
+      let ageMs = Date.now() - pollStart;
+      if (pollData.created_at) {
+        const createdMs = Date.parse(pollData.created_at.endsWith("Z") ? pollData.created_at : pollData.created_at + "Z");
+        if (!Number.isNaN(createdMs)) ageMs = Date.now() - createdMs;
+      }
+      if (ageMs > MAX_JOB_AGE_MS) {
+        throw new Error(`Agent ${label} stuck in "${st}" for ${Math.round(ageMs / 1000)}s (devstudio job did not complete)`);
+      }
+    } catch (err: any) {
+      if (err.message?.startsWith("Agent ")) throw err;
+      console.warn(`[${label}] poll network error, retrying:`, err.message);
+    }
+  }
+}
+
 async function processInvestigation(investigationId: string, alert: any, crawlData: any) {
   try {
-    // Step 1: Scrape the news page
-    let scrapedData: any = null;
-    if (alert.link) {
-      try {
-        const newsHostname = new URL(alert.link).hostname.replace(/^www\./, "");
-        const scrapeResp = await fetch(SCRAPE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ domains: [newsHostname] }),
-          signal: AbortSignal.timeout(30000)
-        });
-        scrapedData = await scrapeResp.json();
-      } catch (scrapeErr) {
-        console.error("[Investigation] Scrape failed:", scrapeErr);
-      }
-    }
+    const current = (myCache.get(`investigation_${investigationId}`) as any) || {};
+    let trackingId: string | undefined = current.trackingId;
 
-    // Step 2: Build AI agent message
-    const message = JSON.stringify({
-      crawlData: crawlData || {},
-      scrapedNewsData: scrapedData,
-      adverseMediaAlert: {
-        title: alert.title,
-        description: alert.description,
-        link: alert.link,
-        sentiment: alert.sentiment,
-        adverseKeywords: alert.adverseKeywords,
-        publicationDate: alert.publicationDate,
-        companyName: alert.companyName,
-        riskLevel: alert.riskLevel,
-        riskScore: alert.riskScore
-      }
-    });
-
-    // Step 3: Call AI agent (no timeout — just kicks off the job and returns tracking_id fast)
-    const agentResp = await fetch(AGENT_CHAT_URL, {
-      method: "POST",
-      headers: { "X-API-Key": AGENT_CHAT_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history: [], stream: false, enable_thinking: false, tracking: true })
-    });
-    const agentData = await agentResp.json();
-    const trackingId = agentData.tracking_id;
-    if (!trackingId) throw new Error("No tracking_id from agent");
-
-    // Step 4: Poll every 2 seconds — no hard cap, just keep going until done
-    const pollUrl = `https://devstudio.27x.ai/api/v1/agents/chat/status/${trackingId}`;
-    let pollResult: any = null;
-    while (true) {
-      await new Promise(r => setTimeout(r, 2000));
-      try {
-        const pollResp = await fetch(pollUrl, { headers: { "x-api-key": AGENT_POLL_KEY } });
-        const pollData = await pollResp.json();
-        if (pollData.status === "completed") { pollResult = pollData; break; }
-        if (pollData.status === "failed" || pollData.status === "error") {
-          throw new Error(`Agent failed with status: ${pollData.status}`);
+    // If we already have a trackingId (e.g. resuming after a restart), skip straight to polling.
+    if (!trackingId) {
+      // Step 1: Scrape the news page
+      let scrapedData: any = null;
+      if (alert.link) {
+        try {
+          const newsHostname = new URL(alert.link).hostname.replace(/^www\./, "");
+          const scrapeResp = await fetch(SCRAPE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domains: [newsHostname] }),
+            signal: AbortSignal.timeout(30000)
+          });
+          scrapedData = await scrapeResp.json();
+        } catch (scrapeErr) {
+          console.error("[Investigation] Scrape failed:", scrapeErr);
         }
-      } catch (pollErr: any) {
-        if (pollErr.message?.startsWith("Agent failed")) throw pollErr;
-        // network hiccup — retry
       }
+
+      // Step 2: Build AI agent message
+      const message = JSON.stringify({
+        crawlData: crawlData || {},
+        scrapedNewsData: scrapedData,
+        adverseMediaAlert: {
+          title: alert.title,
+          description: alert.description,
+          link: alert.link,
+          sentiment: alert.sentiment,
+          adverseKeywords: alert.adverseKeywords,
+          publicationDate: alert.publicationDate,
+          companyName: alert.companyName,
+          riskLevel: alert.riskLevel,
+          riskScore: alert.riskScore
+        }
+      });
+
+      // Step 3: Call AI agent — returns a tracking_id quickly
+      const agentResp = await fetch(AGENT_CHAT_URL, {
+        method: "POST",
+        headers: { "X-API-Key": AGENT_CHAT_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ message, history: [], stream: false, enable_thinking: false, tracking: true })
+      });
+      const agentData = await agentResp.json();
+      trackingId = agentData.tracking_id;
+      if (!trackingId) throw new Error("No tracking_id from agent");
+      console.log(`[Investigation] ${investigationId} → trackingId=${trackingId}`);
+
+      // Persist trackingId immediately so a restart can resume polling instead of re-running the agent.
+      setInvestigation(investigationId, { ...current, status: "processing", trackingId, alert });
+    } else {
+      console.log(`[Investigation] ${investigationId} resuming poll with existing trackingId=${trackingId}`);
     }
 
+    // Step 4: Poll until done
+    const pollResult = await pollAgentStatus(trackingId, AGENT_POLL_KEY, "investigation");
     const existing = (myCache.get(`investigation_${investigationId}`) as any) || {};
-
-    // Parse reply — agent may return JSON string
-    let reply = pollResult.result?.reply || pollResult.result;
-    if (typeof reply === "string") { try { reply = JSON.parse(reply); } catch {} }
+    const reply = parseAgentReply(pollResult);
 
     const screening = myCache.get(`screening_${alert.screeningId}`) as any;
     setInvestigation(investigationId, {
@@ -139,12 +145,14 @@ async function processInvestigation(investigationId: string, alert: any, crawlDa
       screeningData: screening?.screeningData || null,
       completedAt: new Date().toISOString()
     });
+    console.log(`[Investigation] ${investigationId} → completed`);
   } catch (err) {
     console.error("[Investigation] Processing error:", err);
     const existing = (myCache.get(`investigation_${investigationId}`) as any) || {};
     setInvestigation(investigationId, { ...existing, status: "error", error: String(err) });
   }
 }
+
 import {
   users,
   mockEntities,
@@ -433,27 +441,8 @@ router.post("/agent/portfolio-enrich", async (req, res) => {
     const trackingId = agentData.tracking_id;
     if (!trackingId) throw new Error("No tracking_id from agent");
 
-    const pollUrl = `https://devstudio.27x.ai/api/v1/agents/chat/status/${trackingId}`;
-    while (true) {
-      await new Promise(r => setTimeout(r, 2000));
-      try {
-        const pollResp = await fetch(pollUrl, { headers: { "x-api-key": PORTFOLIO_AGENT_KEY } });
-        const pollData = await pollResp.json();
-        if (pollData.status === "completed" || pollData.status === "complete") {
-          let reply = pollData.result?.reply || pollData.result;
-          if (typeof reply === "string") {
-            try { reply = JSON.parse(reply.replace(/```json/gi, "").replace(/```/g, "").trim()); } catch {}
-          }
-          return res.json({ result: reply });
-        }
-        if (pollData.status === "error" || pollData.status === "failed") {
-          throw new Error("Agent processing failed");
-        }
-      } catch (pollErr: any) {
-        if (pollErr.message === "Agent processing failed") throw pollErr;
-        // transient network hiccup — retry next iteration
-      }
-    }
+    const pollResult = await pollAgentStatus(trackingId, PORTFOLIO_AGENT_KEY, "portfolio-enrich");
+    return res.json({ result: parseAgentReply(pollResult) });
   } catch (err) {
     console.error("[Portfolio Enrich] Error:", err);
     res.status(500).json({ error: String(err) });
