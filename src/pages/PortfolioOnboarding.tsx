@@ -931,14 +931,13 @@ const PortfolioOnboarding = () => {
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">Risk Score</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">Rating</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-right">Exposure</TableHead>
-                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-right pr-6">Last Change</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center pr-6">Alert</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedData.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="h-48 text-center">
+                          <TableCell colSpan={8} className="h-48 text-center">
                             <div className="flex flex-col items-center justify-center text-slate-500">
                               <Database className="h-8 w-8 text-slate-300 mb-3" />
                               <p className="text-[14px] font-medium text-slate-600 mb-1">No entities to monitor</p>
@@ -994,11 +993,6 @@ const PortfolioOnboarding = () => {
                             {/* Exposure */}
                             <TableCell className="py-4 text-right text-[13px] font-semibold text-slate-900">
                               {row.exposure}
-                            </TableCell>
-
-                            {/* Last Change */}
-                            <TableCell className="py-4 text-right pr-6 text-[12.5px] font-medium text-slate-500">
-                              {row.lastChange}
                             </TableCell>
 
                             {/* Alert */}
