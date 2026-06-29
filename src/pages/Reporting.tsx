@@ -86,21 +86,6 @@ const Reporting = () => {
           </div>
         </motion.div>
 
-        {/* Tab Navigation (Visual only based on screenshot) */}
-        <div className="flex gap-8 border-b border-slate-100 pb-px text-sm font-medium text-slate-500 overflow-x-auto">
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">Dashboard</div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">News Feed</div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors flex items-center gap-2">
-            Alerts Centre <span className="bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">263</span>
-          </div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">Monitored Companies</div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">Watchlists</div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">Risk Analytics</div>
-          <div className="px-1 py-3 cursor-pointer hover:text-slate-900 transition-colors">AI Agent</div>
-          <div className="px-1 py-3 border-b-2 border-rose-500 text-rose-600 flex items-center gap-1.5">
-            <FileText className="h-4 w-4" /> Reports
-          </div>
-        </div>
 
         <motion.div 
           initial={{ opacity: 0 }} 
