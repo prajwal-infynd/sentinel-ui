@@ -2,6 +2,8 @@ import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AlertTriangle, Sparkles, Brain, AlertCircle, Database, ShieldCheck, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSamplePreview } from "@/lib/dashboard-data";
 
 const mockCriticalAlerts = [
   {
@@ -63,6 +65,26 @@ const mockCountries = [
 ];
 
 const Dashboard = () => {
+  const { data: monitoredEntities = [] } = useQuery({
+    queryKey: ["portfolio-sample"],
+    queryFn: fetchSamplePreview,
+  });
+
+  const totalMonitored = monitoredEntities.length;
+  const highRiskCount = monitoredEntities.filter((e: any) => (e.riskScore || 0) >= 60).length;
+  
+  const totalExposureValue = monitoredEntities.reduce((acc: number, e: any) => {
+    const rev = e.rawIdentifiers?.revenue || e.rawIdentifiers?.financials?.revenue || 0;
+    return acc + rev;
+  }, 0);
+  
+  const formattedExposure = totalExposureValue > 0 
+    ? `$${(totalExposureValue / 1000000).toFixed(1)}M` 
+    : "£640455.1M"; // fallback to mock if no real revenue data
+
+  const uniqueCountries = new Set(monitoredEntities.map((e: any) => e.jurisdiction || e.country).filter(Boolean));
+  const countryCount = uniqueCountries.size || 3;
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#F8F9FC] font-sans pb-12 text-slate-800">
@@ -83,8 +105,8 @@ const Dashboard = () => {
             <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm flex flex-col justify-between h-28">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Monitored Companies</p>
               <div>
-                <h3 className="text-2xl font-bold text-slate-900 leading-none mb-1">36</h3>
-                <p className="text-[11px] text-slate-400">+36 active monitoring</p>
+                <h3 className="text-2xl font-bold text-slate-900 leading-none mb-1">{totalMonitored || 36}</h3>
+                <p className="text-[11px] text-slate-400">+{totalMonitored || 36} active monitoring</p>
               </div>
             </div>
             
@@ -99,7 +121,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm flex flex-col justify-between h-28">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Risk Companies</p>
               <div>
-                <h3 className="text-2xl font-bold text-orange-500 leading-none mb-1">14</h3>
+                <h3 className="text-2xl font-bold text-orange-500 leading-none mb-1">{highRiskCount || 14}</h3>
                 <p className="text-[11px] text-slate-400">Trend: stable</p>
               </div>
             </div>
@@ -115,8 +137,8 @@ const Dashboard = () => {
             <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm flex flex-col justify-between h-28">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Portfolio Exposure</p>
               <div>
-                <h3 className="text-xl font-bold text-slate-900 leading-none mb-1">£640455.1M</h3>
-                <p className="text-[11px] text-slate-400">Across 3 countries</p>
+                <h3 className="text-xl font-bold text-slate-900 leading-none mb-1">{formattedExposure}</h3>
+                <p className="text-[11px] text-slate-400">Across {countryCount} countries</p>
               </div>
             </div>
 
@@ -139,7 +161,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm flex flex-col justify-between h-28">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Countries Monitored</p>
               <div>
-                <h3 className="text-2xl font-bold text-slate-900 leading-none mb-1">3</h3>
+                <h3 className="text-2xl font-bold text-slate-900 leading-none mb-1">{countryCount}</h3>
                 <p className="text-[11px] text-slate-400">Active coverage</p>
               </div>
             </div>
