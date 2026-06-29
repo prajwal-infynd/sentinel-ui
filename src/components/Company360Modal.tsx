@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Building2, FileText, AlertCircle, Users, Target, Shield, Globe, Newspaper, ExternalLink } from "lucide-react";
+import { Building2, FileText, AlertCircle, Users, Target, Shield, Globe, Newspaper, ExternalLink, ShieldAlert } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Company360ModalProps {
@@ -60,7 +60,8 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const identifiers = companyData?.rawIdentifiers || {};
   const payload = companyData?.payload || {};
   const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null;
-  const isScreeningPending = !croftz && !payload.fiscalYear;
+  // isScreeningPending = we don't yet have croftz risk data (does NOT gate the identity card)
+  const isScreeningPending = !croftz;
 
   useEffect(() => {
     if (!isOpen) {
@@ -224,15 +225,25 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6 bg-slate-50/30">
 
-            {/* Screening Pending Banner */}
+            {/* Screening Pending / Failed Banner */}
             {isScreeningPending && (
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
-                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
-                <div>
-                  <div className="text-[13px] font-semibold text-blue-700">Company Registry Screening in Progress</div>
-                  <div className="text-[11px] text-blue-500">Croftz Instacheck is running. Risk data will appear here automatically when complete.</div>
+              fetchFailed ? (
+                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm">
+                  <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div>
+                    <div className="text-[13px] font-semibold text-amber-700">Registry Screening Unavailable</div>
+                    <div className="text-[11px] text-amber-500">Could not connect to the screening service. Basic company info is shown below.</div>
+                  </div>
                 </div>
-              </div>
+              ) : isFetchingCroftz ? (
+                <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <div>
+                    <div className="text-[13px] font-semibold text-blue-700">Company Registry Screening in Progress</div>
+                    <div className="text-[11px] text-blue-500">Croftz Instacheck is running. Risk data will appear here automatically when complete.</div>
+                  </div>
+                </div>
+              ) : null
             )}
 
             {/* Top: Identity + Risk */}
