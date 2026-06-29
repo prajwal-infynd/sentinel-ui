@@ -145,16 +145,37 @@ const Index = () => {
             transition={{ duration: 0.6 }}
             className="max-w-4xl"
           >
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm mb-8">
-              <Shield className="h-3.5 w-3.5 text-primary" />
-              <span className="text-navy-foreground/70">Operational compliance intelligence for bank teams</span>
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-6">
-              Continuous KYB Monitoring, <span className="text-primary">Powered by AI Agents</span>
+            <h2 className="text-3xl md:text-6xl font-bold tracking-tight mb-6 leading-tight">
+              The Next-Gen <br/><span className="text-primary">Agentic Risk Platform</span>
             </h2>
-            <p className="text-lg md:text-xl text-navy-foreground/60 max-w-2xl mb-10 leading-relaxed">
-              Sign in to a live workspace backed by Lovable Cloud for monitored entities, adverse media ingestion,
-              alerts, investigations, analyst notes, and autonomous agent runs.
+            <p className="text-lg md:text-xl text-navy-foreground/60 max-w-2xl mb-12 leading-relaxed">
+              Automate KYB, Continuous monitoring, and adverse media screening with state-of-the-art AI agents.
+            </p>
+            
+            <div className="flex flex-col gap-8 mt-8">
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-1 text-white">Autonomous Agents</h3>
+                  <p className="text-navy-foreground/60 text-lg">Intelligent web crawling and reasoning.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
+                  <Activity className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold mb-1 text-white">Real-time Monitoring</h3>
+                  <p className="text-navy-foreground/60 text-lg">24/7 continuous screening pipeline.</p>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-sm text-navy-foreground/40 mt-16">
+              © 2026 Sentinel Inc. All rights reserved.
             </p>
           </motion.div>
 
@@ -162,7 +183,7 @@ const Index = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.12 }}
-            className="w-full max-w-md justify-self-end"
+            className="w-full max-w-md justify-self-end mt-10 xl:mt-0"
           >
             <Card className="border-white/10 bg-white/[0.04] backdrop-blur-sm shadow-2xl shadow-black/20">
               <CardHeader>
@@ -205,71 +226,6 @@ const Index = () => {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
-
-        {/* Flow Visualization */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
-          className="mt-20 relative"
-        >
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-8 md:p-12">
-            <div className="relative h-[280px] w-full">
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {/* Connection lines */}
-                {[
-                  [10, 22, 28, 34], [10, 47, 28, 34], [10, 72, 28, 38],
-                  [38, 34, 48, 34], [38, 34, 48, 62],
-                  [58, 34, 70, 47], [58, 62, 70, 47],
-                  [80, 47, 88, 47],
-                ].map(([x1, y1, x2, y2], i) => (
-                  <motion.line
-                    key={i}
-                    x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}
-                    stroke="hsl(221 83% 53% / 0.3)"
-                    strokeWidth="0.3"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ duration: 1.2, delay: 0.5 + i * 0.1 }}
-                  />
-                ))}
-              </svg>
-              {flowNodes.map((node, i) => (
-                <motion.div
-                  key={node.label}
-                  className="absolute"
-                  style={{ left: `${node.x}%`, top: `${node.y}%`, transform: "translate(-50%, -50%)" }}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, delay: 0.6 + i * 0.08 }}
-                >
-                  <div className="flex flex-col items-center gap-1.5">
-                    <div className={`h-3 w-3 rounded-full ${i >= 3 && i <= 6 ? "bg-primary" : i === 7 ? "bg-success" : "bg-accent"} shadow-lg`}>
-                      <div className={`h-3 w-3 rounded-full ${i >= 3 && i <= 6 ? "bg-primary" : i === 7 ? "bg-success" : "bg-accent"} animate-pulse-glow`} />
-                    </div>
-                    <span className="text-[10px] md:text-xs text-navy-foreground/50 whitespace-nowrap font-medium">{node.label}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
-          {stats.map((stat, i) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.8 + i * 0.1 }}
-              className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center"
-            >
-              <stat.icon className="h-5 w-5 text-primary mx-auto mb-3" />
-              <div className="text-3xl font-bold font-mono tracking-tight mb-1">{stat.value}</div>
-              <div className="text-xs text-navy-foreground/50">{stat.label}</div>
-            </motion.div>
-          ))}
         </div>
       </div>
     </div>
