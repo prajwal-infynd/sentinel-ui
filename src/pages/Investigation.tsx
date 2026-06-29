@@ -64,9 +64,20 @@ const Investigation = () => {
   const navigate = useNavigate();
   const { getCaseById, updateCaseStatus, assignUser } = useInvestigations();
 
-  // Croftz investigation state
-  const isCroftzAlert = location.state?.isCroftzAlert === true;
-  const croftzInvestigationId = location.state?.investigationId as string | undefined;
+  const caseData = id ? getCaseById(id) : null;
+  const isKlodev = id === "ALT-KLODEV";
+  const isMockAgent = id === "mock-agent";
+
+  // Croftz investigation state.
+  // A "live" backend investigation is either flagged via navigation state, OR detected from the
+  // URL: a UUID id that isn't a known local/mock case. This lets the page work on direct open / refresh.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isCroftzAlert =
+    location.state?.isCroftzAlert === true ||
+    (!!id && UUID_RE.test(id) && !caseData && !isKlodev && !isMockAgent);
+  const croftzInvestigationId =
+    (location.state?.investigationId as string | undefined) || (isCroftzAlert ? id : undefined);
+
   const [liveInvData, setLiveInvData] = useState<any>(null);
   const [invStatus, setInvStatus] = useState<"pending" | "completed" | "error">("pending");
   const [showLoadingOverlay, setShowLoadingOverlay] = useState(isCroftzAlert);
@@ -77,7 +88,6 @@ const Investigation = () => {
 
     const poll = async () => {
       while (!stopped) {
-        await new Promise(r => setTimeout(r, 2000));
         try {
           const { status } = await getInvestigationStatus(croftzInvestigationId);
           if (stopped) break;
@@ -93,17 +103,24 @@ const Investigation = () => {
             setShowLoadingOverlay(false);
             break;
           }
-        } catch {}
+        } catch (err: any) {
+          // 404 → investigation not in cache (e.g. server restarted, in-memory data cleared).
+          // Stop looping and surface an error instead of an infinite spinner.
+          if (err?.response?.status === 404 || err?.status === 404) {
+            if (stopped) break;
+            setInvStatus("error");
+            setShowLoadingOverlay(false);
+            break;
+          }
+          // transient network error — keep polling
+        }
+        await new Promise(r => setTimeout(r, 2000));
       }
     };
 
     poll();
     return () => { stopped = true; };
   }, [isCroftzAlert, croftzInvestigationId]);
-
-  const caseData = id ? getCaseById(id) : null;
-  const isKlodev = id === "ALT-KLODEV";
-  const isMockAgent = id === "mock-agent";
   const activeData: any = liveInvData || (isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null));
   const entity = caseData?.entity || location.state?.entity || {
     name: "Global Tech Inc.",
