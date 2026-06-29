@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { forceCollide } from "d3-force";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
   AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus
@@ -8,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useInvestigations } from "@/context/InvestigationsContext";
 import klodevData from "@/data/klodev.json";
+import mockAgentData from "@/data/mock_agent_res.json";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,7 +64,8 @@ const Investigation = () => {
   
   const caseData = id ? getCaseById(id) : null;
   const isKlodev = id === "ALT-KLODEV";
-  const activeData: any = isKlodev ? klodevData : null;
+  const isMockAgent = id === "mock-agent";
+  const activeData: any = isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null);
   const entity = caseData?.entity || location.state?.entity || {
     name: "Global Tech Inc.",
     entity_type: "company",
@@ -93,6 +96,50 @@ const Investigation = () => {
   ];
   
   const [isSarOpen, setIsSarOpen] = useState(false);
+  const [graphContainer, setGraphContainer] = useState<HTMLDivElement | null>(null);
+  const [graphDimensions, setGraphDimensions] = useState({ width: 800, height: 500 });
+  const [selectedGraphNode, setSelectedGraphNode] = useState<any>(null);
+  const forceGraphRef = useRef<any>(null);
+  const [fgInstance, setFgInstance] = useState<any>(null);
+
+  const onGraphRef = useCallback((fg: any) => {
+    forceGraphRef.current = fg;
+    setFgInstance(fg);
+  }, []);
+
+  // Configure d3 collision force to prevent node overlap
+  useEffect(() => {
+    if (!fgInstance) return;
+    const allLinks = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
+    fgInstance.d3Force('collision', forceCollide((node: any) => {
+      const labelLen = (node.label || node.id || "").length;
+      return Math.max(60, labelLen * 3.5);
+    }).strength(1));
+    fgInstance.d3Force('charge')?.strength(-1200)?.distanceMax(800);
+    fgInstance.d3Force('link')?.distance(220).strength(0.5);
+    fgInstance.d3ReheatSimulation();
+  }, [activeData, fgInstance]);
+
+  useEffect(() => {
+    if (!graphContainer) return;
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setGraphDimensions({
+          width: entries[0].contentRect.width,
+          height: entries[0].contentRect.height
+        });
+      }
+    });
+    observer.observe(graphContainer);
+    
+    // Initial size
+    setGraphDimensions({
+      width: graphContainer.clientWidth,
+      height: graphContainer.clientHeight
+    });
+    
+    return () => observer.disconnect();
+  }, [graphContainer]);
   const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">(
     caseData?.status === "Approved" || caseData?.status === "Resolved" ? "approved" : 
     caseData?.status === "Dismissed" ? "dismissed" : "pending"
@@ -527,201 +574,348 @@ const Investigation = () => {
         </TabsContent>
 
         <TabsContent value="network">
-          <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-6 mt-6 relative overflow-hidden h-[600px]">
+          <div className="rounded-2xl border border-border/50 bg-card shadow-sm p-6 mt-6 relative overflow-hidden h-[600px] flex flex-col">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-50/50 via-transparent to-transparent pointer-events-none" />
             <div className="absolute inset-0 opacity-10 bg-black/5 pointer-events-none mix-blend-overlay"></div>
             
-            <div className="flex justify-between items-center mb-6 relative z-10">
+            <div className="flex justify-between items-center mb-6 relative z-10 shrink-0">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Network className="h-5 w-5 text-indigo-500" /> Dynamic Knowledge Graph</h3>
               <div className="flex gap-2">
-                <Badge variant="outline" className="bg-white shadow-sm font-mono text-[10px]">Depth: 3 Hops</Badge>
-                <Badge variant="outline" className="bg-white shadow-sm font-mono text-[10px] text-destructive border-destructive/20">7 High-Risk Nodes</Badge>
+                <Badge variant="outline" className="bg-white shadow-sm font-mono text-[10px]">Interactive Graph</Badge>
+                {selectedGraphNode && (
+                  <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm font-mono text-[10px]">
+                    Selected: {selectedGraphNode.type}
+                  </Badge>
+                )}
               </div>
             </div>
 
-            {/* Dynamic Graph Visual */}
-            {activeData && activeData.networkGraph ? (
-              <div className="relative w-full h-[500px] flex items-center justify-center z-10">
+            <div className="relative w-full flex-grow z-10 flex gap-4">
+              <div 
+                className={`relative h-full flex-grow border border-border/50 rounded-xl overflow-hidden bg-slate-50/50 transition-all duration-300 ${selectedGraphNode ? 'w-2/3' : 'w-full'}`} 
+                ref={setGraphContainer}
+              >
                 {(() => {
-                  const nodes = activeData.networkGraph.nodes;
-                  const links = activeData.networkGraph.links || activeData.networkGraph.edges || [];
-                  const centerX = 450;
-                  const centerY = 250;
-                  const radius = 220;
+                  let nodes = activeData?.networkGraph?.nodes || [];
+                  let links = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
                   
-                  const positions: Record<string, {x: number, y: number}> = {};
-                  if (nodes.length > 0) {
-                    positions[nodes[0].id] = { x: centerX, y: centerY };
-                    const rest = nodes.slice(1);
-                    rest.forEach((node: any, i: number) => {
-                      const angle = (i / rest.length) * 2 * Math.PI - Math.PI / 2;
-                      positions[node.id] = {
-                        x: centerX + Math.cos(angle) * radius,
-                        y: centerY + Math.sin(angle) * radius
-                      };
-                    });
+                  // Fallback data if none exists
+                  if (nodes.length === 0) {
+                    nodes = [
+                      { id: "E-1", label: entity.name, type: isCompany ? "Company" : "Person" },
+                      { id: "E-2", label: "Subsidiary Ltd", type: "Company" },
+                      { id: "L-1", label: "SEC Investigation", type: "Investigation" },
+                      { id: "N-1", label: "Fraud Allegations", type: "News Article" }
+                    ];
+                    links = [
+                      { source: "E-1", target: "E-2", relationship: "HAS_OWNER" },
+                      { source: "E-1", target: "L-1", relationship: "SUBJECT_OF" },
+                      { source: "N-1", target: "E-1", relationship: "MENTIONS" },
+                      { source: "N-1", target: "L-1", relationship: "DESCRIBES" }
+                    ];
                   }
 
+                  const getNodeColor = (type: string) => {
+                    const t = (type || "").toLowerCase();
+                    if (t.includes("company") || t.includes("business")) return { bg: "#EEF2FF", border: "#6366F1", text: "#3730A3" }; 
+                    if (t.includes("person") || t.includes("director") || t.includes("owner")) return { bg: "#FFFBEB", border: "#F59E0B", text: "#B45309" }; 
+                    if (t.includes("litigation") || t.includes("case") || t.includes("investigation")) return { bg: "#FFF1F2", border: "#E11D48", text: "#9F1239" }; 
+                    if (t.includes("news") || t.includes("article")) return { bg: "#F0FDF4", border: "#10B981", text: "#065F46" }; 
+                    if (t.includes("bankruptcy") || t.includes("event") || t.includes("change")) return { bg: "#FAF5FF", border: "#A855F7", text: "#6B21A8" }; 
+                    return { bg: "#F8FAFC", border: "#94A3B8", text: "#334155" }; 
+                  };
+
+                  const getNodeConfig = (type: string, id: string, allLinks: any[]) => {
+                    const t = (type || "").toLowerCase();
+                    // Count connections to determine node importance
+                    const connections = allLinks.filter((l: any) => {
+                      const src = typeof l.source === 'object' ? l.source.id : l.source;
+                      const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+                      return src === id || tgt === id;
+                    }).length;
+                    
+                    // Radius: hub nodes are bigger
+                    const baseRadius = connections >= 5 ? 38 : connections >= 3 ? 28 : 22;
+                    
+                    if (t.includes("company") || t.includes("business")) 
+                      return { fill1: "#4F46E5", fill2: "#6366F1", border: "#818CF8", text: "#FFFFFF", radius: baseRadius, glow: "rgba(99,102,241,0.35)" };
+                    if (t.includes("person") || t.includes("director") || t.includes("owner")) 
+                      return { fill1: "#D97706", fill2: "#F59E0B", border: "#FCD34D", text: "#FFFFFF", radius: baseRadius, glow: "rgba(245,158,11,0.35)" };
+                    if (t.includes("country") || t.includes("jurisdiction")) 
+                      return { fill1: "#0891B2", fill2: "#06B6D4", border: "#67E8F9", text: "#FFFFFF", radius: baseRadius, glow: "rgba(6,182,212,0.35)" };
+                    if (t.includes("industry") || t.includes("service") || t.includes("partner")) 
+                      return { fill1: "#059669", fill2: "#10B981", border: "#6EE7B7", text: "#FFFFFF", radius: baseRadius, glow: "rgba(16,185,129,0.35)" };
+                    if (t.includes("litigation") || t.includes("case") || t.includes("investigation")) 
+                      return { fill1: "#DC2626", fill2: "#EF4444", border: "#FCA5A5", text: "#FFFFFF", radius: baseRadius, glow: "rgba(239,68,68,0.35)" };
+                    if (t.includes("news") || t.includes("article") || t.includes("media")) 
+                      return { fill1: "#7C3AED", fill2: "#8B5CF6", border: "#C4B5FD", text: "#FFFFFF", radius: baseRadius, glow: "rgba(139,92,246,0.35)" };
+                    if (t.includes("event") || t.includes("bankruptcy") || t.includes("dissolution")) 
+                      return { fill1: "#BE185D", fill2: "#EC4899", border: "#F9A8D4", text: "#FFFFFF", radius: baseRadius, glow: "rgba(236,72,153,0.35)" };
+                    return { fill1: "#475569", fill2: "#64748B", border: "#94A3B8", text: "#FFFFFF", radius: baseRadius, glow: "rgba(100,116,139,0.35)" };
+                  };
+
+                  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
+                    const words = text.split(' ');
+                    const lines: string[] = [];
+                    let currentLine = '';
+                    for (const word of words) {
+                      const testLine = currentLine ? `${currentLine} ${word}` : word;
+                      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                      } else {
+                        currentLine = testLine;
+                      }
+                    }
+                    if (currentLine) lines.push(currentLine);
+                    return lines.slice(0, 3);
+                  };
+
                   return (
-                    <>
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                        {links.map((link: any, i: number) => {
-                          const sourcePos = positions[link.source];
-                          const targetPos = positions[link.target];
-                          if (!sourcePos || !targetPos) return null;
-                          return (
-                            <line 
-                              key={`line-${i}`}
-                              x1={sourcePos.x} 
-                              y1={sourcePos.y} 
-                              x2={targetPos.x} 
-                              y2={targetPos.y} 
-                              stroke="currentColor" 
-                              className="text-indigo-200 stroke-2" 
-                              strokeDasharray="4 4" 
-                            />
-                          );
-                        })}
-                      </svg>
-                      
-                      {/* Relationship Labels */}
-                      {links.map((link: any, i: number) => {
-                        const sourcePos = positions[link.source];
-                        const targetPos = positions[link.target];
-                        if (!sourcePos || !targetPos || !link.relationship) return null;
+                    <ForceGraph2D
+                      width={graphDimensions.width}
+                      height={graphDimensions.height}
+                      graphData={{ nodes, links }}
+                      nodeRelSize={1}
+                      nodeVal={(node: any) => {
+                        const t = (node.type || "").toLowerCase();
+                        const allLinks = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
+                        const connections = allLinks.filter((l: any) => {
+                          const src = typeof l.source === 'object' ? l.source.id : l.source;
+                          const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+                          return src === node.id || tgt === node.id;
+                        }).length;
+                        const r = connections >= 5 ? 38 : connections >= 3 ? 28 : 22;
+                        return r * r; // nodeVal is proportional to area
+                      }}
+                      linkDirectionalArrowLength={4}
+                      linkDirectionalArrowRelPos={1}
+                      linkColor={() => "#CBD5E1"}
+                      linkWidth={1.5}
+                      minZoom={0.6}
+                      maxZoom={2.5}
+                      d3AlphaDecay={0.008}
+                      d3VelocityDecay={0.2}
+                      warmupTicks={200}
+                      cooldownTicks={0}
+                      ref={onGraphRef}
+                      onEngineStop={() => {
+                        const fg = forceGraphRef.current;
+                        if (!fg) return;
                         
-                        const midX = (sourcePos.x + targetPos.x) / 2;
-                        const midY = (sourcePos.y + targetPos.y) / 2;
-                        
-                        return (
-                          <div 
-                            key={`label-${i}`}
-                            className="absolute z-10 flex items-center justify-center pointer-events-none"
-                            style={{ top: midY + 'px', left: midX + 'px', transform: 'translate(-50%, -50%)' }}
-                          >
-                            <div className="bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-indigo-100 text-[9px] font-bold text-indigo-700 max-w-[160px] truncate">
-                              {link.relationship}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      
-                      {nodes.map((node: any, i: number) => {
-                        const pos = positions[node.id];
-                        if (!pos) return null;
-                        const isCenter = i === 0;
-                        const isPerson = node.type === "Person";
-                        
-                        return (
-                          <motion.div 
-                            key={node.id}
-                            initial={{ scale: 0, x: "-50%", y: "-50%" }} 
-                            animate={{ scale: 1, x: "-50%", y: "-50%" }} 
-                            transition={{ delay: i * 0.1 }} 
-                            className="absolute z-20 flex flex-col items-center group cursor-pointer" 
-                            style={{ top: pos.y + 'px', left: pos.x + 'px' }}
-                          >
-                            {isCenter && (
-                              <>
-                                <div className="absolute inset-0 rounded-full border border-indigo-500/30 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                                <div className="absolute inset-0 rounded-full border border-indigo-500/20 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]" style={{ animationDelay: '1.5s' }}></div>
-                              </>
-                            )}
-                            <div className={`relative h-16 w-16 rounded-full ${isCenter ? 'bg-indigo-600 border-4 border-indigo-200 shadow-[0_0_20px_rgba(79,70,229,0.6)]' : isPerson ? 'bg-amber-100 border-2 border-amber-400 shadow-md' : 'bg-white border-2 border-slate-300 shadow-md'} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                              {isCenter ? <Building2 className="h-7 w-7 text-white" /> : isPerson ? <User className="h-7 w-7 text-amber-600" /> : <Building2 className="h-7 w-7 text-slate-500" />}
-                            </div>
-                            <div className="mt-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-lg shadow-sm border border-border/50 text-center w-max max-w-[140px] group-hover:border-indigo-300 transition-colors">
-                              <div className={`text-[11px] font-black truncate ${isPerson ? 'text-amber-700' : 'text-slate-800'}`}>{node.label}</div>
-                              <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">{node.type}</div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </>
+                        if (nodes.length > 0) {
+                          let maxConns = -1;
+                          let mainNode = nodes[0];
+                          nodes.forEach((n: any) => {
+                            const conns = links.filter((l: any) => {
+                              const src = typeof l.source === 'object' ? l.source.id : l.source;
+                              const tgt = typeof l.target === 'object' ? l.target.id : l.target;
+                              return src === n.id || tgt === n.id;
+                            }).length;
+                            if (conns > maxConns) {
+                              maxConns = conns;
+                              mainNode = n;
+                            }
+                          });
+                          
+                          // Focus on the main node instantly when physics stop
+                          fg.centerAt(mainNode.x, mainNode.y, 0);
+                          fg.zoom(1.1, 0); 
+                        } else {
+                          fg.zoomToFit(0, 60);
+                        }
+                      }}
+                      onNodeClick={(node) => setSelectedGraphNode(node)}
+                      onBackgroundClick={() => setSelectedGraphNode(null)}
+                      nodePointerAreaPaint={(node: any, color, ctx) => {
+                        const dims = node.__dims || { w: 80, h: 36 };
+                        ctx.fillStyle = color;
+                        const r = 5;
+                        const x = node.x - dims.w / 2, y = node.y - dims.h / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(x + r, y); ctx.lineTo(x + dims.w - r, y);
+                        ctx.quadraticCurveTo(x + dims.w, y, x + dims.w, y + r);
+                        ctx.lineTo(x + dims.w, y + dims.h - r);
+                        ctx.quadraticCurveTo(x + dims.w, y + dims.h, x + dims.w - r, y + dims.h);
+                        ctx.lineTo(x + r, y + dims.h); ctx.quadraticCurveTo(x, y + dims.h, x, y + dims.h - r);
+                        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+                        ctx.closePath(); ctx.fill();
+                      }}
+                      nodeCanvasObject={(node: any, ctx, globalScale) => {
+                        const label = node.label || node.id;
+                        const type = node.type || "";
+                        const isSelected = node === selectedGraphNode;
+
+                        // --- Color scheme per type ---
+                        const getChipColors = (t: string) => {
+                          const tl = t.toLowerCase();
+                          if (tl === "person") return { border: "#F59E0B", text: "#92400E", typeBg: "#FEF3C7", typeText: "#D97706" };
+                          if (tl === "country") return { border: "#06B6D4", text: "#164E63", typeBg: "#CFFAFE", typeText: "#0E7490" };
+                          if (tl === "state/province" || tl === "city") return { border: "#0EA5E9", text: "#0C4A6E", typeBg: "#E0F2FE", typeText: "#0369A1" };
+                          if (tl === "industry") return { border: "#10B981", text: "#064E3B", typeBg: "#D1FAE5", typeText: "#059669" };
+                          if (tl === "regulator") return { border: "#EF4444", text: "#7F1D1D", typeBg: "#FEE2E2", typeText: "#DC2626" };
+                          if (tl === "social media") return { border: "#EC4899", text: "#831843", typeBg: "#FCE7F3", typeText: "#BE185D" };
+                          if (tl === "news article") return { border: "#8B5CF6", text: "#4C1D95", typeBg: "#EDE9FE", typeText: "#7C3AED" };
+                          if (tl === "asset") return { border: "#F97316", text: "#7C2D12", typeBg: "#FFEDD5", typeText: "#EA580C" };
+                          if (tl === "director") return { border: "#F59E0B", text: "#92400E", typeBg: "#FEF3C7", typeText: "#D97706" };
+                          if (tl.includes("litigation") || tl.includes("investigation")) return { border: "#EF4444", text: "#7F1D1D", typeBg: "#FEE2E2", typeText: "#DC2626" };
+                          // Company default: blue/indigo
+                          return { border: "#6366F1", text: "#1E1B4B", typeBg: "#EEF2FF", typeText: "#4F46E5" };
+                        };
+                        const colors = getChipColors(type);
+
+                        const nameFontSize = Math.max(9, 11 / globalScale);
+                        const typeFontSize = Math.max(7, 8.5 / globalScale);
+                        ctx.font = `bold ${nameFontSize}px Inter, system-ui, sans-serif`;
+                        const labelWidth = ctx.measureText(label).width;
+                        ctx.font = `${typeFontSize}px Inter, system-ui, sans-serif`;
+                        const typeWidth = ctx.measureText(type).width;
+
+                        const padX = 12 / globalScale;
+                        const padY = 7 / globalScale;
+                        const innerGap = 3 / globalScale;
+                        const w = Math.max(labelWidth, typeWidth) + padX * 2;
+                        const h = nameFontSize + typeFontSize + innerGap + padY * 2;
+                        node.__dims = { w, h };
+
+                        const x = node.x - w / 2;
+                        const y = node.y - h / 2;
+                        const r = 6 / globalScale;
+
+                        // --- Drop shadow ---
+                        ctx.shadowColor = "rgba(0,0,0,0.12)";
+                        ctx.shadowBlur = 8 / globalScale;
+                        ctx.shadowOffsetY = 2 / globalScale;
+
+                        // --- White fill ---
+                        ctx.beginPath();
+                        ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+                        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                        ctx.lineTo(x + w, y + h - r);
+                        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+                        ctx.closePath();
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fill();
+                        ctx.shadowColor = "transparent";
+
+                        // --- Colored border ---
+                        ctx.lineWidth = isSelected ? 2.5 / globalScale : 1.5 / globalScale;
+                        ctx.strokeStyle = isSelected ? "#1E40AF" : colors.border;
+                        ctx.stroke();
+
+                        // --- Label text ---
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "alphabetic";
+                        const labelY = node.y - (typeFontSize + innerGap) / 2;
+                        ctx.font = `bold ${nameFontSize}px Inter, system-ui, sans-serif`;
+                        ctx.fillStyle = colors.text;
+                        ctx.fillText(label, node.x, labelY);
+
+                        // --- Type chip ---
+                        const typeY = labelY + innerGap + typeFontSize;
+                        ctx.font = `${typeFontSize}px Inter, system-ui, sans-serif`;
+                        ctx.fillStyle = colors.typeText;
+                        ctx.fillText(type, node.x, typeY);
+                      }}
+                      linkCanvasObjectMode={() => "after"}
+                      linkCanvasObject={(link: any, ctx, globalScale) => {
+                        if (!link.relationship) return;
+                        const start = link.source;
+                        const end = link.target;
+                        if (typeof start !== "object" || typeof end !== "object") return;
+
+                        const midX = start.x + (end.x - start.x) * 0.5;
+                        const midY = start.y + (end.y - start.y) * 0.5;
+
+                        const fontSize = Math.max(7, 8 / globalScale);
+                        ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+
+                        // Simple plain text label like the screenshot
+                        const text = link.relationship.replace(/_/g, " ");
+                        const tw = ctx.measureText(text).width;
+                        // Small semi-transparent white backing
+                        ctx.fillStyle = "rgba(255,255,255,0.85)";
+                        ctx.fillRect(midX - tw / 2 - 3 / globalScale, midY - fontSize * 0.7, tw + 6 / globalScale, fontSize * 1.4);
+                        ctx.fillStyle = "#6B7280";
+                        ctx.fillText(text, midX, midY);
+                      }}
+                    />
+
+
+
                   );
                 })()}
               </div>
-            ) : (
-              <div className="relative w-full h-[400px] flex items-center justify-center z-10">
-                {/* Connecting Lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  <path d="M 400 200 L 250 100" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="4 4" fill="none" />
-                  <path d="M 400 200 L 250 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                  <path d="M 400 200 L 550 100" stroke="#ef4444" strokeWidth="3" fill="none" />
-                  <path d="M 400 200 L 550 300" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                  <path d="M 250 300 L 150 250" stroke="#CBD5E1" strokeWidth="2" fill="none" />
-                  <path d="M 550 100 L 700 150" stroke="#ef4444" strokeWidth="3" fill="none" />
-                </svg>
+              
+              <AnimatePresence>
+                {selectedGraphNode && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className="w-1/3 bg-white border border-border/50 rounded-xl p-5 shadow-sm overflow-y-auto flex flex-col"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-lg text-slate-800">Node Details</h4>
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedGraphNode(null)} className="h-6 w-6 rounded-full text-slate-400 hover:text-slate-700">
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Label</div>
+                        <div className="font-semibold text-slate-900 text-base">{selectedGraphNode.label}</div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Type</div>
+                        <Badge variant="outline" className="bg-slate-50">{selectedGraphNode.type}</Badge>
+                      </div>
 
-                {/* Central Node */}
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '200px', left: '400px' }}>
-                  <div className="h-20 w-20 rounded-full bg-indigo-100 border-4 border-indigo-500 shadow-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                    {isCompany ? <Building className="h-8 w-8 text-indigo-700" /> : <User className="h-8 w-8 text-indigo-700" />}
-                  </div>
-                  <div className="mt-3 bg-white px-3 py-1.5 rounded-lg shadow-md border border-border/50 text-center w-max">
-                    <div className="text-xs font-bold text-foreground">{entity.name}</div>
-                    <div className="text-[10px] font-mono text-muted-foreground">Primary Subject</div>
-                  </div>
-                </motion.div>
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Internal ID</div>
+                        <div className="font-mono text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">{selectedGraphNode.id}</div>
+                      </div>
 
-                {/* Connected Nodes */}
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.1 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '250px' }}>
-                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Building className="h-6 w-6 text-slate-500" />
-                  </div>
-                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                    <div className="text-[10px] font-bold">Doe Consulting Ltd</div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.2 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '250px' }}>
-                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Wallet className="h-6 w-6 text-slate-500" />
-                  </div>
-                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                    <div className="text-[10px] font-bold">Acct: *4912</div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.3 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '100px', left: '550px' }}>
-                  <div className="h-16 w-16 rounded-full bg-destructive/10 border-4 border-destructive shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform animate-pulse">
-                    <Globe className="h-7 w-7 text-destructive" />
-                  </div>
-                  <div className="mt-2 bg-white px-2 py-1 rounded shadow-sm border border-destructive/30 text-center w-max">
-                    <div className="text-[10px] font-bold text-destructive">BVI Holdings Ltd</div>
-                    <div className="text-[8px] font-mono text-muted-foreground uppercase">Shell Company</div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.4 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '300px', left: '550px' }}>
-                  <div className="h-14 w-14 rounded-full bg-white border-2 border-slate-300 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <UserPlus className="h-6 w-6 text-slate-500" />
-                  </div>
-                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                    <div className="text-[10px] font-bold">Jane Smith</div>
-                  </div>
-                </motion.div>
-                
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.5 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '150px', left: '700px' }}>
-                  <div className="h-14 w-14 rounded-full bg-destructive/10 border-2 border-destructive/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Landmark className="h-6 w-6 text-destructive/80" />
-                  </div>
-                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                    <div className="text-[10px] font-bold text-destructive">Swiss Bank Acct</div>
-                  </div>
-                </motion.div>
-
-                <motion.div initial={{ scale: 0, x: "-50%", y: "-50%" }} animate={{ scale: 1, x: "-50%", y: "-50%" }} transition={{ delay: 0.6 }} className="absolute z-20 flex flex-col items-center group cursor-pointer" style={{ top: '250px', left: '150px' }}>
-                  <div className="h-14 w-14 rounded-full bg-warning/10 border-2 border-warning/50 shadow-md flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Hash className="h-6 w-6 text-warning/80" />
-                  </div>
-                  <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded shadow-sm border border-border/50 text-center w-max">
-                    <div className="text-[10px] font-bold text-warning-foreground">Crypto Wallet</div>
-                    <div className="text-[8px] font-mono text-muted-foreground uppercase">BTC Network</div>
-                  </div>
-                </motion.div>
-              </div>
-            )}
+                      <div className="pt-4 border-t border-slate-100 mt-4">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Connected Relationships</div>
+                        <div className="space-y-2">
+                          {(activeData?.networkGraph?.links || activeData?.networkGraph?.edges || []).filter((l: any) => 
+                            (typeof l.source === 'object' ? l.source.id === selectedGraphNode.id : l.source === selectedGraphNode.id) || 
+                            (typeof l.target === 'object' ? l.target.id === selectedGraphNode.id : l.target === selectedGraphNode.id)
+                          ).map((link: any, i: number) => {
+                            const isSource = (typeof link.source === 'object' ? link.source.id === selectedGraphNode.id : link.source === selectedGraphNode.id);
+                            const otherNodeId = isSource ? 
+                              (typeof link.target === 'object' ? link.target.id : link.target) : 
+                              (typeof link.source === 'object' ? link.source.id : link.source);
+                              
+                            const otherNode = (activeData?.networkGraph?.nodes || []).find((n: any) => n.id === otherNodeId);
+                            
+                            return (
+                              <div key={i} className="flex flex-col p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                                <span className="text-slate-400 font-mono text-[9px] uppercase tracking-wider mb-1">
+                                  {isSource ? "Outbound" : "Inbound"}
+                                </span>
+                                <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                                  <span className="text-indigo-600 font-bold">{link.relationship}</span>
+                                  <ArrowRight className="h-3 w-3 text-slate-400" />
+                                  <span className="truncate">{otherNode?.label || otherNodeId}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </TabsContent>
 

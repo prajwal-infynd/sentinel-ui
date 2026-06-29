@@ -9,6 +9,7 @@ const options = [
   { title: "Review Alert Investigations", description: "Inspect AI-generated case files and analyst workflows", icon: Search, path: "/investigations", color: "bg-warning/10 text-warning" },
   { title: "View Data Architecture", description: "Explore the sanctions data pipeline and MDM layer", icon: Database, path: "/architecture", color: "bg-accent/10 text-accent" },
   { title: "See AI Agent Workflows", description: "Watch autonomous agents crawl, extract, match, and score", icon: Bot, path: "/agents", color: "bg-destructive/10 text-destructive" },
+  { title: "Mock Agent Investigation", description: "View the processed JSON API response in the graph", icon: Activity, path: "/investigations/mock-agent", color: "bg-indigo-100 text-indigo-600" },
 ];
 
 const DemoEntry = () => {
