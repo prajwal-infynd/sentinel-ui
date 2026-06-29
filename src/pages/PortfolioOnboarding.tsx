@@ -451,13 +451,6 @@ const PortfolioOnboarding = () => {
             financials: e.financials || {},
           };
 
-          // Update the row in state with rawIdentifiers from crawler
-          setImportedDataRows(prev => prev.map(row =>
-            row.externalReference === entity.externalReference
-              ? { ...row, rawIdentifiers: crawlerIdentifiers }
-              : row
-          ));
-
           // ── Pass ONLY e.normalizedDomain to Croftz POST ──
           const normalizedDomain = e.normalizedDomain;
           if (normalizedDomain && entity.externalReference) {
@@ -467,7 +460,22 @@ const PortfolioOnboarding = () => {
             console.warn(`[Croftz] No normalizedDomain found in crawler response for entity at index ${idx}. Skipping screening.`, e);
             toast({ title: "No Domain Found", description: `Could not extract normalizedDomain from crawler for ${entity.name}. Screening skipped.`, variant: "destructive" });
           }
+          
+          return { ...entity, rawIdentifiers: crawlerIdentifiers };
         });
+        
+        // Update the state with fully assembled entities
+        setImportedDataRows(prev => {
+          const combined = [...updatedEntities, ...prev];
+          // Deduplicate
+          const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
+          return unique;
+        });
+
+        // Persist to backend node-cache
+        importMonitoredEntities(updatedEntities).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
+        }).catch(err => console.error("Failed to persist to node cache", err));
       }
       
     } catch (error) {
@@ -538,7 +546,7 @@ const PortfolioOnboarding = () => {
       }
       
       return {
-        id: index + 1,
+        id: `sample-${row.masterEntityProfile?.externalReference || index}`,
         name: name,
         country: country,
         industry: industry,
@@ -590,7 +598,7 @@ const PortfolioOnboarding = () => {
       const cleanName = name.split("|")[0].trim();
 
       return {
-        id: index + 1,
+        id: `imported-${row.externalReference || index}`,
         name: cleanName,
         country: row.jurisdiction || row.nationality || "Unknown",
         industry: sector,
@@ -601,12 +609,23 @@ const PortfolioOnboarding = () => {
         alert: riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low",
         flag: getFlag(row.jurisdiction || row.nationality || ""),
         initial: cleanName.charAt(0).toUpperCase(),
-        externalReference: row.externalReference,
+        externalReference: row.externalReference || `ENT-IMP-${index}`,
         rawIdentifiers: { ...(row.rawIdentifiers || {}), ...(row.identifiers || {}) }
       };
     });
 
-    return [...formattedImported, ...formattedSample];
+    const combined = [...formattedImported, ...formattedSample];
+    
+    // Deduplicate by name or externalReference
+    const uniqueMap = new Map();
+    combined.forEach(item => {
+      const key = item.externalReference || item.name.toLowerCase();
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, item);
+      }
+    });
+    
+    return Array.from(uniqueMap.values());
   }, [importedDataRows, sampleRows]);
 
   const filteredData = useMemo(() => {
@@ -737,7 +756,17 @@ const PortfolioOnboarding = () => {
         return;
       }
 
-      setImportedDataRows(mapped);
+      setImportedDataRows(prev => {
+        const combined = [...mapped, ...prev];
+        const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
+        return unique;
+      });
+      
+      // Persist to node-cache
+      importMonitoredEntities(mapped).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
+      }).catch(err => console.error("Failed to persist to node cache", err));
+      
       toast({ title: "File parsed", description: `${mapped.length} monitored entities are ready for import.` });
     } catch (error) {
       setImportedDataRows([]);
@@ -775,8 +804,18 @@ const PortfolioOnboarding = () => {
         return;
       }
 
-      setImportedDataRows(prev => [...mapped, ...prev]);
-      toast({ title: "JSON Parsed", description: `${mapped.length} monitored entities added to queue.` });
+      setImportedDataRows(prev => {
+        const combined = [...mapped, ...prev];
+        const unique = Array.from(new Map(combined.map(item => [item.externalReference, item])).values());
+        return unique;
+      });
+      
+      // Persist to node-cache
+      importMonitoredEntities(mapped).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
+      }).catch(err => console.error("Failed to persist to node cache", err));
+
+      toast({ title: "JSON Data Imported", description: `${mapped.length} entities are ready for onboarding.` });
       setIsPasteJsonDialogOpen(false);
       setPasteJsonContent("");
     } catch (error) {

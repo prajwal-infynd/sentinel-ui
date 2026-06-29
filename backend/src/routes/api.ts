@@ -1,6 +1,9 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import NodeCache from "node-cache";
+
+const myCache = new NodeCache();
 import {
   users,
   mockEntities,
@@ -104,7 +107,25 @@ router.patch("/portfolio/entities/:id/kyb-status", (req, res) => {
 router.post("/portfolio/import", (req, res) => {
   const rows = req.body;
   const importCount = Array.isArray(rows) ? rows.length : 1;
-  dashboardSummary.entityCount = importCount;
+  dashboardSummary.entityCount += importCount;
+  
+  // Persist imported entities into node-cache
+  const existingCache: any[] = myCache.get("crawled_entities") || [];
+  const newEntities = Array.isArray(rows) ? rows : [rows];
+  
+  // Format them for the frontend the same way as sample-preview
+  const formattedNew = newEntities.map(row => ({
+    masterEntityProfile: {
+      fullName: row.name,
+      jurisdiction: row.jurisdiction,
+      financials: { sector: row.identifiers?.sector, revenue: row.identifiers?.revenue },
+      ...row.rawIdentifiers
+    },
+    ...row
+  }));
+  
+  myCache.set("crawled_entities", [...formattedNew, ...existingCache]);
+  
   res.json({ imported: importCount });
 });
 router.get("/portfolio/sample-preview", (req, res) => {
@@ -122,7 +143,9 @@ router.get("/portfolio/sample-preview", (req, res) => {
       masterEntityProfile: profile
     }));
     
-    res.json(formattedData);
+    const cachedEntities = (myCache.get("crawled_entities") as any[]) || [];
+    
+    res.json([...cachedEntities, ...formattedData]);
   } catch (err) {
     console.error("Error reading consolidated_entities.json:", err);
     res.status(500).json({ error: "Failed to load sample data" });
