@@ -532,4 +532,51 @@ router.get("/unified-records", (req, res) => {
   ]);
 });
 
+// --- Proxy for AI Agent ---
+router.post("/chat", async (req, res) => {
+  try {
+    const { message, history, stream, enable_thinking } = req.body;
+    
+    const response = await fetch("https://devstudio.27x.ai/api/v1/agents/24a5ac86-de0c-4621-8809-5bf23b7b4ce5/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c6f80be7-6371-465e-ae32-6b7d2e11ec84_Dw5QHAZok3ysPWvTYVZ_yvgVMY8gAW1fuV-HDggKCkM"
+      },
+      body: JSON.stringify({ message, history, stream, enable_thinking })
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: "Failed to fetch from agent API" });
+    }
+
+    if (stream) {
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      
+      if (!response.body) {
+        return res.status(500).json({ error: "No response body from agent API" });
+      }
+
+      const reader = response.body.getReader();
+      let done = false;
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) {
+          res.write(value);
+        }
+      }
+      res.end();
+    } else {
+      const data = await response.json();
+      res.json(data);
+    }
+  } catch (error) {
+    console.error("Error proxying chat:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
