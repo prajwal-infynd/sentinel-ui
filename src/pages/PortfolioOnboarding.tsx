@@ -184,6 +184,23 @@ const PortfolioOnboarding = () => {
   const [crawlerCompanyName, setCrawlerCompanyName] = useState("");
   const [crawlerCompanyDomain, setCrawlerCompanyDomain] = useState("");
   const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlerLoadingText, setCrawlerLoadingText] = useState("Extracting...");
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isCrawling) {
+      const phrases = ["Extracting...", "Attracting...", "Sourcing...", "Gathering Intel...", "Analyzing..."];
+      let idx = 0;
+      setCrawlerLoadingText(phrases[0]);
+      interval = setInterval(() => {
+        idx = (idx + 1) % phrases.length;
+        setCrawlerLoadingText(phrases[idx]);
+      }, 1500);
+    } else {
+      setCrawlerLoadingText("Extracting...");
+    }
+    return () => clearInterval(interval);
+  }, [isCrawling]);
 
   const handleCrawlerSubmit = async () => {
     if (!crawlerCompanyName && !crawlerCompanyDomain) {
@@ -1247,9 +1264,9 @@ const PortfolioOnboarding = () => {
               </div>
               <div className="flex justify-end gap-3 mt-4">
                 <Button variant="outline" onClick={() => setIsCrawlerDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleCrawlerSubmit} disabled={isCrawling} className="bg-blue-600 hover:bg-blue-700 text-white">
-                  {isCrawling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Wand2 className="h-4 w-4 mr-2" />}
-                  {isCrawling ? "Crawling..." : "Start Extraction"}
+                <Button onClick={handleCrawlerSubmit} disabled={isCrawling} className="bg-blue-600 hover:bg-blue-700 text-white w-[140px] transition-all">
+                  {isCrawling ? <Loader2 className="h-4 w-4 animate-spin mr-2 shrink-0" /> : <Wand2 className="h-4 w-4 mr-2 shrink-0" />}
+                  <span className="truncate">{isCrawling ? crawlerLoadingText : "Start Extraction"}</span>
                 </Button>
               </div>
             </DialogContent>
