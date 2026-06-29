@@ -401,7 +401,7 @@ export default function Settings() {
 
       {/* Add Persona Dialog */}
       <Dialog open={isAddPersonaOpen} onOpenChange={setIsAddPersonaOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white shadow-2xl">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[500px] bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle>Add Custom Persona</DialogTitle>
             <DialogDescription>

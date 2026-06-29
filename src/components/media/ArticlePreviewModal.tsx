@@ -16,7 +16,7 @@ export function ArticlePreviewModal({ open, onOpenChange, alert }: ArticlePrevie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] w-[1200px] h-[85vh] p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-indigo-100 rounded-2xl">
+      <DialogContent aria-describedby={undefined} className="max-w-[90vw] w-[1200px] h-[85vh] p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-indigo-100 rounded-2xl">
         {/* Header */}
         <div className="bg-white border-b px-8 py-6 shrink-0 shadow-sm z-10 relative flex flex-col gap-4">
           {/* Top action row */}

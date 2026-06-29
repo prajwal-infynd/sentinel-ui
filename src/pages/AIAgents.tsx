@@ -164,7 +164,7 @@ const AIAgents = () => {
       </div>
 
       <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>
-        <DialogContent className="max-w-5xl bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] p-0 overflow-hidden border-slate-200">
+        <DialogContent aria-describedby={undefined} className="max-w-5xl bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] p-0 overflow-hidden border-slate-200">
           <DialogHeader className="p-6 pb-0 border-b border-slate-100 bg-white">
             <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Edit Root Agent: {editingAgent}</DialogTitle>
             <DialogDescription className="mt-1">Define your agent's identity, privacy boundaries, and core LLM engine.</DialogDescription>
@@ -384,7 +384,7 @@ const AIAgents = () => {
         </DialogContent>
       </Dialog>
       <Dialog open={isCreatingAgent} onOpenChange={setIsCreatingAgent}>
-        <DialogContent className="max-w-2xl bg-white shadow-xl p-0 overflow-hidden border-slate-200">
+        <DialogContent aria-describedby={undefined} className="max-w-2xl bg-white shadow-xl p-0 overflow-hidden border-slate-200">
           <DialogHeader className="p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
             <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
               <Bot className="h-5 w-5 text-indigo-600" /> Build Custom AI Agent

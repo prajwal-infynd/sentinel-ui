@@ -418,7 +418,7 @@ const Investigation = () => {
                 <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5 group-hover:text-indigo-600 transition-colors">Risk Score</div>
               </div>
               
-              <DialogContent className="max-w-md">
+              <DialogContent aria-describedby={undefined} className="max-w-md">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Brain className="h-5 w-5 text-indigo-500" />
@@ -1664,7 +1664,7 @@ const Investigation = () => {
       
       {/* Auto-SAR Generator Modal */}
       <Dialog open={isSarOpen} onOpenChange={setIsSarOpen}>
-        <DialogContent className="max-w-[800px] max-h-[85vh] p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-indigo-100 rounded-2xl">
+        <DialogContent aria-describedby={undefined} className="max-w-[800px] max-h-[85vh] p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-indigo-100 rounded-2xl">
           <div className="bg-white border-b px-8 py-5 shrink-0 shadow-sm relative overflow-hidden">
             <div className="absolute right-0 top-0 w-64 h-full bg-gradient-to-r from-transparent to-indigo-50/50" />
             <div className="flex items-center justify-between relative z-10">

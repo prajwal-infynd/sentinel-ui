@@ -88,7 +88,7 @@ export function KybMonitorModal({ open, onOpenChange, entity, onUpdateStatus }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[92vw] h-[92vh] p-0 gap-0 bg-slate-50 overflow-hidden rounded-xl flex flex-col md:flex-row border border-slate-200 shadow-2xl">
+      <DialogContent aria-describedby={undefined} className="max-w-[92vw] h-[92vh] p-0 gap-0 bg-slate-50 overflow-hidden rounded-xl flex flex-col md:flex-row border border-slate-200 shadow-2xl">
         <DialogTitle className="sr-only">KYB Monitoring Dashboard</DialogTitle>
 
         {/* Left Sidebar (Enterprise Clean) */}

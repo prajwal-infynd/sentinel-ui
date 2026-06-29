@@ -1134,7 +1134,7 @@ const PortfolioOnboarding = () => {
 
           {/* Crawler Dialog */}
           <Dialog open={isCrawlerDialogOpen} onOpenChange={setIsCrawlerDialogOpen}>
-            <DialogContent className="sm:max-w-[450px] bg-white border-slate-200">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-[450px] bg-white border-slate-200">
               <DialogTitle className="sr-only">Web Crawler Import</DialogTitle>
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">Add Company via Crawler</DialogTitle>
@@ -1176,7 +1176,7 @@ const PortfolioOnboarding = () => {
 
           {/* API Dialog */}
           <Dialog open={isApiDialogOpen} onOpenChange={setIsApiDialogOpen}>
-            <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-white border-slate-200">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-[600px] p-0 overflow-hidden bg-white border-slate-200">
               <DialogTitle className="sr-only">API Integration</DialogTitle>
               <DialogHeader className="p-6 pb-0">
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1210,7 +1210,7 @@ const PortfolioOnboarding = () => {
 
           {/* CRM Dialog */}
           <Dialog open={isCrmDialogOpen} onOpenChange={setIsCrmDialogOpen}>
-            <DialogContent className="sm:max-w-[500px] bg-white border-slate-200">
+            <DialogContent aria-describedby={undefined} className="sm:max-w-[500px] bg-white border-slate-200">
               <DialogTitle className="sr-only">CRM Sync</DialogTitle>
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1282,7 +1282,7 @@ const PortfolioOnboarding = () => {
         </div>
       </div>
       <Dialog open={isPasteJsonDialogOpen} onOpenChange={setIsPasteJsonDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] border-slate-100 shadow-xl rounded-xl p-0 overflow-hidden">
+        <DialogContent aria-describedby={undefined} className="sm:max-w-[600px] border-slate-100 shadow-xl rounded-xl p-0 overflow-hidden">
           <DialogTitle className="sr-only">Paste JSON Payload</DialogTitle>
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
             <h2 className="text-xl font-bold mb-1">Paste JSON Data</h2>

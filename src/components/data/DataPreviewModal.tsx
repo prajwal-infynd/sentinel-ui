@@ -13,7 +13,7 @@ interface DataPreviewModalProps {
 export const DataPreviewModal = ({ isOpen, onClose, fileName, totalRecords = "15,420" }: DataPreviewModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl bg-white p-6 rounded-2xl shadow-2xl">
+      <DialogContent aria-describedby={undefined} className="max-w-4xl bg-white p-6 rounded-2xl shadow-2xl">
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-slate-900">
             <Eye className="h-5 w-5 text-indigo-500" />
