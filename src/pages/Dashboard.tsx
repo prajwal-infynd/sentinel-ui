@@ -240,7 +240,13 @@ const Dashboard = () => {
             </div>
 
             {/* Right Column - AI Daily Briefing */}
-            <div className="flex flex-col h-full border border-indigo-200 bg-white rounded-xl overflow-hidden shadow-sm">
+            <div className="flex flex-col h-full border border-indigo-200 bg-white rounded-xl overflow-hidden shadow-sm relative">
+              <div className="absolute inset-0 z-10 backdrop-blur-[3px] bg-white/40 flex items-center justify-center rounded-xl">
+                <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100 font-bold text-indigo-600 text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> Coming Soon
+                </div>
+              </div>
+
               <div className="flex items-center gap-2 p-4 border-b border-indigo-100 bg-indigo-50/30">
                 <div className="bg-white p-1.5 rounded-lg border border-indigo-100 shadow-sm text-indigo-600">
                   <Brain className="h-4 w-4" />
