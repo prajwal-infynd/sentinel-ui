@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus, Search, Clock, History, Link as LinkIcon, Cloud, Settings2, Download } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus, Search, Clock, History, Link as LinkIcon, Cloud, Settings2, Download, Info } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
 import { importMonitoredEntities, fetchSamplePreview, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
 import { runMediaAgent } from "@/lib/media-agent-data";
@@ -928,7 +929,33 @@ const PortfolioOnboarding = () => {
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Company</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Country</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4">Industry</TableHead>
-                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">Risk Score</TableHead>
+                        <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            Risk Score
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer outline-none focus:ring-2 focus:ring-indigo-500 rounded-full" aria-label="Risk Score Information">
+                                  <Info className="h-3.5 w-3.5" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent side="top" className="w-64 p-3 shadow-lg border-slate-200">
+                                <div className="space-y-2">
+                                  <h4 className="font-bold text-[13px] text-slate-800">Risk Score Levels</h4>
+                                  <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
+                                    <span className="font-bold text-red-500">80 - 100</span>
+                                    <span className="text-slate-600">Critical Risk</span>
+                                    <span className="font-bold text-amber-500">50 - 79</span>
+                                    <span className="text-slate-600">Medium/High Risk</span>
+                                    <span className="font-bold text-emerald-500">30 - 49</span>
+                                    <span className="text-slate-600">Low Risk</span>
+                                    <span className="font-bold text-blue-500">0 - 29</span>
+                                    <span className="text-slate-600">Minimal Risk</span>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                        </TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center">Rating</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-right">Exposure</TableHead>
                         <TableHead className="text-[11px] font-bold text-slate-500 uppercase tracking-wider py-4 text-center pr-6">Alert</TableHead>
