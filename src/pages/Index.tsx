@@ -48,7 +48,7 @@ const Index = () => {
   };
 
   const [signInEmail, setSignInEmail] = useState("testuser@example.com");
-  const [signInPassword, setSignInPassword] = useState("Sentinel_Test_Password_2026!@#");
+  const [signInPassword, setSignInPassword] = useState("harish@123");
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
@@ -62,7 +62,7 @@ const Index = () => {
       // Auto-login with hardcoded credentials
       const autoSignIn = async () => {
         setSubmitting(true);
-        await signInWithPassword("testuser@example.com", "Sentinel_Test_Password_2026!@#");
+        await signInWithPassword("testuser@example.com", "harish@123");
         setSubmitting(false);
       };
       autoSignIn();

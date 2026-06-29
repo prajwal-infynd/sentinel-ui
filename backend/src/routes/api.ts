@@ -14,7 +14,7 @@ const router = Router();
 // --- Auth Routes ---
 router.post("/auth/login", (req, res) => {
   const { email, password } = req.body;
-  const user = users.find((u) => u.email === email && password === "Sentinel_Test_Password_2026!@#");
+  const user = users.find((u) => u.email === email && password === "harish@123");
   if (user) {
     res.json({ user, token: "mock-jwt-token" });
   } else {
