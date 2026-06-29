@@ -110,18 +110,31 @@ const Dashboard = () => {
     .sort((a: any, b: any) => b.riskScore - a.riskScore)
     .slice(0, 5);
 
+  const realisticScenarios = [
+    { type: "Regulatory Alert", desc: "Unusual financial activities detected suggesting potential compliance violations. Regulatory bodies have requested documentation." },
+    { type: "Operational Alert", desc: "Significant supply chain disruption reported in key manufacturing region, threatening Q3 delivery targets." },
+    { type: "Market Alert", desc: "Sudden executive departure announced amidst rumors of internal accounting irregularities." },
+    { type: "Adverse Media", desc: "Multiple news outlets reporting on potential class-action lawsuit regarding data privacy breaches." },
+    { type: "Sanctions Alert", desc: "Secondary sanctions risk identified due to recent joint venture with flagged entity in restricted jurisdiction." },
+    { type: "Credit Alert", desc: "Credit rating downgraded by major agency citing liquidity concerns and increased debt burden." },
+    { type: "Cybersecurity Alert", desc: "Major ransomware attack confirmed by company, impacting core operational systems and data availability." },
+  ];
+
   const dynamicCriticalAlerts = topCriticalEntities.length > 0 
-    ? topCriticalEntities.map((e: any, idx: number) => ({
-        id: e.id || idx,
-        company: e.name,
-        severity: e.alert,
-        type: "Risk Alert",
-        description: e.notes || `High risk score of ${e.riskScore} detected for ${e.name}. Requires immediate review.`,
-        aiAction: `AI suggests reviewing ${e.name}'s recent activities due to an elevated risk score.`,
-        flag: e.country === "United States" || e.country === "US" ? "🇺🇸" : e.country === "United Kingdom" || e.country === "UK" ? "🇬🇧" : e.country === "France" || e.country === "FR" ? "🇫🇷" : "🌍",
-        logoBg: "bg-red-500",
-        initial: e.name.charAt(0).toUpperCase()
-      }))
+    ? topCriticalEntities.map((e: any, idx: number) => {
+        const scenario = realisticScenarios[e.name.length % realisticScenarios.length];
+        return {
+          id: e.id || idx,
+          company: e.name,
+          severity: e.alert,
+          type: scenario.type,
+          description: e.notes || scenario.desc,
+          aiAction: `AI suggests reviewing ${e.name}'s recent activities due to an elevated risk score.`,
+          flag: e.country === "United States" || e.country === "US" ? "🇺🇸" : e.country === "United Kingdom" || e.country === "UK" ? "🇬🇧" : e.country === "France" || e.country === "FR" ? "🇫🇷" : "🌍",
+          logoBg: "bg-red-500",
+          initial: e.name.charAt(0).toUpperCase()
+        };
+      })
     : mockCriticalAlerts;
 
   return (
