@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
       '/croftz-api': {
         target: 'https://croftzgo.com',
         changeOrigin: true,
+        secure: false,
         timeout: 300000,
         proxyTimeout: 300000,
         rewrite: (path) => path.replace(/^\/croftz-api/, ''),
@@ -28,6 +29,9 @@ export default defineConfig(({ mode }) => ({
           proxy.on('proxyReq', (proxyReq, req, _res) => {
             proxyReq.removeHeader('Origin');
             proxyReq.removeHeader('Referer');
+            // Forward the api key header if present
+            const apiKey = req.headers['x-api-key'];
+            if (apiKey) proxyReq.setHeader('x-api-key', apiKey);
           });
         }
       }

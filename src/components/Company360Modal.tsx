@@ -107,18 +107,34 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             body: formData.toString()
           });
 
-          if (!postResp.ok) throw new Error("POST failed");
+          if (!postResp.ok) throw new Error(`POST failed: ${postResp.status}`);
           const postData = await postResp.json();
           const postBody = postData.response || postData;
 
-          let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
-          if (!screeningUid && postBody.screeningResults?.length > 0) {
-            screeningUid = postBody.screeningResults[0].screeningUid || postBody.screeningResults[0].id;
-          }
-          if (!screeningUid && postBody.data?.length > 0) {
-            screeningUid = postBody.data[0].screeningUid;
+          // ✅ The POST response returns data[] directly — use first result
+          // Shape: { response: { success, screening: { rowUid }, data: [ { name, companyNumber, jurisdictionCode, ... } ] } }
+          if (postBody.data?.length > 0) {
+            // Map Croftz data[] record to the shape the modal expects
+            const rec = postBody.data[0];
+            setLocalCroftzData({
+              name: rec.name,
+              companyNumber: rec.companyNumber,
+              jurisdictionCode: rec.jurisdictionCode,
+              incorporationDate: rec.incorporationDate,
+              companyType: rec.companyType,
+              currentStatus: rec.currentStatus,
+              sourcePublisher: rec.sourcePublisher,
+              sourceUrl: rec.sourceUrl || rec.registryUrl || rec.opencorporatesUrl,
+              opencorporatesUrl: rec.opencorporatesUrl,
+              registeredAddressInFull: rec.registeredAddressInFull,
+              industryCodes: rec.industryCodes,
+              inactive: rec.inactive,
+            });
+            return;
           }
 
+          // Fallback: try GET with screeningUid if no data[] in POST
+          const screeningUid = postBody.screening?.rowUid || postBody.screeningUid;
           if (screeningUid) {
             const getResp = await fetch(`${endpointUrl}?crScreeningUid=${screeningUid}`, {
               headers: { "x-api-key": CROFTZ_KEY }
@@ -126,11 +142,22 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             if (getResp.ok) {
               const getData = await getResp.json();
               const getBody = getData.response || getData;
-              const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
-              setLocalCroftzData(results);
+              const rec2 = getBody.data?.[0];
+              if (rec2) {
+                setLocalCroftzData({
+                  name: rec2.name,
+                  companyNumber: rec2.companyNumber,
+                  jurisdictionCode: rec2.jurisdictionCode,
+                  incorporationDate: rec2.incorporationDate,
+                  companyType: rec2.companyType,
+                  currentStatus: rec2.currentStatus,
+                  sourcePublisher: rec2.sourcePublisher,
+                  sourceUrl: rec2.sourceUrl || rec2.registryUrl || rec2.opencorporatesUrl,
+                  opencorporatesUrl: rec2.opencorporatesUrl,
+                  registeredAddressInFull: rec2.registeredAddressInFull,
+                });
+              }
             }
-          } else if (postBody.screeningResults?.length > 0) {
-             setLocalCroftzData(postBody.screeningResults[0].results);
           }
         } catch (e) {
           console.error("Croftz fetch error", e);
@@ -368,6 +395,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                     {hasValue(cr.incorporationDate) && <InfoField label="Incorporation Date" value={new Date(cr.incorporationDate).toLocaleDateString()} />}
                     {hasValue(cr.companyType) && <InfoField label="Company Type" value={cr.companyType} />}
                     {hasValue(cr.currentStatus) && <InfoField label="Status" value={cr.currentStatus} />}
+                    {hasValue(cr.registeredAddressInFull) && <InfoField label="Registered Address" value={cr.registeredAddressInFull} className="col-span-2" />}
                     
                     <div className="flex flex-col gap-1 col-span-2">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Source</span>
