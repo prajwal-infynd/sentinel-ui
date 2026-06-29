@@ -109,6 +109,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
           if (!postResp.ok) throw new Error(`POST failed: ${postResp.status}`);
           const postData = await postResp.json();
+          console.log("[Company360Modal] Croftz POST Response:", JSON.parse(JSON.stringify(postData)));
           const postBody = postData.response || postData;
 
           // ✅ The POST response returns data[] directly — use first result
@@ -116,7 +117,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
           if (postBody.data?.length > 0) {
             // Map Croftz data[] record to the shape the modal expects
             const rec = postBody.data[0];
-            setLocalCroftzData({
+            const mappedData = {
               name: rec.name,
               companyNumber: rec.companyNumber,
               jurisdictionCode: rec.jurisdictionCode,
@@ -129,22 +130,26 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               registeredAddressInFull: rec.registeredAddressInFull,
               industryCodes: rec.industryCodes,
               inactive: rec.inactive,
-            });
+            };
+            console.log("[Company360Modal] Setting localCroftzData from POST:", mappedData);
+            setLocalCroftzData(mappedData);
             return;
           }
 
           // Fallback: try GET with screeningUid if no data[] in POST
           const screeningUid = postBody.screening?.rowUid || postBody.screeningUid;
           if (screeningUid) {
+            console.log("[Company360Modal] Falling back to GET with UID:", screeningUid);
             const getResp = await fetch(`${endpointUrl}?crScreeningUid=${screeningUid}`, {
               headers: { "x-api-key": CROFTZ_KEY }
             });
             if (getResp.ok) {
               const getData = await getResp.json();
+              console.log("[Company360Modal] Croftz GET Response:", JSON.parse(JSON.stringify(getData)));
               const getBody = getData.response || getData;
               const rec2 = getBody.data?.[0];
               if (rec2) {
-                setLocalCroftzData({
+                const mappedData2 = {
                   name: rec2.name,
                   companyNumber: rec2.companyNumber,
                   jurisdictionCode: rec2.jurisdictionCode,
@@ -155,7 +160,11 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                   sourceUrl: rec2.sourceUrl || rec2.registryUrl || rec2.opencorporatesUrl,
                   opencorporatesUrl: rec2.opencorporatesUrl,
                   registeredAddressInFull: rec2.registeredAddressInFull,
-                });
+                };
+                console.log("[Company360Modal] Setting localCroftzData from GET:", mappedData2);
+                setLocalCroftzData(mappedData2);
+              } else {
+                console.warn("[Company360Modal] GET returned no data[]");
               }
             }
           }
@@ -179,7 +188,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const competitors = identifiers.keyCompetitors || payload.competitors || [];
 
   // Croftz fields (all null-safe)
-  const riskScore = croftz?.risk_score ?? null;
+  const riskScore = croftz?.risk_score ?? companyData?.riskScore ?? null;
   const riskLevel = croftz?.risk_level ?? null;
   const riskTitle = croftz?.risk_title ?? null;
   const riskDecision = croftz?.risk_decision ?? null;
