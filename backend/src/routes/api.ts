@@ -105,14 +105,188 @@ router.post("/portfolio/import", (req, res) => {
   dashboardSummary.entityCount = importCount;
   res.json({ imported: importCount });
 });
-
 router.get("/portfolio/sample-preview", (req, res) => {
   res.json([
-    { id: "ENT-AAPL", name: "Apple Inc", type: "Public", dob: "1976-04-01", country: "US", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 161000, annualRevenue: 383285000000, industry: "Consumer Electronics", phone: "(408) 996-1010", companyType: "Public", description: "Apple Inc. is an American multinational technology company headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, software and online services." } },
-    { id: "ENT-BMR", name: "B & M Retail Limited", type: "Public", dob: "1978-03-14", country: "Jersey", risk: "Medium", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 35000, annualRevenue: 4983000000, industry: "Retail", phone: "+44 151 728 5400", companyType: "Private", description: "B&M European Value Retail S.A. is a British variety store value retail chain, trading as B&M." } },
-    { id: "ENT-BOY", name: "Bodycote PLC", type: "Public", dob: "1923-01-01", country: "UK", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 4983, annualRevenue: 744000000, industry: "Industrial Engineering", phone: "+44 1625 505300", companyType: "Public", description: "Bodycote plc is a supplier of metallurgical services, headquartered in Macclesfield, United Kingdom." } },
-    { id: "ENT-BP", name: "BP plc", type: "Public", dob: "1909-04-14", country: "UK", risk: "Critical", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 67600, annualRevenue: 241000000000, industry: "Oil & Gas", phone: "+44 20 7496 4000", companyType: "Public", description: "BP p.l.c. is a British multinational oil and gas company headquartered in London, England. It is one of the oil and gas supermajors." } },
-    { id: "ENT-CLDN", name: "Caledonia Investments plc", type: "Public", dob: "1928-01-01", country: "UK", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 45, annualRevenue: 154000000, industry: "Investment Trust", phone: "+44 20 7802 8080", companyType: "Public", description: "Caledonia Investments plc is a British investment trust headquartered in London, England." } }
+    {
+      "masterEntityProfile": {
+        "fullName": "Apple Inc",
+        "aliases": ["Apple", "Apple Computer, Inc.", "Apple Computer Company"],
+        "dateOfBirth": "1976-04-01T00:00:00Z",
+        "jurisdiction": "US",
+        "linkedJurisdictions": ["US", "China"],
+        "legalType": "Public",
+        "address": "One Apple Park Way, Cupertino, California, 95014",
+        "website": "apple.com",
+        "phone": "(408) 996-1010",
+        "status": "ACTIVE",
+        "identifiers": [
+          { "type": "Ticker", "value": "AAPL" },
+          { "type": "DUNS", "value": null }
+        ],
+        "aboutCompany": {
+          "brief": "American multinational technology company headquartered in Cupertino, California, known for consumer electronics, software and online services.",
+          "fullRiskAssessment": "Apple Inc. is an American multinational technology company headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, software and online services. Founded in 1976 as Apple Computer Company by Steve Jobs, Steve Wozniak and Ronald Wayne, the company was incorporated by Jobs and Wozniak as Apple Computer, Inc. the following year."
+        },
+        "financials": {
+          "revenue": 111180000000,
+          "currency": "USD",
+          "employees": 166000,
+          "fiscalYear": "Mar 2026",
+          "sector": "Computers, Peripherals, and Software",
+          "dataSource": "Provided source data"
+        },
+        "keyPersonnel": [
+          { "name": "Tim Cook", "role": "CEO" }
+        ],
+        "keyCompetitors": [
+          { "name": "Samsung", "duns": "N/A", "tier": null }
+        ]
+      }
+    },
+    {
+      "masterEntityProfile": {
+        "fullName": "B & M Retail Limited",
+        "aliases": ["B&M", "B&M European Value Retail S.A."],
+        "dateOfBirth": "1978-03-14T00:00:00Z",
+        "jurisdiction": "Jersey",
+        "linkedJurisdictions": ["Jersey", "UK", "France"],
+        "legalType": "Public",
+        "address": "26, New Street, St Helier, Jersey, JE2 3RA",
+        "website": "bandmretail.com",
+        "phone": "+44 1534 507000",
+        "status": "ACTIVE",
+        "identifiers": [
+          { "type": "Ticker", "value": "BME" },
+          { "type": "DUNS", "value": null }
+        ],
+        "aboutCompany": {
+          "brief": "British multinational variety store and garden centre chain founded in 1978, based in Liverpool, England.",
+          "fullRiskAssessment": "B & M Retail Limited, trading as B&M, is a British multinational variety store and garden centre chain founded in 1978 and based in Liverpool, England."
+        },
+        "financials": {
+          "revenue": 1510000000,
+          "currency": "GBP",
+          "employees": 39100,
+          "fiscalYear": "Mar 2026",
+          "sector": "Consumer",
+          "dataSource": "Provided source data"
+        },
+        "keyPersonnel": [
+          { "name": "Tjeerd Jegen", "role": "Chief Executive Officer" }
+        ],
+        "keyCompetitors": [
+          { "name": "Anzu", "duns": "N/A", "tier": null }
+        ]
+      }
+    },
+    {
+      "masterEntityProfile": {
+        "fullName": "Bodycote PLC",
+        "aliases": ["Bodycote plc", "Bodycote"],
+        "dateOfBirth": "1923-01-01T00:00:00Z",
+        "jurisdiction": "UK",
+        "linkedJurisdictions": ["UK"],
+        "legalType": "Public",
+        "address": "Springwood Court, Springwood Close, Tytherington Business Park, Macclesfield, Cheshire, SK10 2XF, United Kingdom",
+        "website": "bodycote.com",
+        "phone": "+44 (0)1625 505300",
+        "status": "ACTIVE",
+        "identifiers": [
+          { "type": "Ticker", "value": "BOY" },
+          { "type": "DUNS", "value": null }
+        ],
+        "aboutCompany": {
+          "brief": "Supplier of heat treatments, metal joining, hot isostatic pressing and coating services, based in Macclesfield, UK.",
+          "fullRiskAssessment": "Bodycote plc is a supplier of heat treatments, metal joining, hot isostatic pressing and coating services."
+        },
+        "financials": {
+          "revenue": 179050000,
+          "currency": "GBP",
+          "employees": 3920,
+          "fiscalYear": "Dec 2025",
+          "sector": "Machine industry",
+          "dataSource": "Provided source data"
+        },
+        "keyPersonnel": [
+          { "name": "Jim Fairbairn", "role": "Chief Executive Officer" }
+        ],
+        "keyCompetitors": [
+          { "name": "Vinci", "duns": "N/A", "tier": null }
+        ]
+      }
+    },
+    {
+      "masterEntityProfile": {
+        "fullName": "BP plc",
+        "aliases": ["BP p.l.c.", "BP", "British Petroleum"],
+        "dateOfBirth": "1909-04-14T00:00:00Z",
+        "jurisdiction": "UK",
+        "linkedJurisdictions": ["UK", "Iran", "US"],
+        "legalType": "Public",
+        "address": "1 St James's Square, London, SW1Y 4PD, UK",
+        "website": "bp.com",
+        "phone": "+44 (0)20 7496 4000",
+        "status": "ACTIVE",
+        "identifiers": [
+          { "type": "Ticker", "value": "BP" },
+          { "type": "DUNS", "value": null }
+        ],
+        "aboutCompany": {
+          "brief": "British multinational oil and gas 'supermajor' headquartered in London, vertically integrated across the oil and gas industry.",
+          "fullRiskAssessment": "BP p.l.c. is a British multinational oil and gas company headquartered in London, England."
+        },
+        "financials": {
+          "revenue": 51830000000,
+          "currency": "GBP",
+          "employees": 93700,
+          "fiscalYear": "Mar 2026",
+          "sector": "Energy",
+          "dataSource": "Provided source data"
+        },
+        "keyPersonnel": [
+          { "name": "Meg O'Neill", "role": "Chief Executive Officer (CEO)" }
+        ],
+        "keyCompetitors": [
+          { "name": "RIT Capital Partners", "duns": "N/A", "tier": null }
+        ]
+      }
+    },
+    {
+      "masterEntityProfile": {
+        "fullName": "Caledonia Investments plc",
+        "aliases": ["Caledonia Investments", "Caledonia"],
+        "dateOfBirth": "1928-01-01T00:00:00Z",
+        "jurisdiction": "UK",
+        "linkedJurisdictions": ["UK"],
+        "legalType": "Public",
+        "address": "Cayzer House, 30 Buckingham Gate, London SW1E 6NN",
+        "website": "caledonia.com",
+        "phone": "020 7802 8080",
+        "status": "ACTIVE",
+        "identifiers": [
+          { "type": "Ticker", "value": "CLDN" },
+          { "type": "DUNS", "value": null }
+        ],
+        "aboutCompany": {
+          "brief": "Self-managed investment trust company based in London, listed on the London Stock Exchange and a constituent of the FTSE 250 Index.",
+          "fullRiskAssessment": "Caledonia Investments plc is a self-managed investment trust company based in London, England."
+        },
+        "financials": {
+          "revenue": 10900000,
+          "currency": "GBP",
+          "employees": 82,
+          "fiscalYear": "Mar 2026",
+          "sector": "Capital market",
+          "dataSource": "Provided source data"
+        },
+        "keyPersonnel": [
+          { "name": "Mat Masters", "role": "CEO" }
+        ],
+        "keyCompetitors": [
+          { "name": "Steelite", "duns": "N/A", "tier": null }
+        ]
+      }
+    }
   ]);
 });
 

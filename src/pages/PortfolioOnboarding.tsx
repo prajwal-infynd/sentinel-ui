@@ -439,21 +439,60 @@ const PortfolioOnboarding = () => {
     setManualEntityType("");
     setManualJurisdiction("");
   };
-  const defaultCompaniesData = [
-    { id: 1, name: "Xbox (Microsoft Corporation)", country: "United States", industry: "Technology - Software & Cloud Computing", riskScore: 58, rating: "BBB", exposure: "£281700.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇺🇸", initial: "X" },
-    { id: 2, name: "Wise", country: "United Kingdom", industry: "N/A", riskScore: 82, rating: "CCC", exposure: "—", lastChange: "10/15/2025", alert: "Critical", flag: "🇬🇧", initial: "W" },
-    { id: 3, name: "The Weir Group PLC", country: "United Kingdom", industry: "Industrials - Mining Equipment & Technology", riskScore: 47.54, rating: "BBB", exposure: "£2506.0M", lastChange: "1/27/2025", alert: "Low", flag: "🇬🇧", initial: "T" },
-    { id: 4, name: "Videndum plc", country: "United States", industry: "N/A", riskScore: 88, rating: "CCC", exposure: "£228.3M", lastChange: "6/23/2026", alert: "Critical", flag: "🇺🇸", initial: "V" },
-    { id: 5, name: "Thames Water Utilities Limited", country: "United Kingdom", industry: "Utilities - Water & Wastewater Services", riskScore: 88.2, rating: "CCC", exposure: "£2700.0M", lastChange: "6/17/2025", alert: "Critical", flag: "🇬🇧", initial: "T" },
-    { id: 6, name: "Spirit Airlines, Inc.", country: "United States", industry: "Industrials - Airlines (Ultra-Low-Cost Carrier)", riskScore: 95.05, rating: "CCC", exposure: "£5360.0M", lastChange: "6/23/2026", alert: "Critical", flag: "🇺🇸", initial: "S" },
-    { id: 7, name: "Space Exploration Technologies Corp.", country: "United States", industry: "Aerospace & Defense - Space Launch & Satellite Communications", riskScore: 33.7, rating: "AA", exposure: "£14020.0M", lastChange: "6/18/2025", alert: "Medium", flag: "🇺🇸", initial: "S" },
-    { id: 8, name: "Rolls-Royce Motor Cars Limited", country: "United Kingdom", industry: "Consumer Discretionary - Ultra-Luxury Automobiles", riskScore: 28, rating: "AA", exposure: "£978.9M", lastChange: "6/23/2026", alert: "Medium", flag: "🇬🇧", initial: "R" },
-    { id: 9, name: "Rathbones Group Plc", country: "United Kingdom", industry: "Financials - Wealth & Asset Management", riskScore: 46, rating: "BBB", exposure: "£1020.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇬🇧", initial: "R" },
-    { id: 10, name: "Pizza Hut, LLC", country: "United States", industry: "Consumer Discretionary - Quick-Service Restaurants (QSR)", riskScore: 58, rating: "BBB", exposure: "£7549.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇺🇸", initial: "P" },
-  ];
+  const { data: sampleRows = [] } = useQuery({ queryKey: ["portfolio-sample"], queryFn: fetchSamplePreview });
 
   const displayData = useMemo(() => {
-    if (importedDataRows.length === 0) return defaultCompaniesData;
+    if (importedDataRows.length === 0) {
+      if (sampleRows.length === 0) return [];
+      
+      return sampleRows.map((row: any, index: number) => {
+        const profile = row.masterEntityProfile || {};
+        const name = profile.fullName || row.name || "Unknown";
+        const country = profile.jurisdiction || row.country || "Unknown";
+        const industry = profile.financials?.sector || row.payload?.industry || "N/A";
+        const revenue = Number(profile.financials?.revenue || 0);
+        
+        const getFlag = (country: string) => {
+          const c = country.toLowerCase();
+          if (c === "us" || c === "united states" || c === "usa") return "🇺🇸";
+          if (c === "uk" || c === "united kingdom" || c === "england") return "🇬🇧";
+          if (c === "jersey") return "🇯🇪";
+          if (c === "france") return "🇫🇷";
+          if (c === "germany") return "🇩🇪";
+          return "🌐";
+        };
+        
+        let riskScore = 25;
+        if (revenue > 10000000000) riskScore = 85;
+        else if (revenue > 1000000000) riskScore = 65;
+        else if (revenue > 0) riskScore = 45;
+
+        let exposure = "Pending";
+        if (revenue > 0) {
+          if (revenue >= 1000000000) {
+            exposure = `$${(revenue / 1000000).toFixed(1)}M`;
+          } else {
+            exposure = `$${(revenue / 1000).toFixed(1)}K`;
+          }
+        }
+        
+        return {
+          id: index + 1,
+          name: name,
+          country: country,
+          industry: industry,
+          riskScore,
+          rating: riskScore >= 80 ? "CCC" : riskScore >= 50 ? "BBB" : "AA",
+          exposure,
+          lastChange: "Just now",
+          alert: riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low",
+          flag: getFlag(country || ""),
+          initial: name.charAt(0).toUpperCase(),
+          externalReference: row.id || `ENT-${index}`,
+          rawIdentifiers: profile || row.payload || {}
+        };
+      });
+    }
     
     return importedDataRows.map((row, index) => {
       const name = String(row.name || "Unknown Entity");
@@ -506,7 +545,7 @@ const PortfolioOnboarding = () => {
         rawIdentifiers: row.identifiers || {}
       };
     });
-  }, [importedDataRows]);
+  }, [importedDataRows, sampleRows]);
 
   const loadMockData = () => {
     setSelectedFileName("demo-portfolio-Q3.csv");
@@ -534,8 +573,6 @@ const PortfolioOnboarding = () => {
       importMutation.mutate();
     }, 5500);
   };
-
-  const { data: sampleRows = [] } = useQuery({ queryKey: ["portfolio-sample"], queryFn: fetchSamplePreview });
 
   const previewRows = useMemo(() => {
     if (!importedDataRows.length) return sampleRows;
@@ -686,12 +723,12 @@ const PortfolioOnboarding = () => {
                       onClick={() => {
                         setImportedDataRows([]);
                         localStorage.removeItem('sentinel_portfolio_data');
-                        toast({ title: "Local Data Cleared", description: "Reverted to backend sample data." });
+                        toast({ title: "Local Data Cleared", description: "All rows have been removed." });
                       }} 
                       variant="destructive" 
                       className="h-9 gap-2 font-bold shadow-sm text-[13px] rounded-lg px-4 ml-1"
                     >
-                      Clear Data
+                      Clear All Data
                     </Button>
                   )}
                 </div>
@@ -759,73 +796,85 @@ const PortfolioOnboarding = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayData.map((row) => (
-                        <TableRow key={row.id} className="hover:bg-slate-50/60 border-b border-slate-100/80 transition-colors group">
-                          <TableCell className="py-4 pl-6 text-[12.5px] font-semibold text-slate-400">{row.id}</TableCell>
-                          
-                          {/* Company */}
-                          <TableCell className="py-4 cursor-pointer" onClick={() => setSelectedCompany360(row)}>
-                            <div className="flex items-center gap-3">
-                              <div className="w-7 h-7 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
-                                {row.initial}
-                              </div>
-                              <span className="text-[13px] font-bold text-blue-600 hover:text-blue-800">{row.name}</span>
+                      {displayData.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={9} className="h-48 text-center">
+                            <div className="flex flex-col items-center justify-center text-slate-500">
+                              <Database className="h-8 w-8 text-slate-300 mb-3" />
+                              <p className="text-[14px] font-medium text-slate-600 mb-1">No entities to monitor</p>
+                              <p className="text-[13px]">Add companies using the crawler, paste JSON, or select from CRM to get started.</p>
                             </div>
                           </TableCell>
-
-                          {/* Country */}
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">{row.flag}</span>
-                              <span className="text-[13px] font-medium text-slate-600">{row.country}</span>
-                            </div>
-                          </TableCell>
-
-                          {/* Industry */}
-                          <TableCell className="py-4 text-[13px] font-medium text-slate-500 max-w-[200px] truncate">
-                            {row.industry}
-                          </TableCell>
-
-                          {/* Risk Score */}
-                          <TableCell className="py-4 text-center">
-                            <span className={`text-[13.5px] font-bold ${
-                              row.riskScore >= 80 ? 'text-red-500' : 
-                              row.riskScore >= 50 ? 'text-amber-500' : 
-                              row.riskScore >= 30 ? 'text-emerald-500' : 
-                              'text-blue-500'
-                            }`}>
-                              {row.riskScore}
-                            </span>
-                          </TableCell>
-
-                          {/* Rating */}
-                          <TableCell className="py-4 text-center text-[13px] font-bold text-slate-700">
-                            {row.rating}
-                          </TableCell>
-
-                          {/* Exposure */}
-                          <TableCell className="py-4 text-right text-[13px] font-semibold text-slate-900">
-                            {row.exposure}
-                          </TableCell>
-
-                          {/* Last Change */}
-                          <TableCell className="py-4 text-right pr-6 text-[12.5px] font-medium text-slate-500">
-                            {row.lastChange}
-                          </TableCell>
-
-                          {/* Alert */}
-                          <TableCell className="py-4 text-center pr-6">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide border ${
-                              row.alert === "Critical" ? 'bg-red-50 text-red-600 border-red-200' :
-                              row.alert === "Medium" ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                              'bg-emerald-50 text-emerald-600 border-emerald-200'
-                            }`}>
-                              {row.alert}
-                            </span>
-                          </TableCell>
-
                         </TableRow>
-                      ))}
+                      ) : (
+                        displayData.map((row) => (
+                          <TableRow key={row.id} className="hover:bg-slate-50/60 border-b border-slate-100/80 transition-colors group">
+                            <TableCell className="py-4 pl-6 text-[12.5px] font-semibold text-slate-400">{row.id}</TableCell>
+                            
+                            {/* Company */}
+                            <TableCell className="py-4 cursor-pointer" onClick={() => setSelectedCompany360(row)}>
+                              <div className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
+                                  {row.initial}
+                                </div>
+                                <span className="text-[13px] font-bold text-blue-600 hover:text-blue-800">{row.name}</span>
+                              </div>
+                            </TableCell>
+
+                            {/* Country */}
+                            <TableCell className="py-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{row.flag}</span>
+                                <span className="text-[13px] font-medium text-slate-600">{row.country}</span>
+                              </div>
+                            </TableCell>
+
+                            {/* Industry */}
+                            <TableCell className="py-4 text-[13px] font-medium text-slate-500 max-w-[200px] truncate">
+                              {row.industry}
+                            </TableCell>
+
+                            {/* Risk Score */}
+                            <TableCell className="py-4 text-center">
+                              <span className={`text-[13.5px] font-bold ${
+                                row.riskScore >= 80 ? 'text-red-500' : 
+                                row.riskScore >= 50 ? 'text-amber-500' : 
+                                row.riskScore >= 30 ? 'text-emerald-500' : 
+                                'text-blue-500'
+                              }`}>
+                                {row.riskScore}
+                              </span>
+                            </TableCell>
+
+                            {/* Rating */}
+                            <TableCell className="py-4 text-center text-[13px] font-bold text-slate-700">
+                              {row.rating}
+                            </TableCell>
+
+                            {/* Exposure */}
+                            <TableCell className="py-4 text-right text-[13px] font-semibold text-slate-900">
+                              {row.exposure}
+                            </TableCell>
+
+                            {/* Last Change */}
+                            <TableCell className="py-4 text-right pr-6 text-[12.5px] font-medium text-slate-500">
+                              {row.lastChange}
+                            </TableCell>
+
+                            {/* Alert */}
+                            <TableCell className="py-4 text-center pr-6">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide border ${
+                                row.alert === "Critical" ? 'bg-red-50 text-red-600 border-red-200' :
+                                row.alert === "Medium" ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                'bg-emerald-50 text-emerald-600 border-emerald-200'
+                              }`}>
+                                {row.alert}
+                              </span>
+                            </TableCell>
+
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
