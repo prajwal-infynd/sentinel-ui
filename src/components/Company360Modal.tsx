@@ -555,8 +555,6 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                     </div>
                   </div>
                 )}
-                  </div>
-                )}
               </div>
               );
             })()}
