@@ -51,6 +51,9 @@ function getSentimentColor(score: number) {
 }
 
 export function Company360Modal({ isOpen, onClose, companyData }: Company360ModalProps) {
+  const [localCroftzData, setLocalCroftzData] = useState<any>(null);
+  const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
+
   if (!companyData) return null;
 
   const companyName = companyData.name;
@@ -59,9 +62,6 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null; // Updated to include local data
 
   const isScreeningPending = !croftz && !payload.fiscalYear;
-
-  const [localCroftzData, setLocalCroftzData] = useState<any>(null);
-  const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
