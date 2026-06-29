@@ -151,18 +151,7 @@ const PortfolioOnboarding = () => {
   // Modal State
   const [selectedCompany360, setSelectedCompany360] = useState<any | null>(null);
 
-  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>(() => {
-    try {
-      const saved = localStorage.getItem('sentinel_portfolio_data');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('sentinel_portfolio_data', JSON.stringify(importedDataRows));
-  }, [importedDataRows]);
+  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>([]);
 
   const [parseError, setParseError] = useState<string | null>(null);
   const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
@@ -184,11 +173,7 @@ const PortfolioOnboarding = () => {
     sanctions: true
   });
   
-  const [mockUploadHistory] = useState([
-    { id: 1, name: "Q3_Client_List_APAC.csv", date: "2026-06-28 09:30 AM", entities: 1450, user: "Sarah K.", status: "Active" },
-    { id: 2, name: "EMEA_Vendors_Batch1.json", date: "2026-06-25 02:15 PM", entities: 320, user: "Admin", status: "Active" },
-    { id: 3, name: "High_Risk_Prospects.xlsx", date: "2026-06-20 11:45 AM", entities: 85, user: "Michael R.", status: "Archived" }
-  ]);
+
 
   const [manualEntityName, setManualEntityName] = useState("");
   const [manualEntityType, setManualEntityType] = useState("");
@@ -519,59 +504,56 @@ const PortfolioOnboarding = () => {
   const { data: sampleRows = [] } = useQuery({ queryKey: ["portfolio-sample"], queryFn: fetchSamplePreview });
 
   const displayData = useMemo(() => {
-    if (importedDataRows.length === 0) {
-      if (sampleRows.length === 0) return [];
+    // Show both crawled data and the API sample data (consolidated_entities.json)
+    const formattedSample = sampleRows.map((row: any, index: number) => {
+      const profile = row.masterEntityProfile || {};
+      const name = profile.fullName || row.name || "Unknown";
+      const country = profile.jurisdiction || row.country || "Unknown";
+      const industry = profile.financials?.sector || row.payload?.industry || "N/A";
+      const revenue = Number(profile.financials?.revenue || 0);
       
-      return sampleRows.map((row: any, index: number) => {
-        const profile = row.masterEntityProfile || {};
-        const name = profile.fullName || row.name || "Unknown";
-        const country = profile.jurisdiction || row.country || "Unknown";
-        const industry = profile.financials?.sector || row.payload?.industry || "N/A";
-        const revenue = Number(profile.financials?.revenue || 0);
-        
-        const getFlag = (country: string) => {
-          const c = country.toLowerCase();
-          if (c === "us" || c === "united states" || c === "usa") return "🇺🇸";
-          if (c === "uk" || c === "united kingdom" || c === "england") return "🇬🇧";
-          if (c === "jersey") return "🇯🇪";
-          if (c === "france") return "🇫🇷";
-          if (c === "germany") return "🇩🇪";
-          return "🌐";
-        };
-        
-        let riskScore = 25;
-        if (revenue > 10000000000) riskScore = 85;
-        else if (revenue > 1000000000) riskScore = 65;
-        else if (revenue > 0) riskScore = 45;
+      const getFlag = (country: string) => {
+        const c = country.toLowerCase();
+        if (c === "us" || c === "united states" || c === "usa") return "🇺🇸";
+        if (c === "uk" || c === "united kingdom" || c === "england") return "🇬🇧";
+        if (c === "jersey") return "🇯🇪";
+        if (c === "france") return "🇫🇷";
+        if (c === "germany") return "🇩🇪";
+        return "🌐";
+      };
+      
+      let riskScore = 25;
+      if (revenue > 10000000000) riskScore = 85;
+      else if (revenue > 1000000000) riskScore = 65;
+      else if (revenue > 0) riskScore = 45;
 
-        let exposure = "Pending";
-        if (revenue > 0) {
-          if (revenue >= 1000000000) {
-            exposure = `$${(revenue / 1000000).toFixed(1)}M`;
-          } else {
-            exposure = `$${(revenue / 1000).toFixed(1)}K`;
-          }
+      let exposure = "Pending";
+      if (revenue > 0) {
+        if (revenue >= 1000000000) {
+          exposure = `$${(revenue / 1000000).toFixed(1)}M`;
+        } else {
+          exposure = `$${(revenue / 1000).toFixed(1)}K`;
         }
-        
-        return {
-          id: index + 1,
-          name: name,
-          country: country,
-          industry: industry,
-          riskScore,
-          rating: riskScore >= 80 ? "CCC" : riskScore >= 50 ? "BBB" : "AA",
-          exposure,
-          lastChange: "Just now",
-          alert: riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low",
-          flag: getFlag(country || ""),
-          initial: name.charAt(0).toUpperCase(),
-          externalReference: row.id || `ENT-${index}`,
-          rawIdentifiers: profile || row.payload || {}
-        };
-      });
-    }
-    
-    return importedDataRows.map((row, index) => {
+      }
+      
+      return {
+        id: index + 1,
+        name: name,
+        country: country,
+        industry: industry,
+        riskScore,
+        rating: riskScore >= 80 ? "CCC" : riskScore >= 50 ? "BBB" : "AA",
+        exposure,
+        lastChange: "Just now",
+        alert: riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low",
+        flag: getFlag(country || ""),
+        initial: name.charAt(0).toUpperCase(),
+        externalReference: row.id || `ENT-${index}`,
+        rawIdentifiers: profile || row.payload || {}
+      };
+    });
+
+    const formattedImported = importedDataRows.map((row, index) => {
       const name = String(row.name || "Unknown Entity");
       const revenue = Number(row.identifiers?.revenue || 0);
       const currency = String(row.identifiers?.currency || "USD");
@@ -622,6 +604,8 @@ const PortfolioOnboarding = () => {
         rawIdentifiers: { ...(row.rawIdentifiers || {}), ...(row.identifiers || {}) }
       };
     });
+
+    return [...formattedImported, ...formattedSample];
   }, [importedDataRows, sampleRows]);
 
   const filteredData = useMemo(() => {
@@ -678,16 +662,7 @@ const PortfolioOnboarding = () => {
     return filteredData.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredData, currentPage]);
 
-  const loadMockData = () => {
-    setSelectedFileName("demo-portfolio-Q3.csv");
-    setImportedDataRows([
-      { name: "Acme Corp", entityType: "company", jurisdiction: "United Kingdom", riskScore: 85, externalReference: "C-10492" },
-      { name: "John Doe", entityType: "individual", jurisdiction: "United States", riskScore: 42, externalReference: "I-93910" },
-      { name: "Globex Industries", entityType: "company", jurisdiction: "Singapore", riskScore: 12, externalReference: "C-10493" },
-      { name: "Sarah Connor", entityType: "individual", jurisdiction: "Mexico", riskScore: 68, externalReference: "I-93911" },
-      { name: "Stark Industries", entityType: "company", jurisdiction: "United States", riskScore: 94, externalReference: "C-10494" },
-    ] as any[]);
-  };
+
 
   const handleStartMonitoring = () => {
     setIsOrchestrating(true);
