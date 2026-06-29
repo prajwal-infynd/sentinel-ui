@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { forceCollide } from "d3-force";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus, Minus, ZoomIn, ZoomOut, Maximize2, Minimize2, Expand, MousePointer2
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus, Minus, MousePointer2
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -20,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import ForceGraph2D from 'react-force-graph-2d';
+import { NetworkGraph } from "@/components/NetworkGraph";
 
 const defaultDebate = [
   { 
@@ -153,10 +152,7 @@ const Investigation = () => {
   
   const [isSarOpen, setIsSarOpen] = useState(false);
   const [graphContainer, setGraphContainer] = useState<HTMLDivElement | null>(null);
-  const [graphDimensions, setGraphDimensions] = useState({ width: 800, height: 500 });
   const [selectedGraphNode, setSelectedGraphNode] = useState<any>(null);
-  const forceGraphRef = useRef<any>(null);
-  const [fgInstance, setFgInstance] = useState<any>(null);
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -184,67 +180,6 @@ const Investigation = () => {
     }
   };
 
-  const handleZoomIn = () => {
-    const fg = forceGraphRef.current;
-    if (!fg) return;
-    const currentZoom = fg.zoom();
-    const nextZoom = Math.min(2.5, currentZoom * 1.3);
-    fg.zoom(nextZoom, 300);
-  };
-
-  const handleZoomOut = () => {
-    const fg = forceGraphRef.current;
-    if (!fg) return;
-    const currentZoom = fg.zoom();
-    const nextZoom = Math.max(0.6, currentZoom * 0.7);
-    fg.zoom(nextZoom, 300);
-  };
-
-  const handleResetZoom = () => {
-    const fg = forceGraphRef.current;
-    if (!fg) return;
-    fg.centerAt(0, 0, 400);
-    fg.zoom(1.1, 400);
-  };
-
-  const onGraphRef = useCallback((fg: any) => {
-    forceGraphRef.current = fg;
-    setFgInstance(fg);
-  }, []);
-
-  // Configure d3 collision force to prevent node overlap
-  useEffect(() => {
-    if (!fgInstance) return;
-    const allLinks = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
-    fgInstance.d3Force('collision', forceCollide((node: any) => {
-      const labelLen = (node.label || node.id || "").length;
-      return Math.max(60, labelLen * 3.5);
-    }).strength(1));
-    fgInstance.d3Force('charge')?.strength(-1200)?.distanceMax(800);
-    fgInstance.d3Force('link')?.distance(220).strength(0.5);
-    fgInstance.d3ReheatSimulation();
-  }, [activeData, fgInstance]);
-
-  useEffect(() => {
-    if (!graphContainer) return;
-    const observer = new ResizeObserver((entries) => {
-      if (entries[0]) {
-        setGraphDimensions({
-          width: entries[0].contentRect.width,
-          height: entries[0].contentRect.height
-        });
-      }
-    });
-    observer.observe(graphContainer);
-    
-    // Initial size
-    setGraphDimensions({
-      width: graphContainer.clientWidth,
-      height: graphContainer.clientHeight
-    });
-    
-    return () => observer.disconnect();
-  }, [graphContainer]);
   const [caseStatus, setCaseStatus] = useState<"pending" | "approving" | "approved" | "dismissed">(
     caseData?.status === "Approved" || caseData?.status === "Resolved" ? "approved" : 
     caseData?.status === "Dismissed" ? "dismissed" : "pending"
@@ -872,344 +807,41 @@ const Investigation = () => {
               </div>
             </div>
 
-            <div className={`relative w-full flex-grow flex gap-4 ${isMaximized ? 'z-[100]' : 'z-10'}`}>
-              {isMaximized && (
-                <div 
-                  className="fixed inset-0 bg-white/70 backdrop-blur-md z-[100] transition-all duration-300 animate-in fade-in" 
-                  onClick={() => setIsMaximized(false)}
+            {(() => {
+              let nodes = activeData?.networkGraph?.nodes || [];
+              let links = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
+
+              // Fallback data if none exists
+              if (nodes.length === 0) {
+                nodes = [
+                  { id: "E-1", label: entity.name, type: isCompany ? "Company" : "Person" },
+                  { id: "E-2", label: "Subsidiary Ltd", type: "Company" },
+                  { id: "L-1", label: "SEC Investigation", type: "Investigation" },
+                  { id: "N-1", label: "Fraud Allegations", type: "News Article" }
+                ];
+                links = [
+                  { source: "E-1", target: "E-2", relationship: "HAS_OWNER" },
+                  { source: "E-1", target: "L-1", relationship: "SUBJECT_OF" },
+                  { source: "N-1", target: "E-1", relationship: "MENTIONS" },
+                  { source: "N-1", target: "L-1", relationship: "DESCRIBES" }
+                ];
+              }
+
+              return (
+                <NetworkGraph
+                  nodes={nodes}
+                  links={links}
+                  selectedGraphNode={selectedGraphNode}
+                  setSelectedGraphNode={setSelectedGraphNode}
+                  isMaximized={isMaximized}
+                  setIsMaximized={setIsMaximized}
+                  isFullscreen={isFullscreen}
+                  toggleFullscreen={toggleFullscreen}
+                  setGraphContainer={setGraphContainer}
+                  renderDetailsPanel={renderDetailsPanel}
                 />
-              )}
-              <div 
-                className={`border border-border/50 rounded-xl overflow-hidden bg-slate-50/50 transition-all duration-300 flex flex-col ${
-                  isMaximized 
-                    ? 'fixed inset-6 md:inset-12 z-[101] bg-white shadow-2xl border-slate-200 p-4 rounded-2xl' 
-                    : isFullscreen
-                      ? 'fixed inset-0 z-[101] w-full h-full bg-white p-4'
-                      : `relative h-full flex-grow ${selectedGraphNode ? 'w-2/3' : 'w-full'}`
-                }`} 
-                ref={setGraphContainer}
-              >
-                {isMaximized && (
-                  <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-md flex items-center gap-2">
-                    <Network className="h-4 w-4 text-indigo-500 animate-pulse" />
-                    <span className="text-xs font-bold text-slate-700">Dynamic Knowledge Graph (Maximized View)</span>
-                  </div>
-                )}
-
-                {/* Floating Graph Controls */}
-                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200/80 rounded-xl p-1.5 shadow-md hover:shadow-lg hover:border-slate-300/80 transition-all">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleZoomIn}
-                    title="Zoom In"
-                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleZoomOut}
-                    title="Zoom Out"
-                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleResetZoom}
-                    title="Fit to Screen"
-                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    <Expand className="h-4 w-4" />
-                  </Button>
-                  <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsMaximized(!isMaximized)}
-                    title={isMaximized ? "Minimize Panel" : "Maximize Panel"}
-                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleFullscreen}
-                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
-                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
-                  >
-                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                  </Button>
-                </div>
-
-                {(() => {
-                  let nodes = activeData?.networkGraph?.nodes || [];
-                  let links = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
-                  
-                  // Fallback data if none exists
-                  if (nodes.length === 0) {
-                    nodes = [
-                      { id: "E-1", label: entity.name, type: isCompany ? "Company" : "Person" },
-                      { id: "E-2", label: "Subsidiary Ltd", type: "Company" },
-                      { id: "L-1", label: "SEC Investigation", type: "Investigation" },
-                      { id: "N-1", label: "Fraud Allegations", type: "News Article" }
-                    ];
-                    links = [
-                      { source: "E-1", target: "E-2", relationship: "HAS_OWNER" },
-                      { source: "E-1", target: "L-1", relationship: "SUBJECT_OF" },
-                      { source: "N-1", target: "E-1", relationship: "MENTIONS" },
-                      { source: "N-1", target: "L-1", relationship: "DESCRIBES" }
-                    ];
-                  }
-
-                  const getNodeColor = (type: string) => {
-                    const t = (type || "").toLowerCase();
-                    if (t.includes("company") || t.includes("business")) return { bg: "#EEF2FF", border: "#6366F1", text: "#3730A3" }; 
-                    if (t.includes("person") || t.includes("director") || t.includes("owner")) return { bg: "#FFFBEB", border: "#F59E0B", text: "#B45309" }; 
-                    if (t.includes("litigation") || t.includes("case") || t.includes("investigation")) return { bg: "#FFF1F2", border: "#E11D48", text: "#9F1239" }; 
-                    if (t.includes("news") || t.includes("article")) return { bg: "#F0FDF4", border: "#10B981", text: "#065F46" }; 
-                    if (t.includes("bankruptcy") || t.includes("event") || t.includes("change")) return { bg: "#FAF5FF", border: "#A855F7", text: "#6B21A8" }; 
-                    return { bg: "#F8FAFC", border: "#94A3B8", text: "#334155" }; 
-                  };
-
-                  const getNodeConfig = (type: string, id: string, allLinks: any[]) => {
-                    const t = (type || "").toLowerCase();
-                    // Count connections to determine node importance
-                    const connections = allLinks.filter((l: any) => {
-                      const src = typeof l.source === 'object' ? l.source.id : l.source;
-                      const tgt = typeof l.target === 'object' ? l.target.id : l.target;
-                      return src === id || tgt === id;
-                    }).length;
-                    
-                    // Radius: hub nodes are bigger
-                    const baseRadius = connections >= 5 ? 38 : connections >= 3 ? 28 : 22;
-                    
-                    if (t.includes("company") || t.includes("business")) 
-                      return { fill1: "#4F46E5", fill2: "#6366F1", border: "#818CF8", text: "#FFFFFF", radius: baseRadius, glow: "rgba(99,102,241,0.35)" };
-                    if (t.includes("person") || t.includes("director") || t.includes("owner")) 
-                      return { fill1: "#D97706", fill2: "#F59E0B", border: "#FCD34D", text: "#FFFFFF", radius: baseRadius, glow: "rgba(245,158,11,0.35)" };
-                    if (t.includes("country") || t.includes("jurisdiction")) 
-                      return { fill1: "#0891B2", fill2: "#06B6D4", border: "#67E8F9", text: "#FFFFFF", radius: baseRadius, glow: "rgba(6,182,212,0.35)" };
-                    if (t.includes("industry") || t.includes("service") || t.includes("partner")) 
-                      return { fill1: "#059669", fill2: "#10B981", border: "#6EE7B7", text: "#FFFFFF", radius: baseRadius, glow: "rgba(16,185,129,0.35)" };
-                    if (t.includes("litigation") || t.includes("case") || t.includes("investigation")) 
-                      return { fill1: "#DC2626", fill2: "#EF4444", border: "#FCA5A5", text: "#FFFFFF", radius: baseRadius, glow: "rgba(239,68,68,0.35)" };
-                    if (t.includes("news") || t.includes("article") || t.includes("media")) 
-                      return { fill1: "#7C3AED", fill2: "#8B5CF6", border: "#C4B5FD", text: "#FFFFFF", radius: baseRadius, glow: "rgba(139,92,246,0.35)" };
-                    if (t.includes("event") || t.includes("bankruptcy") || t.includes("dissolution")) 
-                      return { fill1: "#BE185D", fill2: "#EC4899", border: "#F9A8D4", text: "#FFFFFF", radius: baseRadius, glow: "rgba(236,72,153,0.35)" };
-                    return { fill1: "#475569", fill2: "#64748B", border: "#94A3B8", text: "#FFFFFF", radius: baseRadius, glow: "rgba(100,116,139,0.35)" };
-                  };
-
-                  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] => {
-                    const words = text.split(' ');
-                    const lines: string[] = [];
-                    let currentLine = '';
-                    for (const word of words) {
-                      const testLine = currentLine ? `${currentLine} ${word}` : word;
-                      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-                        lines.push(currentLine);
-                        currentLine = word;
-                      } else {
-                        currentLine = testLine;
-                      }
-                    }
-                    if (currentLine) lines.push(currentLine);
-                    return lines.slice(0, 3);
-                  };
-
-                  return (
-                    <ForceGraph2D
-                      width={graphDimensions.width}
-                      height={graphDimensions.height}
-                      graphData={{ nodes, links }}
-                      nodeRelSize={1}
-                      nodeVal={(node: any) => {
-                        const t = (node.type || "").toLowerCase();
-                        const allLinks = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
-                        const connections = allLinks.filter((l: any) => {
-                          const src = typeof l.source === 'object' ? l.source.id : l.source;
-                          const tgt = typeof l.target === 'object' ? l.target.id : l.target;
-                          return src === node.id || tgt === node.id;
-                        }).length;
-                        const r = connections >= 5 ? 38 : connections >= 3 ? 28 : 22;
-                        return r * r; // nodeVal is proportional to area
-                      }}
-                      linkDirectionalArrowLength={4}
-                      linkDirectionalArrowRelPos={1}
-                      linkColor={() => "#CBD5E1"}
-                      linkWidth={1.5}
-                      minZoom={0.6}
-                      maxZoom={2.5}
-                      d3AlphaDecay={0.008}
-                      d3VelocityDecay={0.2}
-                      warmupTicks={200}
-                      cooldownTicks={0}
-                      ref={onGraphRef}
-                      enableZoomInteraction={false}
-                      onEngineStop={() => {
-                        const fg = forceGraphRef.current;
-                        if (!fg) return;
-                        
-                        if (nodes.length > 0) {
-                          let maxConns = -1;
-                          let mainNode = nodes[0];
-                          nodes.forEach((n: any) => {
-                            const conns = links.filter((l: any) => {
-                              const src = typeof l.source === 'object' ? l.source.id : l.source;
-                              const tgt = typeof l.target === 'object' ? l.target.id : l.target;
-                              return src === n.id || tgt === n.id;
-                            }).length;
-                            if (conns > maxConns) {
-                              maxConns = conns;
-                              mainNode = n;
-                            }
-                          });
-                          
-                          // Focus on the main node instantly when physics stop
-                          fg.centerAt(mainNode.x, mainNode.y, 0);
-                          fg.zoom(1.1, 0); 
-                        } else {
-                          fg.zoomToFit(0, 60);
-                        }
-                      }}
-                      onNodeClick={(node) => setSelectedGraphNode(node)}
-                      onBackgroundClick={() => setSelectedGraphNode(null)}
-                      nodePointerAreaPaint={(node: any, color, ctx) => {
-                        const dims = node.__dims || { w: 80, h: 36 };
-                        ctx.fillStyle = color;
-                        const r = 5;
-                        const x = node.x - dims.w / 2, y = node.y - dims.h / 2;
-                        ctx.beginPath();
-                        ctx.moveTo(x + r, y); ctx.lineTo(x + dims.w - r, y);
-                        ctx.quadraticCurveTo(x + dims.w, y, x + dims.w, y + r);
-                        ctx.lineTo(x + dims.w, y + dims.h - r);
-                        ctx.quadraticCurveTo(x + dims.w, y + dims.h, x + dims.w - r, y + dims.h);
-                        ctx.lineTo(x + r, y + dims.h); ctx.quadraticCurveTo(x, y + dims.h, x, y + dims.h - r);
-                        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-                        ctx.closePath(); ctx.fill();
-                      }}
-                      nodeCanvasObject={(node: any, ctx, globalScale) => {
-                        const label = node.label || node.id;
-                        const type = node.type || "";
-                        const isSelected = node === selectedGraphNode;
-
-                        // --- Color scheme per type ---
-                        const getChipColors = (t: string) => {
-                          const tl = t.toLowerCase();
-                          if (tl === "person") return { border: "#F59E0B", text: "#92400E", typeBg: "#FEF3C7", typeText: "#D97706" };
-                          if (tl === "country") return { border: "#06B6D4", text: "#164E63", typeBg: "#CFFAFE", typeText: "#0E7490" };
-                          if (tl === "state/province" || tl === "city") return { border: "#0EA5E9", text: "#0C4A6E", typeBg: "#E0F2FE", typeText: "#0369A1" };
-                          if (tl === "industry") return { border: "#10B981", text: "#064E3B", typeBg: "#D1FAE5", typeText: "#059669" };
-                          if (tl === "regulator") return { border: "#EF4444", text: "#7F1D1D", typeBg: "#FEE2E2", typeText: "#DC2626" };
-                          if (tl === "social media") return { border: "#EC4899", text: "#831843", typeBg: "#FCE7F3", typeText: "#BE185D" };
-                          if (tl === "news article") return { border: "#8B5CF6", text: "#4C1D95", typeBg: "#EDE9FE", typeText: "#7C3AED" };
-                          if (tl === "asset") return { border: "#F97316", text: "#7C2D12", typeBg: "#FFEDD5", typeText: "#EA580C" };
-                          if (tl === "director") return { border: "#F59E0B", text: "#92400E", typeBg: "#FEF3C7", typeText: "#D97706" };
-                          if (tl.includes("litigation") || tl.includes("investigation")) return { border: "#EF4444", text: "#7F1D1D", typeBg: "#FEE2E2", typeText: "#DC2626" };
-                          // Company default: blue/indigo
-                          return { border: "#6366F1", text: "#1E1B4B", typeBg: "#EEF2FF", typeText: "#4F46E5" };
-                        };
-                        const colors = getChipColors(type);
-
-                        const nameFontSize = Math.max(9, 11 / globalScale);
-                        const typeFontSize = Math.max(7, 8.5 / globalScale);
-                        ctx.font = `bold ${nameFontSize}px Inter, system-ui, sans-serif`;
-                        const labelWidth = ctx.measureText(label).width;
-                        ctx.font = `${typeFontSize}px Inter, system-ui, sans-serif`;
-                        const typeWidth = ctx.measureText(type).width;
-
-                        const padX = 12 / globalScale;
-                        const padY = 7 / globalScale;
-                        const innerGap = 3 / globalScale;
-                        const w = Math.max(labelWidth, typeWidth) + padX * 2;
-                        const h = nameFontSize + typeFontSize + innerGap + padY * 2;
-                        node.__dims = { w, h };
-
-                        const x = node.x - w / 2;
-                        const y = node.y - h / 2;
-                        const r = 6 / globalScale;
-
-                        // --- Drop shadow ---
-                        ctx.shadowColor = "rgba(0,0,0,0.12)";
-                        ctx.shadowBlur = 8 / globalScale;
-                        ctx.shadowOffsetY = 2 / globalScale;
-
-                        // --- White fill ---
-                        ctx.beginPath();
-                        ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-                        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-                        ctx.lineTo(x + w, y + h - r);
-                        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-                        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-                        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
-                        ctx.closePath();
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.fill();
-                        ctx.shadowColor = "transparent";
-
-                        // --- Colored border ---
-                        ctx.lineWidth = isSelected ? 2.5 / globalScale : 1.5 / globalScale;
-                        ctx.strokeStyle = isSelected ? "#1E40AF" : colors.border;
-                        ctx.stroke();
-
-                        // --- Label text ---
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "alphabetic";
-                        const labelY = node.y - (typeFontSize + innerGap) / 2;
-                        ctx.font = `bold ${nameFontSize}px Inter, system-ui, sans-serif`;
-                        ctx.fillStyle = colors.text;
-                        ctx.fillText(label, node.x, labelY);
-
-                        // --- Type chip ---
-                        const typeY = labelY + innerGap + typeFontSize;
-                        ctx.font = `${typeFontSize}px Inter, system-ui, sans-serif`;
-                        ctx.fillStyle = colors.typeText;
-                        ctx.fillText(type, node.x, typeY);
-                      }}
-                      linkCanvasObjectMode={() => "after"}
-                      linkCanvasObject={(link: any, ctx, globalScale) => {
-                        if (!link.relationship) return;
-                        const start = link.source;
-                        const end = link.target;
-                        if (typeof start !== "object" || typeof end !== "object") return;
-
-                        const midX = start.x + (end.x - start.x) * 0.5;
-                        const midY = start.y + (end.y - start.y) * 0.5;
-
-                        const fontSize = Math.max(7, 8 / globalScale);
-                        ctx.font = `${fontSize}px Inter, system-ui, sans-serif`;
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "middle";
-
-                        // Simple plain text label like the screenshot
-                        const text = link.relationship.replace(/_/g, " ");
-                        const tw = ctx.measureText(text).width;
-                        // Small semi-transparent white backing
-                        ctx.fillStyle = "rgba(255,255,255,0.85)";
-                        ctx.fillRect(midX - tw / 2 - 3 / globalScale, midY - fontSize * 0.7, tw + 6 / globalScale, fontSize * 1.4);
-                        ctx.fillStyle = "#6B7280";
-                        ctx.fillText(text, midX, midY);
-                      }}
-                    />
-                  );
-                })()}
-
-                {/* Render Details Panel inside when in Maximized/Fullscreen Overlay mode */}
-                <AnimatePresence>
-                  {(isMaximized || isFullscreen) && renderDetailsPanel(true)}
-                </AnimatePresence>
-              </div>
-
-              {/* Render Details Panel as normal side-by-side sibling in normal view */}
-              <AnimatePresence>
-                {!(isMaximized || isFullscreen) && renderDetailsPanel(false)}
-              </AnimatePresence>
-            </div>
+              );
+            })()}
           </div>
         </TabsContent>
 
