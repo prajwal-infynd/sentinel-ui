@@ -253,7 +253,7 @@ const PolicyConfig = () => {
             <DialogTrigger asChild>
               <Button size="sm" className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-full px-5 font-bold shadow-sm shadow-blue-500/20">+ Add Policy</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent aria-describedby={undefined}>
               <DialogHeader>
                 <DialogTitle>Add Custom Policy</DialogTitle>
               </DialogHeader>

@@ -374,7 +374,7 @@ export default function AIGovernance() {
       </div>
 
       <Dialog open={!!editingPolicy} onOpenChange={(open) => !open && setEditingPolicy(null)}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Edit Policy: {editingPolicy?.name}</DialogTitle>
           </DialogHeader>
@@ -406,7 +406,7 @@ export default function AIGovernance() {
       </Dialog>
 
       <Dialog open={isAddingPolicy} onOpenChange={setIsAddingPolicy}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Create Custom Policy</DialogTitle>
           </DialogHeader>

@@ -131,7 +131,7 @@ const InvestigationsList = () => {
                   <UploadCloud className="h-4 w-4" /> Bulk Import
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md bg-white p-6 rounded-2xl">
+              <DialogContent aria-describedby={undefined} className="max-w-md bg-white p-6 rounded-2xl">
                 <DialogHeader className="mb-4">
                   <DialogTitle className="text-xl font-bold flex items-center gap-2">
                     <UploadCloud className="h-5 w-5 text-indigo-600" />
@@ -171,7 +171,7 @@ const InvestigationsList = () => {
                   <Plus className="h-4 w-4" /> Manual Case
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md bg-white p-6 rounded-2xl">
+              <DialogContent aria-describedby={undefined} className="max-w-md bg-white p-6 rounded-2xl">
                 <DialogHeader className="mb-4">
                   <DialogTitle className="text-xl font-bold">Create Manual Case</DialogTitle>
                 </DialogHeader>

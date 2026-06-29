@@ -129,7 +129,7 @@ export default function AdminPortal() {
                   <UserPlus className="h-4 w-4" /> Invite New User
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby={undefined}>
                 <DialogHeader>
                   <DialogTitle>Invite User to Workspace</DialogTitle>
                 </DialogHeader>

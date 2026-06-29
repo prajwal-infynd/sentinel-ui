@@ -138,7 +138,7 @@ export const ExternalData = () => {
                   <UploadCloud className="h-5 w-5" /> New Data Source
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-xl p-8">
+              <DialogContent aria-describedby={undefined} className="max-w-xl p-8">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold">Add New Data Source</DialogTitle>
                 </DialogHeader>
@@ -173,7 +173,7 @@ export const ExternalData = () => {
                   <Database className="h-4 w-4 text-slate-400" /> Connect API
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby={undefined}>
                 <DialogHeader>
                   <DialogTitle>Connect Internal API</DialogTitle>
                 </DialogHeader>
