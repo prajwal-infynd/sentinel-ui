@@ -12,6 +12,7 @@ import { KybMonitorModal } from "@/components/portfolio/KybMonitorModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
 import { importMonitoredEntities, fetchSamplePreview, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
@@ -77,6 +78,17 @@ const toImportRow = (rawRow: Record<string, unknown>): MonitoredEntityImportRow 
     identifiers: {
       registration_number: String(row.registrationnumber ?? row.regno ?? "").trim() || undefined,
       country: String(row.country ?? "").trim() || undefined,
+      revenue: (row.financials as any)?.revenue,
+      currency: (row.financials as any)?.currency,
+      sector: (row.financials as any)?.sector || row.industry || row.sector,
+      financials: row.financials,
+      aboutCompany: row.aboutcompany,
+      keyPersonnel: row.keypersonnel,
+      keyCompetitors: row.keycompetitors,
+      website: row.website,
+      phone: row.phone,
+      duns: row.duns,
+      legalType: row.legaltype,
     },
   };
 };
@@ -115,9 +127,21 @@ const PortfolioOnboarding = () => {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   
   // Modal State
-  const [selectedCompany360, setSelectedCompany360] = useState<string | null>(null);
+  const [selectedCompany360, setSelectedCompany360] = useState<any | null>(null);
 
-  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>([]);
+  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>(() => {
+    try {
+      const saved = localStorage.getItem('sentinel_portfolio_data');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sentinel_portfolio_data', JSON.stringify(importedDataRows));
+  }, [importedDataRows]);
+
   const [parseError, setParseError] = useState<string | null>(null);
   const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
   const [isCrmDialogOpen, setIsCrmDialogOpen] = useState(false);
@@ -125,6 +149,8 @@ const PortfolioOnboarding = () => {
   const [isOrchestrating, setIsOrchestrating] = useState(false);
   const [orchestrationStep, setOrchestrationStep] = useState(0);
   const [isJsonDialogOpen, setIsJsonDialogOpen] = useState(false);
+  const [isPasteJsonDialogOpen, setIsPasteJsonDialogOpen] = useState(false);
+  const [pasteJsonContent, setPasteJsonContent] = useState("");
   const [selectedKybEntity, setSelectedKybEntity] = useState<any>(null);
 
   const [monitoringFrequency, setMonitoringFrequency] = useState("daily");
@@ -164,6 +190,96 @@ const PortfolioOnboarding = () => {
         finalDomain = crawlerCompanyName.toLowerCase().replace(/[^a-z0-9]/g, '') + ".com";
       }
 
+      const initiateCorporateRegistryScreening = async (normalizedDomain: string, externalRef: string) => {
+        try {
+          const endpointUrl = "https://croftzgo.com/api/v1/screening";
+          const CROFTZ_KEY = "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
+
+          // ── Build form payload ──
+          const formData = new URLSearchParams();
+          formData.append('name', normalizedDomain);
+          formData.append('entityType', 'company');
+          formData.append('exactMatch', 'false');
+          formData.append('fuzzinessThreshold', '100');
+          formData.append('monitor', 'false');
+          formData.append('countryCodes', '');
+          formData.append('metadata', '');
+          formData.append('birthYear', '');
+          formData.append('monitoringDuration', '60');
+          formData.append('monitoringRenew', 'false');
+
+          // ── LOG: Full request details ──
+          console.group(`%c[Croftz] POST Request → ${normalizedDomain}`, 'color: #2563eb; font-weight: bold; font-size: 13px;');
+          console.log('URL:', endpointUrl);
+          console.log('Headers:', { 'Content-Type': 'application/x-www-form-urlencoded', 'x-api-key': CROFTZ_KEY });
+          console.log('Body (parsed):', Object.fromEntries(formData.entries()));
+          console.log('Body (raw):', formData.toString());
+          console.groupEnd();
+
+          const postResp = await fetch(endpointUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "x-api-key": CROFTZ_KEY
+            },
+            body: formData.toString()
+          });
+
+          // ── LOG: Raw HTTP response status ──
+          console.group(`%c[Croftz] POST Response ← ${postResp.status} ${postResp.statusText}`, postResp.ok ? 'color: #16a34a; font-weight: bold;' : 'color: #dc2626; font-weight: bold;');
+          console.log('Status:', postResp.status, postResp.statusText);
+          console.log('Response Headers:', Object.fromEntries(postResp.headers.entries()));
+
+          if (!postResp.ok) {
+            const errText = await postResp.text();
+            console.log('Error Body (raw text):', errText);
+            console.groupEnd();
+            throw new Error("Croftz returned " + postResp.status + ": " + errText);
+          }
+
+          const postData = await postResp.json();
+          // ── LOG: Full response JSON — completely untruncated ──
+          console.log('Full Response JSON:', JSON.parse(JSON.stringify(postData)));
+          console.groupEnd();
+
+          const postBody = postData.response || postData;
+
+          if (!postBody.success) {
+            console.error('[Croftz] success=false. Full body:', postBody);
+            throw new Error(postBody.message || "Screening failed");
+          }
+
+          // ── LOG: screeningResults summary ──
+          console.group('%c[Croftz] Screening Results', 'color: #7c3aed; font-weight: bold;');
+          console.log('screeningResults count:', postBody.screeningResults?.length ?? 0);
+          if (postBody.screeningResults?.length > 0) {
+            console.log('screeningResults[0] (full):', JSON.parse(JSON.stringify(postBody.screeningResults[0])));
+            console.log('results object (full):', JSON.parse(JSON.stringify(postBody.screeningResults[0].results)));
+          } else {
+            console.warn('No screeningResults in response. Full postBody:', postBody);
+          }
+          console.groupEnd();
+
+          // ── Extract results directly from POST response ──
+          if (postBody.screeningResults?.length > 0) {
+            const results = postBody.screeningResults[0].results;
+            setImportedDataRows(prev => prev.map(row =>
+              row.externalReference === externalRef
+                ? { ...row, identifiers: { ...row.identifiers, corporateRegistry: results } }
+                : row
+            ));
+            toast({ title: "✅ Screening Complete", description: `Risk data loaded for ${normalizedDomain}.` });
+          } else {
+            toast({ title: "No Results", description: `No screening results for ${normalizedDomain}.`, variant: "destructive" });
+          }
+
+        } catch (err) {
+          console.error("[Croftz] ❌ Screening failed:", err);
+          toast({ title: "Screening Unavailable", description: String(err), variant: "destructive" });
+        }
+      };
+
+
       const payload: any = {
         domains: finalDomain ? [finalDomain] : []
       };
@@ -173,17 +289,24 @@ const PortfolioOnboarding = () => {
       }
       
       const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "http://173.249.56.10:1234/api/v1/crawler/extract-company-info";
-      
+
+      // 2-minute timeout — crawler does heavy scraping, needs time
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
+
       const response = await fetch(crawlerUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: controller.signal
       });
-      
+
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         throw new Error(`Crawler API error: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       
       console.log("CRAWLER PAYLOAD RECEIVED:", data);
@@ -199,15 +322,16 @@ const PortfolioOnboarding = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast({ 
-        title: "Crawler Finished", 
-        description: `Successfully extracted data for ${crawlerCompanyName || crawlerCompanyDomain}. The JSON payload has been downloaded.` 
-      });
-      
+      // ── Close dialog IMMEDIATELY — don't make user wait ──
       setIsCrawlerDialogOpen(false);
       setCrawlerCompanyName("");
       setCrawlerCompanyDomain("");
-      
+
+      toast({
+        title: "Crawler Finished",
+        description: `Extracted data for ${crawlerCompanyName || crawlerCompanyDomain}. Running screening in background...`
+      });
+
       let newEntities: MonitoredEntityImportRow[] = [];
       const extractedList = Array.isArray(data.data) ? data.data : (Array.isArray(data.entities) ? data.entities : null);
       
@@ -215,10 +339,12 @@ const PortfolioOnboarding = () => {
         newEntities = extractedList.map((e: any, idx: number) => {
           // Support the actual API payload structure
           if (e.normalizedDomain || e.ipCountry) {
+            // Use the cleanest name: clearbitName is most reliable from crawler
+            const entityName = (e.clearbitName || e.nameFromTitle || crawlerCompanyName || crawlerCompanyDomain || e.companyName || "Unknown Entity").split("|")[0].trim();
             return {
-              name: e.clearbitName || e.nameFromTitle || e.companyName || crawlerCompanyName || crawlerCompanyDomain || "Unknown Entity",
+              name: entityName,
               entityType: "company",
-              jurisdiction: e.ipCountry || "Unknown",
+              jurisdiction: e.ipCountry || e.clearbitGeo?.country || "Unknown",
               riskScore: 25,
               externalReference: e.normalizedDomain || `CRAWL-${Date.now()}-${idx}`,
               notes: e.description || ""
@@ -247,9 +373,49 @@ const PortfolioOnboarding = () => {
       }
       
       setImportedDataRows(prev => [...newEntities, ...prev]);
+
+      if (extractedList && extractedList.length > 0) {
+        newEntities.forEach((entity, idx) => {
+          const e = extractedList[idx];
+
+          // ── Store the full crawler payload as rawIdentifiers on the row ──
+          const crawlerIdentifiers = {
+            website: e.website || e.clearbitDomain,
+            phone: e.phone || e.clearbitPhone,
+            address: e.address || e.clearbitGeo,
+            legalType: e.legalType || e.clearbitType,
+            duns: e.duns,
+            aboutCompany: e.aboutCompany || { brief: e.description },
+            keyPersonnel: e.keyPersonnel || [],
+            keyCompetitors: e.keyCompetitors || [],
+            financials: e.financials || {},
+          };
+
+          // Update the row in state with rawIdentifiers from crawler
+          setImportedDataRows(prev => prev.map(row =>
+            row.externalReference === entity.externalReference
+              ? { ...row, rawIdentifiers: crawlerIdentifiers }
+              : row
+          ));
+
+          // ── Pass ONLY e.normalizedDomain to Croftz POST ──
+          const normalizedDomain = e.normalizedDomain;
+          if (normalizedDomain && entity.externalReference) {
+            console.log(`[Croftz] Using normalizedDomain: "${normalizedDomain}" for externalRef: "${entity.externalReference}"`);
+            initiateCorporateRegistryScreening(normalizedDomain, entity.externalReference);
+          } else {
+            console.warn(`[Croftz] No normalizedDomain found in crawler response for entity at index ${idx}. Skipping screening.`, e);
+            toast({ title: "No Domain Found", description: `Could not extract normalizedDomain from crawler for ${entity.name}. Screening skipped.`, variant: "destructive" });
+          }
+        });
+      }
       
     } catch (error) {
-      toast({ title: "Crawler Failed", description: error instanceof Error ? error.message : "Network error", variant: "destructive" });
+      if (error instanceof Error && error.name === "AbortError") {
+        toast({ title: "Crawler Timeout", description: "The crawler is taking too long. The server may be busy — please try again in a moment.", variant: "destructive" });
+      } else {
+        toast({ title: "Crawler Failed", description: error instanceof Error ? error.message : "Network error", variant: "destructive" });
+      }
     } finally {
       setIsCrawling(false);
     }
@@ -273,7 +439,7 @@ const PortfolioOnboarding = () => {
     setManualEntityType("");
     setManualJurisdiction("");
   };
-  const mockCompaniesData = [
+  const defaultCompaniesData = [
     { id: 1, name: "Xbox (Microsoft Corporation)", country: "United States", industry: "Technology - Software & Cloud Computing", riskScore: 58, rating: "BBB", exposure: "£281700.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇺🇸", initial: "X" },
     { id: 2, name: "Wise", country: "United Kingdom", industry: "N/A", riskScore: 82, rating: "CCC", exposure: "—", lastChange: "10/15/2025", alert: "Critical", flag: "🇬🇧", initial: "W" },
     { id: 3, name: "The Weir Group PLC", country: "United Kingdom", industry: "Industrials - Mining Equipment & Technology", riskScore: 47.54, rating: "BBB", exposure: "£2506.0M", lastChange: "1/27/2025", alert: "Low", flag: "🇬🇧", initial: "T" },
@@ -285,6 +451,62 @@ const PortfolioOnboarding = () => {
     { id: 9, name: "Rathbones Group Plc", country: "United Kingdom", industry: "Financials - Wealth & Asset Management", riskScore: 46, rating: "BBB", exposure: "£1020.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇬🇧", initial: "R" },
     { id: 10, name: "Pizza Hut, LLC", country: "United States", industry: "Consumer Discretionary - Quick-Service Restaurants (QSR)", riskScore: 58, rating: "BBB", exposure: "£7549.0M", lastChange: "6/23/2026", alert: "Low", flag: "🇺🇸", initial: "P" },
   ];
+
+  const displayData = useMemo(() => {
+    if (importedDataRows.length === 0) return defaultCompaniesData;
+    
+    return importedDataRows.map((row, index) => {
+      const name = String(row.name || "Unknown Entity");
+      const revenue = Number(row.identifiers?.revenue || 0);
+      const currency = String(row.identifiers?.currency || "USD");
+      const sector = String(row.identifiers?.sector || (row.entityType !== "individual" ? "Corporate Entity" : "Individual"));
+      
+      let riskScore = Number(row.riskScore || 0);
+      if (riskScore === 0) {
+        if (revenue > 10000000000) riskScore = 85;
+        else if (revenue > 1000000000) riskScore = 65;
+        else if (revenue > 0) riskScore = 45;
+      }
+      
+      let exposure = "Pending";
+      if (revenue > 0) {
+        const symbol = currency === "GBP" ? "£" : currency === "USD" ? "$" : currency + " ";
+        if (revenue >= 1000000000) {
+          exposure = `${symbol}${(revenue / 1000000).toFixed(1)}M`;
+        } else {
+          exposure = `${symbol}${(revenue / 1000).toFixed(1)}K`;
+        }
+      }
+
+      const getFlag = (country: string) => {
+        const c = country.toLowerCase();
+        if (c === "us" || c === "united states" || c === "usa") return "🇺🇸";
+        if (c === "uk" || c === "united kingdom" || c === "england") return "🇬🇧";
+        if (c === "jersey") return "🇯🇪";
+        if (c === "france") return "🇫🇷";
+        return "🌐";
+      };
+
+      // Clean up name: take only the first segment if multiple aliases were concatenated
+      const cleanName = name.split("|")[0].trim();
+
+      return {
+        id: index + 1,
+        name: cleanName,
+        country: row.jurisdiction || row.nationality || "Unknown",
+        industry: sector,
+        riskScore,
+        rating: riskScore >= 80 ? "CCC" : riskScore >= 50 ? "BBB" : "AA",
+        exposure,
+        lastChange: "Just now",
+        alert: riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low",
+        flag: getFlag(row.jurisdiction || row.nationality || ""),
+        initial: cleanName.charAt(0).toUpperCase(),
+        externalReference: row.externalReference,
+        rawIdentifiers: row.identifiers || {}
+      };
+    });
+  }, [importedDataRows]);
 
   const loadMockData = () => {
     setSelectedFileName("demo-portfolio-Q3.csv");
@@ -379,6 +601,45 @@ const PortfolioOnboarding = () => {
     }
   };
 
+  const handlePastedJsonSubmit = () => {
+    if (!pasteJsonContent.trim()) {
+      toast({ title: "No Data", description: "Please paste some JSON data to import.", variant: "destructive" });
+      return;
+    }
+    
+    try {
+      setParseError(null);
+      const parsed = JSON.parse(pasteJsonContent);
+      let rows: any[] = [];
+      
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && !("data" in parsed) && !("entities" in parsed)) {
+        rows = [parsed];
+      } else {
+        rows = Array.isArray(parsed)
+          ? parsed
+          : parsed && typeof parsed === "object" && Array.isArray((parsed as any).entities)
+            ? (parsed as any).entities
+            : parsed && typeof parsed === "object" && Array.isArray((parsed as any).data)
+              ? (parsed as any).data
+              : [];
+      }
+      
+      const mapped = rows.map(toImportRow).filter((row): row is MonitoredEntityImportRow => Boolean(row));
+
+      if (!mapped.length) {
+        toast({ title: "No Entities Found", description: "No valid entities could be parsed from the JSON.", variant: "destructive" });
+        return;
+      }
+
+      setImportedDataRows(prev => [...mapped, ...prev]);
+      toast({ title: "JSON Parsed", description: `${mapped.length} monitored entities added to queue.` });
+      setIsPasteJsonDialogOpen(false);
+      setPasteJsonContent("");
+    } catch (error) {
+      toast({ title: "Invalid JSON", description: error instanceof Error ? error.message : "The pasted content is not valid JSON.", variant: "destructive" });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#F8F9FC] font-sans pb-12 text-slate-800">
@@ -402,11 +663,37 @@ const PortfolioOnboarding = () => {
                   <p className="text-[12.5px] text-slate-500">Bulk import, search, or sync from your CRM</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-4 md:mt-0">
-                  <Button variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><FileSpreadsheet className="h-4 w-4 text-slate-400" /> CSV</Button>
-                  <Button variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><FileJson className="h-4 w-4 text-slate-400" /> Excel</Button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".csv,.xlsx,.xls,.json"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFile(e.target.files[0]);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><FileSpreadsheet className="h-4 w-4 text-slate-400" /> CSV / Excel</Button>
+                  <Button onClick={() => fileInputRef.current?.click()} variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><FileJson className="h-4 w-4 text-slate-400" /> JSON Upload</Button>
+                  <Button onClick={() => setIsPasteJsonDialogOpen(true)} variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><Database className="h-4 w-4 text-slate-400" /> Paste JSON</Button>
                   <Button onClick={() => setIsCrmDialogOpen(true)} variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><Cloud className="h-4 w-4 text-slate-400" /> CRM</Button>
                   <Button onClick={() => setIsApiDialogOpen(true)} variant="outline" className="h-9 gap-2 text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900 font-semibold shadow-sm text-[13px] rounded-lg px-4"><LinkIcon className="h-4 w-4 text-slate-400" /> API</Button>
                   <Button onClick={() => setIsCrawlerDialogOpen(true)} className="h-9 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm text-[13px] rounded-lg px-5 ml-1"><Plus className="h-4 w-4" /> Add Company</Button>
+                  {importedDataRows.length > 0 && (
+                    <Button 
+                      onClick={() => {
+                        setImportedDataRows([]);
+                        localStorage.removeItem('sentinel_portfolio_data');
+                        toast({ title: "Local Data Cleared", description: "Reverted to backend sample data." });
+                      }} 
+                      variant="destructive" 
+                      className="h-9 gap-2 font-bold shadow-sm text-[13px] rounded-lg px-4 ml-1"
+                    >
+                      Clear Data
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -472,12 +759,12 @@ const PortfolioOnboarding = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockCompaniesData.map((row) => (
+                      {displayData.map((row) => (
                         <TableRow key={row.id} className="hover:bg-slate-50/60 border-b border-slate-100/80 transition-colors group">
                           <TableCell className="py-4 pl-6 text-[12.5px] font-semibold text-slate-400">{row.id}</TableCell>
                           
                           {/* Company */}
-                          <TableCell className="py-4 cursor-pointer" onClick={() => setSelectedCompany360(row.name)}>
+                          <TableCell className="py-4 cursor-pointer" onClick={() => setSelectedCompany360(row)}>
                             <div className="flex items-center gap-3">
                               <div className="w-7 h-7 rounded bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs shadow-sm">
                                 {row.initial}
@@ -564,6 +851,7 @@ const PortfolioOnboarding = () => {
           {/* Crawler Dialog */}
           <Dialog open={isCrawlerDialogOpen} onOpenChange={setIsCrawlerDialogOpen}>
             <DialogContent className="sm:max-w-[450px] bg-white border-slate-200">
+              <DialogTitle className="sr-only">Web Crawler Import</DialogTitle>
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold">Add Company via Crawler</DialogTitle>
                 <DialogDescription>
@@ -605,6 +893,7 @@ const PortfolioOnboarding = () => {
           {/* API Dialog */}
           <Dialog open={isApiDialogOpen} onOpenChange={setIsApiDialogOpen}>
             <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-white border-slate-200">
+              <DialogTitle className="sr-only">API Integration</DialogTitle>
               <DialogHeader className="p-6 pb-0">
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   <LinkIcon className="h-5 w-5 text-blue-600" />
@@ -638,6 +927,7 @@ const PortfolioOnboarding = () => {
           {/* CRM Dialog */}
           <Dialog open={isCrmDialogOpen} onOpenChange={setIsCrmDialogOpen}>
             <DialogContent className="sm:max-w-[500px] bg-white border-slate-200">
+              <DialogTitle className="sr-only">CRM Sync</DialogTitle>
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   <Cloud className="h-5 w-5 text-blue-600" />
@@ -666,8 +956,19 @@ const PortfolioOnboarding = () => {
               <div className="flex justify-end gap-3 mt-4">
                 <Button variant="outline" onClick={() => setIsCrmDialogOpen(false)}>Cancel</Button>
                 <Button 
-                  onClick={() => { setIsCrmDialogOpen(false); loadMockData(); }} 
-                  className="bg-blue-600 hover:bg-blue-700 font-bold"
+                  variant="outline" 
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={() => {
+                    setImportedDataRows([]);
+                    localStorage.removeItem('sentinel_portfolio_data');
+                    toast({ title: "Data Cleared", description: "Reverted to preloaded backend data." });
+                  }}
+                >
+                  Clear Local Data
+                </Button>
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700 shadow-md text-white border-0"
+                  onClick={handleStartMonitoring}
                   disabled={selectedCrmEntities.length === 0}
                 >
                   Sync Selected Entities
@@ -676,13 +977,52 @@ const PortfolioOnboarding = () => {
             </DialogContent>
           </Dialog>
 
-          <Company360Modal 
-            isOpen={!!selectedCompany360} 
-            onClose={() => setSelectedCompany360(null)} 
-            companyName={selectedCompany360} 
-          />
+          {/* Derive live data for modal from importedDataRows so Croftz data auto-fills when it arrives */}
+          {(() => {
+            const liveRow = selectedCompany360
+              ? importedDataRows.find(r => r.externalReference === selectedCompany360.externalReference)
+              : null;
+            const liveModalData = selectedCompany360 && liveRow ? {
+              ...selectedCompany360,
+              rawIdentifiers: liveRow.identifiers || {}
+            } : selectedCompany360;
+            return (
+              <Company360Modal
+                isOpen={!!selectedCompany360}
+                onClose={() => setSelectedCompany360(null)}
+                companyData={liveModalData}
+              />
+            );
+          })()}
+
         </div>
       </div>
+      <Dialog open={isPasteJsonDialogOpen} onOpenChange={setIsPasteJsonDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] border-slate-100 shadow-xl rounded-xl p-0 overflow-hidden">
+          <DialogTitle className="sr-only">Paste JSON Payload</DialogTitle>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+            <h2 className="text-xl font-bold mb-1">Paste JSON Data</h2>
+            <p className="text-blue-100 text-sm opacity-90">Paste your raw JSON payload directly to import monitored entities</p>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700 block mb-1.5">JSON Payload</label>
+                <Textarea 
+                  placeholder='{"entities": [ ... ]}' 
+                  className="h-64 font-mono text-xs bg-slate-50"
+                  value={pasteJsonContent}
+                  onChange={(e) => setPasteJsonContent(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-100">
+              <Button variant="outline" onClick={() => setIsPasteJsonDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handlePastedJsonSubmit} className="bg-blue-600 hover:bg-blue-700 font-bold">Import Data</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };

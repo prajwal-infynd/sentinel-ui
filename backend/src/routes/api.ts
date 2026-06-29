@@ -88,6 +88,35 @@ router.patch("/portfolio/entities/:id/status", (req, res) => {
   }
 });
 
+router.patch("/portfolio/entities/:id/kyb-status", (req, res) => {
+  const { kyb_status } = req.body;
+  const entity = mockEntities.find((e) => e.id === req.params.id);
+  if (entity) {
+    (entity as any).kyb_status = kyb_status;
+    res.json(entity);
+  } else {
+    res.status(404).json({ message: "Entity not found" });
+  }
+});
+
+router.post("/portfolio/import", (req, res) => {
+  const rows = req.body;
+  const importCount = Array.isArray(rows) ? rows.length : 1;
+  dashboardSummary.entityCount = importCount;
+  res.json({ imported: importCount });
+});
+
+router.get("/portfolio/sample-preview", (req, res) => {
+  res.json([
+    { id: "ENT-AAPL", name: "Apple Inc", type: "Public", dob: "1976-04-01", country: "US", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 161000, annualRevenue: 383285000000, industry: "Consumer Electronics", phone: "(408) 996-1010", companyType: "Public", description: "Apple Inc. is an American multinational technology company headquartered in Cupertino, California, in Silicon Valley, and known for consumer electronics, software and online services." } },
+    { id: "ENT-BMR", name: "B & M Retail Limited", type: "Public", dob: "1978-03-14", country: "Jersey", risk: "Medium", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 35000, annualRevenue: 4983000000, industry: "Retail", phone: "+44 151 728 5400", companyType: "Private", description: "B&M European Value Retail S.A. is a British variety store value retail chain, trading as B&M." } },
+    { id: "ENT-BOY", name: "Bodycote PLC", type: "Public", dob: "1923-01-01", country: "UK", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 4983, annualRevenue: 744000000, industry: "Industrial Engineering", phone: "+44 1625 505300", companyType: "Public", description: "Bodycote plc is a supplier of metallurgical services, headquartered in Macclesfield, United Kingdom." } },
+    { id: "ENT-BP", name: "BP plc", type: "Public", dob: "1909-04-14", country: "UK", risk: "Critical", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 67600, annualRevenue: 241000000000, industry: "Oil & Gas", phone: "+44 20 7496 4000", companyType: "Public", description: "BP p.l.c. is a British multinational oil and gas company headquartered in London, England. It is one of the oil and gas supermajors." } },
+    { id: "ENT-CLDN", name: "Caledonia Investments plc", type: "Public", dob: "1928-01-01", country: "UK", risk: "Low", onboarded: "Pending", payload: { fiscalYear: "2023", employees: 45, annualRevenue: 154000000, industry: "Investment Trust", phone: "+44 20 7802 8080", companyType: "Public", description: "Caledonia Investments plc is a British investment trust headquartered in London, England." } }
+  ]);
+});
+
+
 // --- Alerts and Agents ---
 router.get("/alerts", (req, res) => {
   res.json(sampleAlerts.slice(0, 5));

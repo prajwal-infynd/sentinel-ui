@@ -2,8 +2,11 @@ import MockAdapter from "axios-mock-adapter";
 import { apiClient } from "./api-client";
 import { formatRelativeTime } from "./utils";
 
-// Initialize mock adapter
-export const mock = new MockAdapter(apiClient, { delayResponse: 500 }); // simulate network delay
+// Initialize mock adapter, but restore it immediately to disable mocking
+// and allow real API calls to go through to the backend.
+export const mock = new MockAdapter(apiClient, { onNoMatch: "passthrough" });
+mock.restore(); 
+
 
 // --- AUTH & USERS DATA ---
 export const ROLES = {
@@ -487,13 +490,7 @@ mock.onPost("/policy/rollback").reply((config) => {
 });
 
 // --- PORTFOLIO ONBOARDING DATA ---
-mock.onGet("/portfolio/sample-preview").reply(200, [
-  { id: "ENT-AAPL", name: "Apple Inc", type: "Public", dob: "1976-04-01", country: "US", risk: "Low", onboarded: "Pending" },
-  { id: "ENT-BMR", name: "B & M Retail Limited", type: "Public", dob: "1978-03-14", country: "Jersey", risk: "Medium", onboarded: "Pending" },
-  { id: "ENT-BOY", name: "Bodycote PLC", type: "Public", dob: "1923-01-01", country: "UK", risk: "Low", onboarded: "Pending" },
-  { id: "ENT-BP", name: "BP plc", type: "Public", dob: "1909-04-14", country: "UK", risk: "Critical", onboarded: "Pending" },
-  { id: "ENT-CLDN", name: "Caledonia Investments plc", type: "Public", dob: "1928-01-01", country: "UK", risk: "Low", onboarded: "Pending" }
-]);
+// Mock removed to use real backend API for sample-preview
 
 // --- MASTER DATA INDEX ---
 mock.onGet("/unified-records").reply(200, [

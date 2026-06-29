@@ -34,9 +34,9 @@ import LiveCrawlEngine from "./pages/LiveCrawlEngine";
 import Settings from "./pages/Settings";
 import AdminPortal from "./pages/AdminPortal";
 import Landing from "./pages/Landing";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AuthProvider } from "./context/AuthContext";
-import { InvestigationsProvider } from "./context/InvestigationsContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/context/AuthContext";
+import { InvestigationsProvider } from "@/context/InvestigationsContext";
 
 const queryClient = new QueryClient();
 

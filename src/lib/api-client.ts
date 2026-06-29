@@ -9,18 +9,18 @@ export const apiClient = axios.create({
 
 // Add request interceptor to log outgoing requests
 apiClient.interceptors.request.use((config) => {
-  console.log(`[Mock API Request] ${config.method?.toUpperCase()} ${config.url}`);
+  console.log(`[Backend API Request] ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 });
 
 // Add response interceptor to log incoming responses
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[Mock API Response] ${response.config.url}`, response.data);
+    console.log(`[Backend API Response] ${response.config.url}`, response.data);
     return response;
   },
   (error) => {
-    console.error("[Mock API Error]:", error);
+    console.error("[Backend API Error]:", error);
     return Promise.reject(error);
   }
 );
