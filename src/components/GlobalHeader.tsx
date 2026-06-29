@@ -16,10 +16,11 @@ import { useAuth } from "@/context/AuthContext";
 export function GlobalHeader() {
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState([
-    { id: 1, title: "Critical Alert: PEP Match", desc: "John Doe matched against OFAC list.", time: "2 min ago", unread: true },
-    { id: 2, title: "Agent Completed", desc: "News Crawler finished scanning 1,200 sources.", time: "1 hr ago", unread: true },
-    { id: 3, title: "System Update", desc: "New scoring policy deployed successfully.", time: "2 hrs ago", unread: true },
-    { id: 4, title: "Portfolio Ingested", desc: "154 entities added to monitoring.", time: "1 day ago", unread: false },
+    { id: 1, title: "Critical Risk: Adverse Media", desc: "Atos SE flagged for potential default risk based on recent executive turnover and credit downgrades.", time: "2 min ago", unread: true },
+    { id: 2, title: "Agent Crawler Completed", desc: "AI Agent finished deep-dive screening on 34 recently onboarded entities. 2 high-risk signals detected.", time: "15 min ago", unread: true },
+    { id: 3, title: "Sanctions List Update", desc: "Global OFAC/SDN lists updated. Running background delta-scan across portfolio...", time: "1 hr ago", unread: true },
+    { id: 4, title: "Case Assigned", desc: "You have been assigned to review 'Volkswagen AG' compliance breach.", time: "3 hrs ago", unread: false },
+    { id: 5, title: "Portfolio Sync", desc: "Successfully imported 12 new CRM records into the monitoring pipeline.", time: "1 day ago", unread: false },
   ]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
