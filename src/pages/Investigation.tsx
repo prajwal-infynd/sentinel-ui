@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { forceCollide } from "d3-force";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus, Minus, ZoomIn, ZoomOut, Maximize2, Minimize2, Expand
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -101,6 +101,55 @@ const Investigation = () => {
   const [selectedGraphNode, setSelectedGraphNode] = useState<any>(null);
   const forceGraphRef = useRef<any>(null);
   const [fgInstance, setFgInstance] = useState<any>(null);
+
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!graphContainer) return;
+    if (!document.fullscreenElement) {
+      graphContainer.requestFullscreen().catch((err) => {
+        toast({
+          title: "Fullscreen Error",
+          description: `Could not enter fullscreen: ${err.message}`,
+          variant: "destructive",
+        });
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const handleZoomIn = () => {
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+    const currentZoom = fg.zoom();
+    const nextZoom = Math.min(2.5, currentZoom * 1.3);
+    fg.zoom(nextZoom, 300);
+  };
+
+  const handleZoomOut = () => {
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+    const currentZoom = fg.zoom();
+    const nextZoom = Math.max(0.6, currentZoom * 0.7);
+    fg.zoom(nextZoom, 300);
+  };
+
+  const handleResetZoom = () => {
+    const fg = forceGraphRef.current;
+    if (!fg) return;
+    fg.centerAt(0, 0, 400);
+    fg.zoom(1.1, 400);
+  };
 
   const onGraphRef = useCallback((fg: any) => {
     forceGraphRef.current = fg;
@@ -261,6 +310,76 @@ const Investigation = () => {
       setHasJudgeDecided(true);
       setJudgeVerdict("While the source is highly credible, formal charges have not been filed. However, SFO involvement in a multi-jurisdictional fraud context is a material risk. I am setting the Risk Score to 95 (Critical) given the confirmed matching criteria and tagging it for immediate review.");
     }, (defaultDebate.length + 1) * 1200);
+  };
+
+  const renderDetailsPanel = (isOverlay: boolean) => {
+    if (!selectedGraphNode) return null;
+    return (
+      <motion.div 
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        className={
+          isOverlay
+            ? "absolute right-4 top-16 bottom-4 w-80 md:w-96 bg-white border border-slate-200 rounded-xl p-5 shadow-lg overflow-y-auto flex flex-col z-30"
+            : "w-1/3 bg-white border border-border/50 rounded-xl p-5 shadow-sm overflow-y-auto flex flex-col"
+        }
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-bold text-lg text-slate-800">Node Details</h4>
+          <Button variant="ghost" size="icon" onClick={() => setSelectedGraphNode(null)} className="h-6 w-6 rounded-full text-slate-400 hover:text-slate-700">
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Label</div>
+            <div className="font-semibold text-slate-900 text-base">{selectedGraphNode.label}</div>
+          </div>
+          
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Type</div>
+            <Badge variant="outline" className="bg-slate-50">{selectedGraphNode.type}</Badge>
+          </div>
+
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Internal ID</div>
+            <div className="font-mono text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">{selectedGraphNode.id}</div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-4">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Connected Relationships</div>
+            <div className="space-y-2">
+              {(activeData?.networkGraph?.links || activeData?.networkGraph?.edges || []).filter((l: any) => 
+                (typeof l.source === 'object' ? l.source.id === selectedGraphNode.id : l.source === selectedGraphNode.id) || 
+                (typeof l.target === 'object' ? l.target.id === selectedGraphNode.id : l.target === selectedGraphNode.id)
+              ).map((link: any, i: number) => {
+                const isSource = (typeof link.source === 'object' ? link.source.id === selectedGraphNode.id : link.source === selectedGraphNode.id);
+                const otherNodeId = isSource ? 
+                  (typeof link.target === 'object' ? link.target.id : link.target) : 
+                  (typeof link.source === 'object' ? link.source.id : link.source);
+                  
+                const otherNode = (activeData?.networkGraph?.nodes || []).find((n: any) => n.id === otherNodeId);
+                
+                return (
+                  <div key={i} className="flex flex-col p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs">
+                    <span className="text-slate-400 font-mono text-[9px] uppercase tracking-wider mb-1">
+                      {isSource ? "Outbound" : "Inbound"}
+                    </span>
+                    <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                      <span className="text-indigo-600 font-bold">{link.relationship}</span>
+                      <ArrowRight className="h-3 w-3 text-slate-400" />
+                      <span className="truncate">{otherNode?.label || otherNodeId}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
   };
 
   return (
@@ -590,11 +709,80 @@ const Investigation = () => {
               </div>
             </div>
 
-            <div className="relative w-full flex-grow z-10 flex gap-4">
+            <div className={`relative w-full flex-grow flex gap-4 ${isMaximized ? 'z-[100]' : 'z-10'}`}>
+              {isMaximized && (
+                <div 
+                  className="fixed inset-0 bg-white/70 backdrop-blur-md z-[100] transition-all duration-300 animate-in fade-in" 
+                  onClick={() => setIsMaximized(false)}
+                />
+              )}
               <div 
-                className={`relative h-full flex-grow border border-border/50 rounded-xl overflow-hidden bg-slate-50/50 transition-all duration-300 ${selectedGraphNode ? 'w-2/3' : 'w-full'}`} 
+                className={`border border-border/50 rounded-xl overflow-hidden bg-slate-50/50 transition-all duration-300 flex flex-col ${
+                  isMaximized 
+                    ? 'fixed inset-6 md:inset-12 z-[101] bg-white shadow-2xl border-slate-200 p-4 rounded-2xl' 
+                    : isFullscreen
+                      ? 'fixed inset-0 z-[101] w-full h-full bg-white p-4'
+                      : `relative h-full flex-grow ${selectedGraphNode ? 'w-2/3' : 'w-full'}`
+                }`} 
                 ref={setGraphContainer}
               >
+                {isMaximized && (
+                  <div className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur-sm border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-md flex items-center gap-2">
+                    <Network className="h-4 w-4 text-indigo-500 animate-pulse" />
+                    <span className="text-xs font-bold text-slate-700">Dynamic Knowledge Graph (Maximized View)</span>
+                  </div>
+                )}
+
+                {/* Floating Graph Controls */}
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200/80 rounded-xl p-1.5 shadow-md hover:shadow-lg hover:border-slate-300/80 transition-all">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleZoomIn}
+                    title="Zoom In"
+                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleZoomOut}
+                    title="Zoom Out"
+                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleResetZoom}
+                    title="Fit to Screen"
+                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    <Expand className="h-4 w-4" />
+                  </Button>
+                  <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsMaximized(!isMaximized)}
+                    title={isMaximized ? "Minimize Panel" : "Maximize Panel"}
+                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleFullscreen}
+                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
+                    className="h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors"
+                  >
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                  </Button>
+                </div>
+
                 {(() => {
                   let nodes = activeData?.networkGraph?.nodes || [];
                   let links = activeData?.networkGraph?.links || activeData?.networkGraph?.edges || [];
@@ -699,6 +887,7 @@ const Investigation = () => {
                       warmupTicks={200}
                       cooldownTicks={0}
                       ref={onGraphRef}
+                      enableZoomInteraction={false}
                       onEngineStop={() => {
                         const fg = forceGraphRef.current;
                         if (!fg) return;
@@ -844,76 +1033,18 @@ const Investigation = () => {
                         ctx.fillText(text, midX, midY);
                       }}
                     />
-
-
-
                   );
                 })()}
+
+                {/* Render Details Panel inside when in Maximized/Fullscreen Overlay mode */}
+                <AnimatePresence>
+                  {(isMaximized || isFullscreen) && renderDetailsPanel(true)}
+                </AnimatePresence>
               </div>
-              
+
+              {/* Render Details Panel as normal side-by-side sibling in normal view */}
               <AnimatePresence>
-                {selectedGraphNode && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="w-1/3 bg-white border border-border/50 rounded-xl p-5 shadow-sm overflow-y-auto flex flex-col"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-lg text-slate-800">Node Details</h4>
-                      <Button variant="ghost" size="icon" onClick={() => setSelectedGraphNode(null)} className="h-6 w-6 rounded-full text-slate-400 hover:text-slate-700">
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Label</div>
-                        <div className="font-semibold text-slate-900 text-base">{selectedGraphNode.label}</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entity Type</div>
-                        <Badge variant="outline" className="bg-slate-50">{selectedGraphNode.type}</Badge>
-                      </div>
-
-                      <div>
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Internal ID</div>
-                        <div className="font-mono text-xs text-slate-500 bg-slate-50 p-2 rounded border border-slate-100">{selectedGraphNode.id}</div>
-                      </div>
-
-                      <div className="pt-4 border-t border-slate-100 mt-4">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Connected Relationships</div>
-                        <div className="space-y-2">
-                          {(activeData?.networkGraph?.links || activeData?.networkGraph?.edges || []).filter((l: any) => 
-                            (typeof l.source === 'object' ? l.source.id === selectedGraphNode.id : l.source === selectedGraphNode.id) || 
-                            (typeof l.target === 'object' ? l.target.id === selectedGraphNode.id : l.target === selectedGraphNode.id)
-                          ).map((link: any, i: number) => {
-                            const isSource = (typeof link.source === 'object' ? link.source.id === selectedGraphNode.id : link.source === selectedGraphNode.id);
-                            const otherNodeId = isSource ? 
-                              (typeof link.target === 'object' ? link.target.id : link.target) : 
-                              (typeof link.source === 'object' ? link.source.id : link.source);
-                              
-                            const otherNode = (activeData?.networkGraph?.nodes || []).find((n: any) => n.id === otherNodeId);
-                            
-                            return (
-                              <div key={i} className="flex flex-col p-2 bg-slate-50 rounded-lg border border-slate-100 text-xs">
-                                <span className="text-slate-400 font-mono text-[9px] uppercase tracking-wider mb-1">
-                                  {isSource ? "Outbound" : "Inbound"}
-                                </span>
-                                <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                                  <span className="text-indigo-600 font-bold">{link.relationship}</span>
-                                  <ArrowRight className="h-3 w-3 text-slate-400" />
-                                  <span className="truncate">{otherNode?.label || otherNodeId}</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                {!(isMaximized || isFullscreen) && renderDetailsPanel(false)}
               </AnimatePresence>
             </div>
           </div>
