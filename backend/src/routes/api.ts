@@ -109,7 +109,11 @@ router.post("/portfolio/import", (req, res) => {
 });
 router.get("/portfolio/sample-preview", (req, res) => {
   try {
-    const dataPath = path.resolve("/home/senthil/Videos/sentinelApp/AISDR-BE/consolidated_entities.json");
+    let dataPath = path.join(process.cwd(), "consolidated_entities.json");
+    if (!fs.existsSync(dataPath)) {
+      dataPath = path.join(process.cwd(), "..", "consolidated_entities.json");
+    }
+    
     const rawData = fs.readFileSync(dataPath, "utf8");
     const parsedData = JSON.parse(rawData);
     

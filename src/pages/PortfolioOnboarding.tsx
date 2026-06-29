@@ -141,6 +141,13 @@ const PortfolioOnboarding = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [riskFilter, setRiskFilter] = useState("all-risks");
+  const [ratingFilter, setRatingFilter] = useState("all-ratings");
+  const [exposureFilter, setExposureFilter] = useState("all-exposures");
+  const [alertFilter, setAlertFilter] = useState("all-severities");
+  
   // Modal State
   const [selectedCompany360, setSelectedCompany360] = useState<any | null>(null);
 
@@ -562,11 +569,59 @@ const PortfolioOnboarding = () => {
     });
   }, [importedDataRows, sampleRows]);
 
-  const totalPages = Math.ceil(displayData.length / itemsPerPage);
+  const filteredData = useMemo(() => {
+    return displayData.filter(row => {
+      // 1. Search Query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (
+          !row.name.toLowerCase().includes(query) && 
+          !row.country.toLowerCase().includes(query) && 
+          !row.industry.toLowerCase().includes(query)
+        ) {
+          return false;
+        }
+      }
+
+      // 2. Risk Level
+      if (riskFilter !== "all-risks") {
+        if (riskFilter === "critical" && row.riskScore < 80) return false;
+        if (riskFilter === "high" && (row.riskScore < 60 || row.riskScore >= 80)) return false;
+        if (riskFilter === "medium" && (row.riskScore < 30 || row.riskScore >= 60)) return false;
+        if (riskFilter === "low" && row.riskScore >= 30) return false;
+      }
+
+      // 3. Rating
+      if (ratingFilter !== "all-ratings" && row.rating !== ratingFilter) {
+        return false;
+      }
+
+      // 4. Exposure
+      if (exposureFilter !== "all-exposures") {
+        const rev = row.rawIdentifiers?.revenue || row.rawIdentifiers?.financials?.revenue || 0;
+        if (exposureFilter === "<1M" && (rev === 0 || rev >= 1000000)) return false;
+        if (exposureFilter === "1M-1B" && (rev < 1000000 || rev >= 1000000000)) return false;
+        if (exposureFilter === ">1B" && rev < 1000000000) return false;
+      }
+
+      // 5. Alerts
+      if (alertFilter !== "all-severities" && row.alert !== alertFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [displayData, searchQuery, riskFilter, ratingFilter, exposureFilter, alertFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, riskFilter, ratingFilter, exposureFilter, alertFilter]);
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return displayData.slice(startIndex, startIndex + itemsPerPage);
-  }, [displayData, currentPage]);
+    return filteredData.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredData, currentPage]);
 
   const loadMockData = () => {
     setSelectedFileName("demo-portfolio-Q3.csv");
@@ -759,42 +814,60 @@ const PortfolioOnboarding = () => {
               <div className="flex flex-wrap items-center gap-3 mb-6 bg-white p-2 rounded-xl border border-slate-200/60 shadow-sm">
                 <div className="relative flex-1 min-w-[200px] border-r border-slate-100 pr-3">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input placeholder="Search companies..." className="pl-9 bg-transparent border-0 h-10 w-full focus-visible:ring-0 text-[13px] placeholder:text-slate-400 shadow-none" />
+                  <Input 
+                    placeholder="Search companies..." 
+                    className="pl-9 bg-transparent border-0 h-10 w-full focus-visible:ring-0 text-[13px] placeholder:text-slate-400 shadow-none" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
                 
-                <Select defaultValue="all-risks">
+                <Select value={riskFilter} onValueChange={setRiskFilter}>
                   <SelectTrigger className="w-[180px] h-10 bg-transparent border-0 font-semibold text-slate-700 shadow-none text-[13px] focus:ring-0 border-r border-slate-100 rounded-none pr-3">
                     <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div> <span className="text-slate-400 font-medium mr-1">Risk Level:</span> <SelectValue /></div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl shadow-lg border-slate-100">
                     <SelectItem value="all-risks" className="text-[13px] font-medium">All Risks</SelectItem>
+                    <SelectItem value="critical" className="text-[13px] font-medium">Critical (80+)</SelectItem>
+                    <SelectItem value="high" className="text-[13px] font-medium">High (60-79)</SelectItem>
+                    <SelectItem value="medium" className="text-[13px] font-medium">Medium (30-59)</SelectItem>
+                    <SelectItem value="low" className="text-[13px] font-medium">Low (0-29)</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select defaultValue="all-ratings">
+                <Select value={ratingFilter} onValueChange={setRatingFilter}>
                   <SelectTrigger className="w-[180px] h-10 bg-transparent border-0 font-semibold text-slate-700 shadow-none text-[13px] focus:ring-0 border-r border-slate-100 rounded-none pr-3">
                     <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div> <span className="text-slate-400 font-medium mr-1">Rating:</span> <SelectValue /></div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl shadow-lg border-slate-100">
                     <SelectItem value="all-ratings" className="text-[13px] font-medium">All Ratings</SelectItem>
+                    <SelectItem value="CCC" className="text-[13px] font-medium">CCC</SelectItem>
+                    <SelectItem value="BBB" className="text-[13px] font-medium">BBB</SelectItem>
+                    <SelectItem value="AA" className="text-[13px] font-medium">AA</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select defaultValue="all-exposures">
+                <Select value={exposureFilter} onValueChange={setExposureFilter}>
                   <SelectTrigger className="w-[200px] h-10 bg-transparent border-0 font-semibold text-slate-700 shadow-none text-[13px] focus:ring-0 border-r border-slate-100 rounded-none pr-3">
                     <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div> <span className="text-slate-400 font-medium mr-1">Exposure:</span> <SelectValue /></div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl shadow-lg border-slate-100">
                     <SelectItem value="all-exposures" className="text-[13px] font-medium">All Exposures</SelectItem>
+                    <SelectItem value=">1B" className="text-[13px] font-medium">Over $1B</SelectItem>
+                    <SelectItem value="1M-1B" className="text-[13px] font-medium">$1M - $1B</SelectItem>
+                    <SelectItem value="<1M" className="text-[13px] font-medium">Under $1M</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select defaultValue="all-severities">
+                <Select value={alertFilter} onValueChange={setAlertFilter}>
                   <SelectTrigger className="w-[190px] h-10 bg-transparent border-0 font-semibold text-slate-700 shadow-none text-[13px] focus:ring-0 pr-2">
                     <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div> <span className="text-slate-400 font-medium mr-1">Alerts:</span> <SelectValue /></div>
                   </SelectTrigger>
                   <SelectContent className="rounded-xl shadow-lg border-slate-100">
                     <SelectItem value="all-severities" className="text-[13px] font-medium">All Severities</SelectItem>
+                    <SelectItem value="Critical" className="text-[13px] font-medium">Critical</SelectItem>
+                    <SelectItem value="Medium" className="text-[13px] font-medium">Medium</SelectItem>
+                    <SelectItem value="Low" className="text-[13px] font-medium">Low</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -903,8 +976,9 @@ const PortfolioOnboarding = () => {
                 {/* Pagination */}
                 <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
                   <div className="text-[13px] font-medium text-slate-500">
-                    Showing <span className="font-bold text-slate-700">{displayData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * itemsPerPage, displayData.length)}</span> of <span className="font-bold text-slate-700">{displayData.length}</span> companies
+                    Showing <span className="font-bold text-slate-700">{filteredData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> of <span className="font-bold text-slate-700">{filteredData.length}</span> companies
                   </div>
+
                   <div className="flex items-center gap-1.5">
                     <Button 
                       variant="outline" 
