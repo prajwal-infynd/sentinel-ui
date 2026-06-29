@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Building2, FileText, AlertCircle, Users, Target, Shield, Globe, Newspaper, ExternalLink } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,9 +56,91 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const companyName = companyData.name;
   const identifiers = companyData.rawIdentifiers || {};
   const payload = companyData.payload || {};
-  const croftz = identifiers.corporateRegistry ?? null; // Croftz screeningResults[0].results
+  const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null; // Updated to include local data
 
   const isScreeningPending = !croftz && !payload.fiscalYear;
+
+  const [localCroftzData, setLocalCroftzData] = useState<any>(null);
+  const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setLocalCroftzData(null);
+      setIsFetchingCroftz(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Only fetch if screening is pending and we don't have data yet
+    if (isOpen && isScreeningPending && !isFetchingCroftz && !localCroftzData) {
+      const fetchCroftz = async () => {
+        setIsFetchingCroftz(true);
+        try {
+          const endpointUrl = "/croftz-api/api/v1/corporate-registry-screening";
+          const CROFTZ_KEY = import.meta.env.VITE_CROFTZ_API_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
+          
+          const website = identifiers.website || payload.url;
+          let domain = companyName;
+          if (website) {
+            domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+          } else if (companyName) {
+            domain = companyName.toLowerCase().replace(/[^a-z0-9]/g, '') + ".com";
+          }
+
+          const formData = new URLSearchParams();
+          formData.append("name", domain || "unknown.com");
+          formData.append("entityType", "company");
+          formData.append("exactMatch", "false");
+          formData.append("fuzzinessThreshold", "100");
+          formData.append("monitor", "false");
+          formData.append("countryCodes", "");
+          formData.append("monitoringDuration", "60");
+          formData.append("monitoringRenew", "false");
+
+          const postResp = await fetch(endpointUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              "x-api-key": CROFTZ_KEY
+            },
+            body: formData.toString()
+          });
+
+          if (!postResp.ok) throw new Error("POST failed");
+          const postData = await postResp.json();
+          const postBody = postData.response || postData;
+
+          let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
+          if (!screeningUid && postBody.screeningResults?.length > 0) {
+            screeningUid = postBody.screeningResults[0].screeningUid || postBody.screeningResults[0].id;
+          }
+          if (!screeningUid && postBody.data?.length > 0) {
+            screeningUid = postBody.data[0].screeningUid;
+          }
+
+          if (screeningUid) {
+            const getResp = await fetch(`${endpointUrl}?crScreeningUid=${screeningUid}`, {
+              headers: { "x-api-key": CROFTZ_KEY }
+            });
+            if (getResp.ok) {
+              const getData = await getResp.json();
+              const getBody = getData.response || getData;
+              const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
+              setLocalCroftzData(results);
+            }
+          } else if (postBody.screeningResults?.length > 0) {
+             setLocalCroftzData(postBody.screeningResults[0].results);
+          }
+        } catch (e) {
+          console.error("Croftz fetch error", e);
+        } finally {
+          setIsFetchingCroftz(false);
+        }
+      };
+      fetchCroftz();
+    }
+  }, [isOpen, isScreeningPending, isFetchingCroftz, localCroftzData, companyName, identifiers.website, payload.url]);
+
 
   const about = payload.description || identifiers.aboutCompany?.fullRiskAssessment || identifiers.aboutCompany?.brief;
   const personnel = identifiers.keyPersonnel || payload.keyPersonnel || [];
@@ -101,7 +185,30 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               <div className="text-[12px] text-slate-500 mt-0.5">Match Status: <span className="font-semibold text-slate-700">{matchStatus}</span></div>
             )}
           </div>
-          {riskScore !== null && riskColors && (
+          {isFetchingCroftz ? (
+                <div className="bg-white border rounded-2xl p-5 shadow-sm border-slate-200 flex flex-col justify-between">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" /> Risk Assessment
+                  </h3>
+                  <div className="mb-4">
+                    <div className="flex items-end gap-2 mb-1">
+                      <Skeleton className="h-10 w-16" />
+                      <div className="text-[12px] text-slate-400 mb-1">/100</div>
+                    </div>
+                    <Skeleton className="w-full h-2 rounded-full" />
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Skeleton className="h-3 w-20 mb-1" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-3 w-16 mb-1" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                </div>
+              ) : riskScore !== null && riskColors && (
             <div className={`flex flex-col items-center px-4 py-2 rounded-xl border ${riskColors.bg} ${riskColors.border}`}>
               <div className={`text-2xl font-black ${riskColors.text}`}>{riskScore}</div>
               <div className={`text-[10px] font-bold uppercase tracking-wider ${riskColors.text}`}>Risk Score</div>
@@ -163,7 +270,30 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               </div>
 
               {/* Risk Panel */}
-              {riskScore !== null && riskColors && (
+              {isFetchingCroftz ? (
+                <div className="bg-white border rounded-2xl p-5 shadow-sm border-slate-200 flex flex-col justify-between">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5" /> Risk Assessment
+                  </h3>
+                  <div className="mb-4">
+                    <div className="flex items-end gap-2 mb-1">
+                      <Skeleton className="h-10 w-16" />
+                      <div className="text-[12px] text-slate-400 mb-1">/100</div>
+                    </div>
+                    <Skeleton className="w-full h-2 rounded-full" />
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <Skeleton className="h-3 w-20 mb-1" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-3 w-16 mb-1" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                  </div>
+                </div>
+              ) : riskScore !== null && riskColors && (
                 <div className={`bg-white border rounded-2xl p-5 shadow-sm ${riskColors.border}`}>
                   <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5" /> Risk Assessment
@@ -185,7 +315,25 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
             {/* Corporate Registry */}
             {(() => {
-              const rawCr = companyData.rawIdentifiers?.corporateRegistry;
+              if (isFetchingCroftz) {
+                 return (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {Array.from({length: 8}).map((_, i) => (
+                        <div key={i}>
+                          <Skeleton className="h-3 w-20 mb-1" />
+                          <Skeleton className="h-4 w-28" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                 );
+              }
+
+              const rawCr = croftz;
               if (!rawCr) return null;
               
               // Handle both object and array response formats safely
