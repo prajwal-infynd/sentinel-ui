@@ -120,11 +120,26 @@ const parseFile = async (file: File) => {
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 };
 
+const getPageNumbers = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, '...', totalPages];
+  }
+  if (currentPage >= totalPages - 3) {
+    return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+};
+
 const PortfolioOnboarding = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   // Modal State
   const [selectedCompany360, setSelectedCompany360] = useState<any | null>(null);
@@ -547,6 +562,12 @@ const PortfolioOnboarding = () => {
     });
   }, [importedDataRows, sampleRows]);
 
+  const totalPages = Math.ceil(displayData.length / itemsPerPage);
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return displayData.slice(startIndex, startIndex + itemsPerPage);
+  }, [displayData, currentPage]);
+
   const loadMockData = () => {
     setSelectedFileName("demo-portfolio-Q3.csv");
     setImportedDataRows([
@@ -796,7 +817,7 @@ const PortfolioOnboarding = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {displayData.length === 0 ? (
+                      {paginatedData.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={9} className="h-48 text-center">
                             <div className="flex flex-col items-center justify-center text-slate-500">
@@ -807,7 +828,7 @@ const PortfolioOnboarding = () => {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        displayData.map((row) => (
+                        paginatedData.map((row) => (
                           <TableRow key={row.id} className="hover:bg-slate-50/60 border-b border-slate-100/80 transition-colors group">
                             <TableCell className="py-4 pl-6 text-[12.5px] font-semibold text-slate-400">{row.id}</TableCell>
                             
@@ -882,15 +903,49 @@ const PortfolioOnboarding = () => {
                 {/* Pagination */}
                 <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
                   <div className="text-[13px] font-medium text-slate-500">
-                    Showing <span className="font-bold text-slate-700">1</span> to <span className="font-bold text-slate-700">10</span> of <span className="font-bold text-slate-700">36</span> companies
+                    Showing <span className="font-bold text-slate-700">{displayData.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-slate-700">{Math.min(currentPage * itemsPerPage, displayData.length)}</span> of <span className="font-bold text-slate-700">{displayData.length}</span> companies
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" className="h-8 px-3 text-[12px] font-bold text-slate-600 bg-white border-slate-200">Previous</Button>
-                    <Button size="sm" className="h-8 w-8 p-0 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm rounded-md">1</Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[13px] font-bold text-slate-600 hover:bg-slate-100 rounded-md">2</Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[13px] font-bold text-slate-600 hover:bg-slate-100 rounded-md">3</Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-[13px] font-bold text-slate-600 hover:bg-slate-100 rounded-md">4</Button>
-                    <Button variant="outline" size="sm" className="h-8 px-3 text-[12px] font-bold text-slate-600 bg-white border-slate-200">Next</Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 px-3 text-[12px] font-bold text-slate-600 bg-white border-slate-200"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    
+                    {getPageNumbers(currentPage, totalPages).map((page, index) => {
+                      if (page === '...') {
+                        return <span key={`ellipsis-${index}`} className="px-1.5 text-slate-400 font-bold tracking-widest text-[13px]">...</span>;
+                      }
+                      return (
+                        <Button 
+                          key={page}
+                          variant={currentPage === page ? "default" : "ghost"}
+                          size="sm" 
+                          className={`h-8 w-8 p-0 text-[13px] font-bold rounded-md ${
+                            currentPage === page 
+                              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" 
+                              : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                          onClick={() => setCurrentPage(page as number)}
+                        >
+                          {page}
+                        </Button>
+                      );
+                    })}
+
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 px-3 text-[12px] font-bold text-slate-600 bg-white border-slate-200"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                    >
+                      Next
+                    </Button>
                   </div>
                 </div>
               </div>
