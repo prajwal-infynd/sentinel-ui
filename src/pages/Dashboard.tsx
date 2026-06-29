@@ -70,35 +70,55 @@ const Dashboard = () => {
     queryFn: fetchSamplePreview,
   });
 
-  const totalMonitored = monitoredEntities.length;
-  const highRiskCount = monitoredEntities.filter((e: any) => (e.riskScore || 0) >= 60).length;
+  const formattedEntities = monitoredEntities.map((row: any) => {
+    const profile = row.masterEntityProfile || {};
+    const name = profile.fullName || row.name || "Unknown";
+    const country = profile.jurisdiction || row.country || "Unknown";
+    const revenue = Number(profile.financials?.revenue || row.rawIdentifiers?.revenue || 0);
+    
+    let riskScore = row.riskScore || 25;
+    if (!row.riskScore) {
+      if (revenue > 10000000000) riskScore = 85;
+      else if (revenue > 1000000000) riskScore = 65;
+      else if (revenue > 0) riskScore = 45;
+    }
+
+    return {
+      ...row,
+      name,
+      country,
+      revenue,
+      riskScore,
+      alert: row.alert || (riskScore >= 80 ? "Critical" : riskScore >= 50 ? "Medium" : "Low")
+    };
+  });
+
+  const totalMonitored = formattedEntities.length;
+  const highRiskCount = formattedEntities.filter((e: any) => e.riskScore >= 60).length;
   
-  const totalExposureValue = monitoredEntities.reduce((acc: number, e: any) => {
-    const rev = e.rawIdentifiers?.revenue || e.rawIdentifiers?.financials?.revenue || 0;
-    return acc + rev;
-  }, 0);
+  const totalExposureValue = formattedEntities.reduce((acc: number, e: any) => acc + e.revenue, 0);
   
   const formattedExposure = totalExposureValue > 0 
     ? `$${(totalExposureValue / 1000000).toFixed(1)}M` 
     : "£640455.1M"; // fallback to mock if no real revenue data
 
-  const uniqueCountries = new Set(monitoredEntities.map((e: any) => e.jurisdiction || e.country).filter(Boolean));
+  const uniqueCountries = new Set(formattedEntities.map((e: any) => e.country).filter(Boolean));
   const countryCount = uniqueCountries.size || 3;
 
-  const topCriticalEntities = [...monitoredEntities]
-    .filter(e => (e.riskScore || 0) >= 80 || e.alert === 'Critical' || (e.riskScore || 0) > 0)
-    .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
+  const topCriticalEntities = [...formattedEntities]
+    .filter((e: any) => e.riskScore >= 80 || e.alert === 'Critical' || e.riskScore > 0)
+    .sort((a: any, b: any) => b.riskScore - a.riskScore)
     .slice(0, 5);
 
   const dynamicCriticalAlerts = topCriticalEntities.length > 0 
-    ? topCriticalEntities.map((e, idx) => ({
+    ? topCriticalEntities.map((e: any, idx: number) => ({
         id: e.id || idx,
         company: e.name,
-        severity: e.alert || ((e.riskScore || 0) >= 80 ? "Critical" : (e.riskScore || 0) >= 60 ? "High" : "Medium"),
+        severity: e.alert,
         type: "Risk Alert",
-        description: e.notes || `High risk score of ${e.riskScore || 0} detected for ${e.name}. Requires immediate review.`,
+        description: e.notes || `High risk score of ${e.riskScore} detected for ${e.name}. Requires immediate review.`,
         aiAction: `AI suggests reviewing ${e.name}'s recent activities due to an elevated risk score.`,
-        flag: e.jurisdiction === "United States" || e.country === "US" ? "🇺🇸" : e.jurisdiction === "United Kingdom" || e.country === "UK" ? "🇬🇧" : e.jurisdiction === "France" || e.country === "FR" ? "🇫🇷" : "🌍",
+        flag: e.country === "United States" || e.country === "US" ? "🇺🇸" : e.country === "United Kingdom" || e.country === "UK" ? "🇬🇧" : e.country === "France" || e.country === "FR" ? "🇫🇷" : "🌍",
         logoBg: "bg-red-500",
         initial: e.name.charAt(0).toUpperCase()
       }))
