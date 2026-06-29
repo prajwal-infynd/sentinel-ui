@@ -139,21 +139,21 @@ const AIAgents = () => {
 
                 <div className="mb-6 grid grid-cols-2 gap-4">
                   <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
-                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{agent.processed.toLocaleString()}</div>
+                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.processed || 0).toLocaleString()}</div>
                     <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Items Processed</div>
                   </div>
                   <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
-                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{agent.signals.toLocaleString()}</div>
+                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.signals || 0).toLocaleString()}</div>
                     <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Signals Found</div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className={`text-[11px] font-medium ${config.color} truncate ${config.bg} px-3 py-2 rounded-lg border ${config.border} flex items-center shadow-sm`}><Clock className="mr-2 h-3.5 w-3.5 opacity-80" />{agent.lastAction}</div>
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Uptime {agent.uptime}</div>
+                  <div className={`text-[11px] font-medium ${config.color} truncate ${config.bg} px-3 py-2 rounded-lg border ${config.border} flex items-center shadow-sm`}><Clock className="mr-2 h-3.5 w-3.5 opacity-80" />{agent.lastAction || "Unknown"}</div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Uptime {agent.uptime || "N/A"}</div>
                   <div className="flex items-center gap-3 pt-2">
-                    <Progress value={agent.accuracy} className="h-2 flex-1 bg-slate-100" />
-                    <span className={`text-xs font-black font-mono ${config.color}`}>{agent.accuracy}%</span>
+                    <Progress value={agent.accuracy || 0} className="h-2 flex-1 bg-slate-100" />
+                    <span className={`text-xs font-black font-mono ${config.color}`}>{agent.accuracy || 0}%</span>
                   </div>
                 </div>
               </div>
