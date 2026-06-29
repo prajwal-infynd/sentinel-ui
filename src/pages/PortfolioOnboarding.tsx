@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
-import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus, Search, Clock, History, Link as LinkIcon, Cloud, Settings2, Download, Info } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, ShieldCheck, Database, AlertCircle, Wand2, Keyboard, Plus, Search, Clock, History, Link as LinkIcon, Cloud, Settings2, Download, Info, X } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -902,21 +902,21 @@ const PortfolioOnboarding = () => {
                   </SelectContent>
                 </Select>
 
-                {(searchQuery !== "" || riskFilter !== "all-risks" || ratingFilter !== "all-ratings" || exposureFilter !== "all-exposures" || alertFilter !== "all-severities") && (
-                  <Button 
-                    variant="ghost" 
-                    className="h-9 px-3 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-[13px] font-medium ml-auto rounded-lg"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setRiskFilter("all-risks");
-                      setRatingFilter("all-ratings");
-                      setExposureFilter("all-exposures");
-                      setAlertFilter("all-severities");
-                    }}
-                  >
-                    Reset Filters
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  className="h-9 px-3 text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-[13px] font-medium ml-auto rounded-lg"
+                  disabled={!(searchQuery !== "" || riskFilter !== "all-risks" || ratingFilter !== "all-ratings" || exposureFilter !== "all-exposures" || alertFilter !== "all-severities")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setRiskFilter("all-risks");
+                    setRatingFilter("all-ratings");
+                    setExposureFilter("all-exposures");
+                    setAlertFilter("all-severities");
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1.5" />
+                  Clear All
+                </Button>
               </div>
 
               {/* Table */}
