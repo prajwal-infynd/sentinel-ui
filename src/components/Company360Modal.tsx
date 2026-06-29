@@ -117,7 +117,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
                 <div>
-                  <div className="text-[13px] font-semibold text-blue-700">AML Screening in Progress</div>
+                  <div className="text-[13px] font-semibold text-blue-700">Company Registry Screening in Progress</div>
                   <div className="text-[11px] text-blue-500">Croftz Instacheck is running. Risk data will appear here automatically when complete.</div>
                 </div>
               </div>
