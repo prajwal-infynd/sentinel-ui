@@ -53,7 +53,7 @@ function getSentimentColor(score: number) {
 export function Company360Modal({ isOpen, onClose, companyData }: Company360ModalProps) {
   const [localCroftzData, setLocalCroftzData] = useState<any>(null);
   const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
-  const [fetchFailed, setFetchFailed] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState<string | null>(null);
 
   // Derive values safely (companyData may be null)
   const companyName = companyData?.name ?? "";
@@ -107,9 +107,16 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             body: formData.toString()
           });
 
-          if (!postResp.ok) throw new Error(`POST failed: ${postResp.status}`);
+          if (!postResp.ok) {
+            const errText = await postResp.text();
+            throw new Error(errText);
+          }
           const postData = await postResp.json();
           const postBody = postData.response || postData;
+
+          if (!postBody.success) {
+             throw new Error(postBody.message || postBody.title || "Screening failed");
+          }
 
           // ── Extract screeningUid from POST response ──
           let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
@@ -129,6 +136,10 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             if (getResp.ok) {
               const getData = await getResp.json();
               const getBody = getData.response || getData;
+              
+              if (!getBody.success) {
+                throw new Error(getBody.message || getBody.title || "GET failed");
+              }
               
               // Extract exactly like PortfolioOnboarding
               const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
@@ -156,7 +167,8 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
                  setLocalCroftzData(results);
               }
             } else {
-               throw new Error(`GET failed: ${getResp.status}`);
+               const errText = await getResp.text();
+               throw new Error(errText);
             }
           } else if (postBody.screeningResults?.length > 0) {
              setLocalCroftzData(postBody.screeningResults[0].results);
@@ -181,7 +193,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
           }
         } catch (e) {
           console.error("Croftz fetch error", e);
-          setFetchFailed(true); // stop retrying on failure
+          setFetchFailed(e instanceof Error ? e.message : String(e)); // stop retrying on failure
         } finally {
           setIsFetchingCroftz(false);
         }
@@ -275,11 +287,11 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             {/* Screening Pending / Failed Banner */}
             {isScreeningPending && (
               fetchFailed ? (
-                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm mb-6">
                   <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
                   <div>
                     <div className="text-[13px] font-semibold text-amber-700">Registry Screening Unavailable</div>
-                    <div className="text-[11px] text-amber-500">Could not connect to the screening service. Basic company info is shown below.</div>
+                    <div className="text-[11px] text-amber-600 line-clamp-2">{typeof fetchFailed === 'string' ? fetchFailed : "Could not connect to the screening service."}</div>
                   </div>
                 </div>
               ) : isFetchingCroftz ? (
