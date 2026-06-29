@@ -85,6 +85,25 @@ const Dashboard = () => {
   const uniqueCountries = new Set(monitoredEntities.map((e: any) => e.jurisdiction || e.country).filter(Boolean));
   const countryCount = uniqueCountries.size || 3;
 
+  const topCriticalEntities = [...monitoredEntities]
+    .filter(e => (e.riskScore || 0) >= 80 || e.alert === 'Critical' || (e.riskScore || 0) > 0)
+    .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
+    .slice(0, 5);
+
+  const dynamicCriticalAlerts = topCriticalEntities.length > 0 
+    ? topCriticalEntities.map((e, idx) => ({
+        id: e.id || idx,
+        company: e.name,
+        severity: e.alert || ((e.riskScore || 0) >= 80 ? "Critical" : (e.riskScore || 0) >= 60 ? "High" : "Medium"),
+        type: "Risk Alert",
+        description: e.notes || `High risk score of ${e.riskScore || 0} detected for ${e.name}. Requires immediate review.`,
+        aiAction: `AI suggests reviewing ${e.name}'s recent activities due to an elevated risk score.`,
+        flag: e.jurisdiction === "United States" || e.country === "US" ? "🇺🇸" : e.jurisdiction === "United Kingdom" || e.country === "UK" ? "🇬🇧" : e.jurisdiction === "France" || e.country === "FR" ? "🇫🇷" : "🌍",
+        logoBg: "bg-red-500",
+        initial: e.name.charAt(0).toUpperCase()
+      }))
+    : mockCriticalAlerts;
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#F8F9FC] font-sans pb-12 text-slate-800">
@@ -176,11 +195,11 @@ const Dashboard = () => {
                   Critical Alerts Requiring Action
                 </div>
                 <div className="text-[10px] font-bold tracking-wider text-slate-500 uppercase bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">
-                  {mockCriticalAlerts.length} OPEN
+                  {dynamicCriticalAlerts.length} OPEN
                 </div>
               </div>
               <div className="p-4 flex flex-col gap-4 overflow-y-auto max-h-[600px] custom-scrollbar">
-                {mockCriticalAlerts.map(alert => (
+                {dynamicCriticalAlerts.map((alert: any) => (
                   <div key={alert.id} className="border border-red-100/80 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-xl" />
                     
