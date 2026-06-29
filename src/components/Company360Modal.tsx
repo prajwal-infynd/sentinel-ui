@@ -54,13 +54,11 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const [localCroftzData, setLocalCroftzData] = useState<any>(null);
   const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
 
-  if (!companyData) return null;
-
-  const companyName = companyData.name;
-  const identifiers = companyData.rawIdentifiers || {};
-  const payload = companyData.payload || {};
-  const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null; // Updated to include local data
-
+  // Derive values safely (companyData may be null)
+  const companyName = companyData?.name ?? "";
+  const identifiers = companyData?.rawIdentifiers || {};
+  const payload = companyData?.payload || {};
+  const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null;
   const isScreeningPending = !croftz && !payload.fiscalYear;
 
   useEffect(() => {
@@ -72,7 +70,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
   useEffect(() => {
     // Only fetch if screening is pending and we don't have data yet
-    if (isOpen && isScreeningPending && !isFetchingCroftz && !localCroftzData) {
+    if (isOpen && companyData && isScreeningPending && !isFetchingCroftz && !localCroftzData) {
       const fetchCroftz = async () => {
         setIsFetchingCroftz(true);
         try {
@@ -139,8 +137,10 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
       };
       fetchCroftz();
     }
-  }, [isOpen, isScreeningPending, isFetchingCroftz, localCroftzData, companyName, identifiers.website, payload.url]);
+  }, [isOpen, companyData, isScreeningPending, isFetchingCroftz, localCroftzData, companyName, identifiers.website, payload.url]);
 
+  // Early return AFTER all hooks
+  if (!companyData) return null;
 
   const about = payload.description || identifiers.aboutCompany?.fullRiskAssessment || identifiers.aboutCompany?.brief;
   const personnel = identifiers.keyPersonnel || payload.keyPersonnel || [];
