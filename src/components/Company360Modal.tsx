@@ -53,6 +53,7 @@ function getSentimentColor(score: number) {
 export function Company360Modal({ isOpen, onClose, companyData }: Company360ModalProps) {
   const [localCroftzData, setLocalCroftzData] = useState<any>(null);
   const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
 
   // Derive values safely (companyData may be null)
   const companyName = companyData?.name ?? "";
@@ -65,12 +66,13 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
     if (!isOpen) {
       setLocalCroftzData(null);
       setIsFetchingCroftz(false);
+      setFetchFailed(false);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    // Only fetch if screening is pending and we don't have data yet
-    if (isOpen && companyData && isScreeningPending && !isFetchingCroftz && !localCroftzData) {
+    // Only fetch once — stop retrying if it already failed
+    if (isOpen && companyData && isScreeningPending && !isFetchingCroftz && !localCroftzData && !fetchFailed) {
       const fetchCroftz = async () => {
         setIsFetchingCroftz(true);
         try {
@@ -131,13 +133,15 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
           }
         } catch (e) {
           console.error("Croftz fetch error", e);
+          setFetchFailed(true); // stop retrying on failure
         } finally {
           setIsFetchingCroftz(false);
         }
       };
       fetchCroftz();
     }
-  }, [isOpen, companyData, isScreeningPending, isFetchingCroftz, localCroftzData, companyName, identifiers.website, payload.url]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, companyData, fetchFailed]);
 
   // Early return AFTER all hooks
   if (!companyData) return null;
@@ -171,7 +175,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[900px] p-0 overflow-hidden bg-white border-slate-200 shadow-2xl rounded-2xl h-[92vh] flex flex-col">
+      <DialogContent aria-describedby="company360-description" className="max-w-[900px] p-0 overflow-hidden bg-white border-slate-200 shadow-2xl rounded-2xl h-[92vh] flex flex-col">
         {/* Header */}
         <DialogHeader className="p-5 pb-4 border-b border-slate-100 bg-white shrink-0 flex flex-row items-center gap-3">
           <div className="h-9 w-9 bg-blue-600 rounded-xl flex items-center justify-center shadow">
@@ -181,6 +185,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
             <DialogTitle className="text-xl font-bold text-slate-800 tracking-tight m-0 p-0 leading-none">
               Company 360 <span className="font-medium text-slate-400 text-base">/ {companyName}</span>
             </DialogTitle>
+            <span id="company360-description" className="sr-only">360° company risk profile and compliance screening results</span>
             {hasValue(matchStatus) && (
               <div className="text-[12px] text-slate-500 mt-0.5">Match Status: <span className="font-semibold text-slate-700">{matchStatus}</span></div>
             )}
