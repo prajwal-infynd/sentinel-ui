@@ -6,6 +6,7 @@ import {
   Building, User, AlertTriangle, CheckCircle2, ChevronRight, UploadCloud
 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { AgentChatbot } from "@/components/AgentChatbot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -311,6 +312,7 @@ const InvestigationsList = () => {
           </div>
         </motion.div>
       </div>
+      <AgentChatbot />
     </DashboardLayout>
   );
 };

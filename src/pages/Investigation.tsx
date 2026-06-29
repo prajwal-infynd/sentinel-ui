@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { forceCollide } from "d3-force";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { 
-  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus, Minus, ZoomIn, ZoomOut, Maximize2, Minimize2, Expand
+  AlertTriangle, User, Calendar, ExternalLink, UserPlus, CheckCircle2, ArrowUpRight, FileText, Clock, Brain, Shield, Download, FileSignature, Share2, Sparkles, Network, Building, Wallet, Landmark, Activity, ScanFace, Globe, Loader2, XCircle, Lock, Hash, Eye, MessageSquare, Scale, Bot, ShieldAlert, RefreshCw, ArrowLeft, UserMinus, ShieldQuestion, Flag, Building2, ArrowRight, Search, Plus, Minus, ZoomIn, ZoomOut, Maximize2, Minimize2, Expand, MousePointer2
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { AgentChatbot } from "@/components/AgentChatbot";
 import { useInvestigations } from "@/context/InvestigationsContext";
 import { getInvestigationStatus, getInvestigationData } from "@/lib/dashboard-data";
 import klodevData from "@/data/klodev.json";
@@ -859,7 +860,10 @@ const Investigation = () => {
             <div className="flex justify-between items-center mb-6 relative z-10 shrink-0">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Network className="h-5 w-5 text-indigo-500" /> Dynamic Knowledge Graph</h3>
               <div className="flex gap-2">
-                <Badge variant="outline" className="bg-white shadow-sm font-mono text-[10px]">Interactive Graph</Badge>
+                <Badge variant="outline" className="bg-white shadow-sm font-mono text-[10px] flex items-center gap-1">
+                  <MousePointer2 className="h-3 w-3" />
+                  Interactive Graph
+                </Badge>
                 {selectedGraphNode && (
                   <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm font-mono text-[10px]">
                     Selected: {selectedGraphNode.type}
@@ -2006,6 +2010,7 @@ const Investigation = () => {
         </DialogContent>
       </Dialog>
     </div>
+    <AgentChatbot contextData={activeData || caseData || entity} />
   </DashboardLayout>
   );
 };

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchAlerts, startInvestigation } from "@/lib/dashboard-data";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
+import { AgentChatbot } from "@/components/AgentChatbot";
 
 const severityDot = (s: string) => {
   const str = String(s).toLowerCase();
