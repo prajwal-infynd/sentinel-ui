@@ -2,8 +2,103 @@ import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import NodeCache from "node-cache";
+import crypto from "crypto";
 
-const myCache = new NodeCache();
+const myCache = new NodeCache({ stdTTL: 0 }); // no expiry for MVP
+
+const CROFTZ_KEY = "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
+const AGENT_CHAT_URL = "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
+const AGENT_CHAT_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a5d822ca-4e36-42a3-8f4c-4c660db847ad__pllbvogOhiPt5TrzNFcFeCrGT7r3KfPKvX6yzLpXhw";
+const AGENT_POLL_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c606a23d-d21e-4935-9a7e-f32efdcc4125_p_NR0R0MQVMPOpa7HmjnyXV0UFEX1yi5TCypF-gKGYI";
+const SCRAPE_URL = "http://173.249.56.10:3000/page-source";
+
+async function processInvestigation(investigationId: string, alert: any, crawlData: any) {
+  try {
+    // Step 1: Scrape the news page
+    let scrapedData: any = null;
+    if (alert.link) {
+      try {
+        const newsHostname = new URL(alert.link).hostname.replace(/^www\./, "");
+        const scrapeResp = await fetch(SCRAPE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domains: [newsHostname] }),
+          signal: AbortSignal.timeout(30000)
+        });
+        scrapedData = await scrapeResp.json();
+      } catch (scrapeErr) {
+        console.error("[Investigation] Scrape failed:", scrapeErr);
+      }
+    }
+
+    // Step 2: Build AI agent message
+    const message = JSON.stringify({
+      crawlData: crawlData || {},
+      scrapedNewsData: scrapedData,
+      adverseMediaAlert: {
+        title: alert.title,
+        description: alert.description,
+        link: alert.link,
+        sentiment: alert.sentiment,
+        adverseKeywords: alert.adverseKeywords,
+        publicationDate: alert.publicationDate,
+        companyName: alert.companyName,
+        riskLevel: alert.riskLevel,
+        riskScore: alert.riskScore
+      }
+    });
+
+    // Step 3: Call AI agent (no timeout — just kicks off the job and returns tracking_id fast)
+    const agentResp = await fetch(AGENT_CHAT_URL, {
+      method: "POST",
+      headers: { "X-API-Key": AGENT_CHAT_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ message, history: [], stream: false, enable_thinking: false, tracking: true })
+    });
+    const agentData = await agentResp.json();
+    const trackingId = agentData.tracking_id;
+    if (!trackingId) throw new Error("No tracking_id from agent");
+
+    // Step 4: Poll every 2 seconds — no hard cap, just keep going until done
+    const pollUrl = `https://devstudio.27x.ai/api/v1/agents/chat/status/${trackingId}`;
+    let pollResult: any = null;
+    while (true) {
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        const pollResp = await fetch(pollUrl, { headers: { "x-api-key": AGENT_POLL_KEY } });
+        const pollData = await pollResp.json();
+        if (pollData.status === "completed") { pollResult = pollData; break; }
+        if (pollData.status === "failed" || pollData.status === "error") {
+          throw new Error(`Agent failed with status: ${pollData.status}`);
+        }
+      } catch (pollErr: any) {
+        if (pollErr.message?.startsWith("Agent failed")) throw pollErr;
+        // network hiccup — retry
+      }
+    }
+
+    const existing = (myCache.get(`investigation_${investigationId}`) as any) || {};
+
+    // Parse reply — agent may return JSON string
+    let reply = pollResult.result?.reply || pollResult.result;
+    if (typeof reply === "string") { try { reply = JSON.parse(reply); } catch {} }
+
+    const screening = myCache.get(`screening_${alert.screeningId}`) as any;
+    myCache.set(`investigation_${investigationId}`, {
+      ...existing,
+      status: "completed",
+      data: reply,
+      rawResult: pollResult.result,
+      alert,
+      adverseMedia: screening?.adverseMedia || [],
+      screeningData: screening?.screeningData || null,
+      completedAt: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("[Investigation] Processing error:", err);
+    const existing = (myCache.get(`investigation_${investigationId}`) as any) || {};
+    myCache.set(`investigation_${investigationId}`, { ...existing, status: "error", error: String(err) });
+  }
+}
 import {
   users,
   mockEntities,
@@ -153,9 +248,133 @@ router.get("/portfolio/sample-preview", (req, res) => {
 });
 
 
+// --- Adverse Media Screening (Croftz) ---
+router.post("/screening/adverse-media", async (req, res) => {
+  const { name, crawlData } = req.body;
+  if (!name) return res.status(400).json({ error: "name is required" });
+
+  const screeningId = crypto.randomUUID();
+
+  try {
+    const formData = new URLSearchParams({
+      monitoringRenew: "false", exactMatch: "true", name, metadata: "",
+      countryCodes: "", fuzzinessThreshold: "100", monitor: "false",
+      birthYear: "", monitoringDuration: "60", entityType: "company"
+    });
+
+    const postResp = await fetch("https://croftzgo.com/api/v1/screening", {
+      method: "POST",
+      headers: { "accept": "application/json", "X-API-Key": CROFTZ_KEY, "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+      signal: AbortSignal.timeout(30000)
+    });
+    if (!postResp.ok) throw new Error(`Croftz POST ${postResp.status}: ${await postResp.text()}`);
+    const postData = await postResp.json();
+    const postBody = postData.response || postData;
+    const screeningUid = postBody.screening?.rowUid || postBody.screeningUid;
+
+    let getBody: any = postBody;
+    if (screeningUid) {
+      const getResp = await fetch(`https://croftzgo.com/api/v1/screening?screeningUid=${screeningUid}`, {
+        headers: { "accept": "application/json", "X-API-Key": CROFTZ_KEY },
+        signal: AbortSignal.timeout(20000)
+      });
+      const getData = await getResp.json();
+      getBody = getData.response || getData;
+    }
+
+    const screeningResults: any[] = getBody.screeningResults || postBody.screeningResults || [];
+    const adverseMedia: any[] = screeningResults.flatMap((r: any) => r.results?.adverse_media || []);
+    const firstResult = screeningResults[0]?.results || {};
+
+    const alerts = adverseMedia.map((media: any) => {
+      const score = typeof media.score === "number" ? media.score : -1;
+      const severity = score <= -3 ? "critical" : score <= -2 ? "high" : "medium";
+      return {
+        id: crypto.randomUUID(), screeningId, screeningUid, companyName: name,
+        title: media.title || "Adverse Media Alert",
+        description: media.description || "",
+        link: media.link || "",
+        sentiment: media.sentiment || "negative",
+        score, adverseKeywords: media.adverse_keywords || [],
+        publicationDate: media.publication_date || new Date().toISOString(),
+        country: media.country || null, thumbnail: media.thumbnail || "",
+        riskLevel: firstResult.risk_level || "Medium",
+        riskScore: firstResult.risk_score || 40,
+        matchStatus: getBody.screening?.matchStatus || "Potential Match",
+        // Alert-compatible fields
+        severity, category: "Adverse Media",
+        generated_at: new Date().toISOString(),
+        monitored_entities: { name },
+        summary: media.description || "Adverse media detected",
+        source: "Croftz", investigationId: null
+      };
+    });
+
+    myCache.set(`screening_${screeningId}`, {
+      screeningId, screeningUid, companyName: name, crawlData,
+      screeningData: getBody, adverseMedia, alerts, createdAt: new Date().toISOString()
+    });
+
+    const existingAlerts = (myCache.get("croftz_alerts") as any[]) || [];
+    myCache.set("croftz_alerts", [...alerts, ...existingAlerts]);
+
+    res.json({ screeningId, alertCount: alerts.length, alerts });
+  } catch (err) {
+    console.error("[Screening] Error:", err);
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// --- Start Investigation from Croftz Alert ---
+router.post("/investigations/start", async (req, res) => {
+  const { alertId } = req.body;
+  if (!alertId) return res.status(400).json({ error: "alertId required" });
+
+  const croftzAlerts = (myCache.get("croftz_alerts") as any[]) || [];
+  const alert = croftzAlerts.find((a: any) => a.id === alertId);
+  if (!alert) return res.status(404).json({ error: "Alert not found" });
+
+  if (alert.investigationId) {
+    return res.json({ investigationId: alert.investigationId, status: "existing" });
+  }
+
+  const investigationId = crypto.randomUUID();
+  myCache.set(`investigation_${investigationId}`, {
+    status: "pending", alertId, companyName: alert.companyName,
+    alert, createdAt: new Date().toISOString()
+  });
+
+  myCache.set("croftz_alerts", croftzAlerts.map((a: any) =>
+    a.id === alertId ? { ...a, investigationId } : a
+  ));
+
+  res.json({ investigationId, status: "pending" });
+
+  const screening = (myCache.get(`screening_${alert.screeningId}`) as any);
+  processInvestigation(investigationId, alert, screening?.crawlData).catch(console.error);
+});
+
+// --- Investigation Status ---
+router.get("/investigations/status/:id", (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  const inv = myCache.get(`investigation_${req.params.id}`) as any;
+  if (!inv) return res.status(404).json({ error: "Not found" });
+  res.json({ status: inv.status, error: inv.error || null });
+});
+
+// --- Investigation Data ---
+router.get("/investigations/data/:id", (req, res) => {
+  const inv = myCache.get(`investigation_${req.params.id}`) as any;
+  if (!inv) return res.status(404).json({ error: "Not found" });
+  res.json(inv);
+});
+
 // --- Alerts and Agents ---
 router.get("/alerts", (req, res) => {
-  res.json(sampleAlerts.slice(0, 5));
+  const croftzAlerts = (myCache.get("croftz_alerts") as any[]) || [];
+  res.json(croftzAlerts);
 });
 
 router.get("/agents/runs", (req, res) => {

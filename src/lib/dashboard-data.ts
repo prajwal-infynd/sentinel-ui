@@ -69,3 +69,23 @@ export async function fetchInvestigationSnapshot() {
   const { data } = await apiClient.get("/investigations/snapshot");
   return data;
 }
+
+export async function startAdverseMediaScreening(name: string, crawlData: any) {
+  const { data } = await apiClient.post("/screening/adverse-media", { name, crawlData });
+  return data as { screeningId: string; alertCount: number; alerts: any[] };
+}
+
+export async function startInvestigation(alertId: string) {
+  const { data } = await apiClient.post("/investigations/start", { alertId });
+  return data as { investigationId: string; status: string };
+}
+
+export async function getInvestigationStatus(investigationId: string) {
+  const { data } = await apiClient.get(`/investigations/status/${investigationId}`);
+  return data as { status: string; error?: string };
+}
+
+export async function getInvestigationData(investigationId: string) {
+  const { data } = await apiClient.get(`/investigations/data/${investigationId}`);
+  return data;
+}

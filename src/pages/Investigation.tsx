@@ -8,6 +8,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useInvestigations } from "@/context/InvestigationsContext";
+import { getInvestigationStatus, getInvestigationData } from "@/lib/dashboard-data";
 import klodevData from "@/data/klodev.json";
 import mockAgentData from "@/data/mock_agent_res.json";
 import { Badge } from "@/components/ui/badge";
@@ -61,11 +62,48 @@ const Investigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { getCaseById, updateCaseStatus, assignUser } = useInvestigations();
-  
+
+  // Croftz investigation state
+  const isCroftzAlert = location.state?.isCroftzAlert === true;
+  const croftzInvestigationId = location.state?.investigationId as string | undefined;
+  const [liveInvData, setLiveInvData] = useState<any>(null);
+  const [invStatus, setInvStatus] = useState<"pending" | "completed" | "error">("pending");
+  const [showLoadingOverlay, setShowLoadingOverlay] = useState(isCroftzAlert);
+
+  useEffect(() => {
+    if (!isCroftzAlert || !croftzInvestigationId) return;
+    let stopped = false;
+
+    const poll = async () => {
+      while (!stopped) {
+        await new Promise(r => setTimeout(r, 2000));
+        try {
+          const { status } = await getInvestigationStatus(croftzInvestigationId);
+          if (stopped) break;
+          if (status === "completed") {
+            const invData = await getInvestigationData(croftzInvestigationId);
+            setLiveInvData(invData.data);
+            setInvStatus("completed");
+            setShowLoadingOverlay(false);
+            break;
+          }
+          if (status === "error") {
+            setInvStatus("error");
+            setShowLoadingOverlay(false);
+            break;
+          }
+        } catch {}
+      }
+    };
+
+    poll();
+    return () => { stopped = true; };
+  }, [isCroftzAlert, croftzInvestigationId]);
+
   const caseData = id ? getCaseById(id) : null;
   const isKlodev = id === "ALT-KLODEV";
   const isMockAgent = id === "mock-agent";
-  const activeData: any = isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null);
+  const activeData: any = liveInvData || (isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null));
   const entity = caseData?.entity || location.state?.entity || {
     name: "Global Tech Inc.",
     entity_type: "company",
@@ -384,6 +422,81 @@ const Investigation = () => {
 
   return (
   <DashboardLayout>
+    {/* Investigation loading overlay — shown while AI agent processes the case */}
+    <AnimatePresence>
+      {showLoadingOverlay && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+          style={{ background: "rgba(255,255,255,0.92)", backdropFilter: "blur(6px)" }}
+        >
+          <button
+            onClick={() => navigate("/alerts")}
+            className="absolute top-5 right-5 flex items-center gap-1.5 text-slate-400 hover:text-slate-700 bg-white/80 hover:bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] font-semibold shadow-sm transition-colors"
+            title="Cancel and go back to alerts"
+          >
+            <XCircle className="w-4 h-4" /> Close
+          </button>
+          <div className="flex flex-col items-center gap-7 max-w-md text-center px-8">
+            {/* Animated icon */}
+            <div className="relative">
+              <div className="w-24 h-24 border-4 border-indigo-100 rounded-full animate-spin border-t-indigo-600" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Brain className="h-9 w-9 text-indigo-600" />
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">
+                Building Investigation Report
+              </h2>
+              <p className="text-slate-500 text-sm leading-relaxed">
+                Scraping news sources, running multi-agent AI analysis, and assembling the full intelligence profile for this entity.
+              </p>
+            </div>
+
+            {/* Steps */}
+            <div className="w-full space-y-2 text-left">
+              {[
+                { label: "Extracting company intelligence", done: true },
+                { label: "Scraping adverse media sources", done: true },
+                { label: "Running AI risk assessment", done: invStatus === "completed" },
+                { label: "Generating investigation report", done: invStatus === "completed" }
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  {step.done ? (
+                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Loader2 className="w-3 h-3 text-indigo-600 animate-spin" />
+                    </div>
+                  )}
+                  <span className={`text-[13px] font-medium ${step.done ? "text-emerald-700" : "text-indigo-700"}`}>
+                    {step.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <motion.div
+                className="bg-indigo-600 h-2 rounded-full"
+                animate={{ width: ["20%", "80%"] }}
+                transition={{ duration: 4, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
+              />
+            </div>
+
+            <p className="text-xs text-slate-400">This typically takes 30–90 seconds</p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     <div className="p-6 space-y-5">
       <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground pl-0 -ml-2" onClick={() => navigate('/investigations')}>
         <ArrowLeft className="h-4 w-4" />
@@ -407,6 +520,30 @@ const Investigation = () => {
               <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> {activeData ? activeData.timestamp : "2024-03-15 14:23 UTC"}</span>
               <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> {activeData ? activeData.source : "Sentinel AI Source"}</span>
             </div>
+
+            {/* Source evidence links from riskExplanation.evidence */}
+            {activeData?.riskExplanation?.evidence?.filter((e: any) => e.url)?.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeData.riskExplanation.evidence.filter((e: any) => e.url).map((ev: any, i: number) => (
+                  <a
+                    key={i}
+                    href={ev.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                    title={ev.indicator}
+                  >
+                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    {ev.source || new URL(ev.url).hostname.replace("www.", "")}
+                    {ev.points != null && (
+                      <span className="ml-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
+                        +{ev.points}pts
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-5">
             <Dialog open={isExplainableOpen} onOpenChange={setIsExplainableOpen}>
@@ -455,7 +592,7 @@ const Investigation = () => {
       </motion.div>
 
       {/* Tabs */}
-      <Tabs defaultValue="summary">
+      <Tabs defaultValue={isCroftzAlert ? "adverse_media" : "summary"}>
         <TabsList className="bg-transparent border-b border-border/50 rounded-none p-0 w-full justify-start overflow-x-auto h-auto gap-4">
           <TabsTrigger value="summary" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Summary</TabsTrigger>
           <TabsTrigger value="network" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Network Graph</TabsTrigger>
@@ -472,7 +609,12 @@ const Investigation = () => {
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="audit" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-indigo-600 data-[state=active]:bg-transparent data-[state=active]:text-indigo-600 data-[state=active]:shadow-none py-3 px-1">Audit Trail</TabsTrigger>
+          {isCroftzAlert && (
+            <TabsTrigger value="adverse_media" className="text-sm font-medium rounded-none border-b-2 border-transparent data-[state=active]:border-purple-600 data-[state=active]:bg-transparent data-[state=active]:text-purple-600 data-[state=active]:shadow-none py-3 px-1 flex items-center gap-1.5">
+              <ShieldAlert className="h-3.5 w-3.5" /> Adverse Media
+            </TabsTrigger>
+          )}
+          {/* Audit Trail tab hidden from UI — route still exists */}
         </TabsList>
 
         <TabsContent value="pending_updates">
@@ -1448,9 +1590,21 @@ const Investigation = () => {
 
         <TabsContent value="debate">
           <div className="rounded-2xl border border-border/50 bg-slate-50 shadow-inner p-8 mt-6 relative overflow-hidden">
-            {/* Background embellishments */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-100/50 via-transparent to-transparent pointer-events-none" />
-            
+
+            {/* For Croftz investigations without debate data, show empty state */}
+            {isCroftzAlert && !(activeData?.sentinelDebate?.length > 0) ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4 text-center relative z-10">
+                <div className="w-14 h-14 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center">
+                  <MessageSquare className="h-6 w-6 text-indigo-300" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-700 mb-1">No Debate Data</h4>
+                  <p className="text-sm text-slate-400 max-w-xs">Sentinel Debate runs on cases with structured investigation data. This adverse media alert has not generated debate arguments.</p>
+                </div>
+              </div>
+            ) : (
+            <>
             <div className="flex items-center justify-between mb-10 relative z-10">
               <div>
                 <h3 className="text-xl font-black tracking-tight flex items-center gap-3 text-slate-900">
@@ -1613,6 +1767,8 @@ const Investigation = () => {
                 </motion.div>
               )}
             </div>
+            </>
+            )}
           </div>
         </TabsContent>
 
@@ -1660,8 +1816,133 @@ const Investigation = () => {
             </Table>
           </div>
         </TabsContent>
+
+        {/* Adverse Media Tab — only for Croftz-sourced investigations */}
+        <TabsContent value="adverse_media">
+          <div className="mt-6 space-y-5">
+            {/* Header row */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-purple-600" /> Adverse Media Screening Results
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">Sourced from Croftz real-time adverse media monitoring</p>
+              </div>
+              {(liveInvData as any)?.riskScore && (
+                <div className="text-center px-4 py-2 bg-purple-50 border border-purple-200 rounded-xl">
+                  <div className="text-2xl font-black font-mono text-purple-700">{(liveInvData as any).riskScore}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-purple-500">Risk Score</div>
+                </div>
+              )}
+            </div>
+
+            {/* Show loading state or error */}
+            {invStatus === "pending" && (
+              <div className="flex items-center gap-3 p-4 bg-indigo-50 border border-indigo-200 rounded-xl text-indigo-700 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" /> Processing AI investigation report...
+              </div>
+            )}
+            {invStatus === "error" && (
+              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                <AlertTriangle className="w-4 h-4" /> Investigation processing failed. Adverse media articles are shown below from the screening.
+              </div>
+            )}
+
+            {/* Screening summary from AI data */}
+            {liveInvData?.riskExplanation && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+                <h4 className="text-sm font-bold text-slate-800">Risk Assessment</h4>
+                <p className="text-sm text-slate-600">{liveInvData.riskExplanation.why}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(liveInvData.riskExplanation.indicatorsFound || liveInvData.riskExplanation.scoreBreakdown?.indicatorsFound || []).map((ind: string, i: number) => (
+                    <span key={i} className="text-[11px] bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full font-medium">
+                      {ind}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Business intelligence — last 90 days */}
+            {liveInvData?.businessIntelligence?.last90DaysChanges?.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+                <h4 className="text-sm font-bold text-slate-800">Recent Events (Last 90 Days)</h4>
+                {liveInvData.businessIntelligence.last90DaysChanges.map((ev: any, i: number) => {
+                  const evidence: any[] = liveInvData?.riskExplanation?.evidence ?? [];
+                  // Match evidence by URL equality or hostname overlap
+                  const matched = evidence.find((e: any) => {
+                    if (!e.url || !ev.source) return false;
+                    try { return e.url === ev.source || ev.source.includes(new URL(e.url).hostname); } catch { return false; }
+                  });
+                  const sourceLabel = matched?.source ?? (() => {
+                    try { return ev.source?.startsWith("http") ? new URL(ev.source).hostname.replace("www.", "") : ev.source; } catch { return "Source"; }
+                  })();
+
+                  return (
+                    <div key={i} className="border-l-2 border-purple-300 pl-4 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-slate-400">{ev.date}</span>
+                        <span className="text-[11px] font-semibold text-purple-600 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full">Event</span>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-800">{ev.event}</p>
+                      <p className="text-xs text-slate-500">{ev.impact}</p>
+                      {ev.source?.startsWith("http") ? (
+                        <a
+                          href={ev.source}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                          {sourceLabel}
+                          {matched?.points != null && (
+                            <span className="ml-1 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">
+                              +{matched.points}pts
+                            </span>
+                          )}
+                        </a>
+                      ) : ev.source ? (
+                        <span className="text-[11px] text-slate-400">{ev.source}</span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Key insights */}
+            {liveInvData?.businessIntelligence?.keyInsights?.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+                <h4 className="text-sm font-bold text-slate-800">Key Intelligence Insights</h4>
+                <ul className="space-y-2">
+                  {liveInvData.businessIntelligence.keyInsights.map((insight: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0" />
+                      {insight}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Recommended actions */}
+            {liveInvData?.riskExplanation?.recommendedAction?.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+                <h4 className="text-sm font-bold text-slate-800">Recommended Actions</h4>
+                <ul className="space-y-2">
+                  {liveInvData.riskExplanation.recommendedAction.map((action: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      {action}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
-      
+
       {/* Auto-SAR Generator Modal */}
       <Dialog open={isSarOpen} onOpenChange={setIsSarOpen}>
         <DialogContent aria-describedby={undefined} className="max-w-[800px] max-h-[85vh] p-0 overflow-hidden flex flex-col bg-[#f8fafc] border-indigo-100 rounded-2xl">
