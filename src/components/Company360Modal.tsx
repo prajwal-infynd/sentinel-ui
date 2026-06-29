@@ -183,6 +183,39 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               )}
             </div>
 
+            {/* Corporate Registry */}
+            {(() => {
+              const rawCr = companyData.rawIdentifiers?.corporateRegistry;
+              if (!rawCr) return null;
+              
+              // Handle both object and array response formats safely
+              const cr = Array.isArray(rawCr) ? rawCr[0] : rawCr;
+              if (!cr) return null;
+
+              return (
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
+                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {hasValue(cr.name) && <InfoField label="Registry Name" value={cr.name} />}
+                    {hasValue(cr.companyNumber) && <InfoField label="Company Number" value={cr.companyNumber} />}
+                    {hasValue(cr.jurisdictionCode) && <InfoField label="Jurisdiction" value={cr.jurisdictionCode?.toUpperCase()} />}
+                    {hasValue(cr.incorporationDate) && <InfoField label="Incorporation Date" value={new Date(cr.incorporationDate).toLocaleDateString()} />}
+                    {hasValue(cr.companyType) && <InfoField label="Company Type" value={cr.companyType} />}
+                    {hasValue(cr.currentStatus) && <InfoField label="Status" value={cr.currentStatus} />}
+                    
+                    <div className="flex flex-col gap-1 col-span-2">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Source</span>
+                      <a href={cr.sourceUrl || cr.opencorporatesUrl || "#"} target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-colors line-clamp-1">
+                        {cr.sourcePublisher || "View Registry"}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* About the Company (from JSON payload) */}
             {hasValue(about) && (
               <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
