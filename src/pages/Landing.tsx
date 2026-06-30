@@ -74,7 +74,7 @@ export default function Landing() {
               transition={{ delay: 0.3 }}
               className="text-lg text-slate-300 leading-relaxed mb-12"
             >
-              Automate KYB, transaction monitoring, and adverse media screening with state-of-the-art AI agents.
+              Automate KYB, continuous monitoring, and adverse media screening with state-of-the-art AI agents.
             </motion.p>
 
             <motion.div 
