@@ -13,12 +13,6 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      '/api/v1/crawler': {
-        target: 'http://173.249.56.10:1234',
-        changeOrigin: true,
-        timeout: 300000,
-        proxyTimeout: 300000,
-      },
       '/croftz-api': {
         target: 'https://croftzgo.com',
         changeOrigin: true,
