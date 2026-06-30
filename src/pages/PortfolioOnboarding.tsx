@@ -488,8 +488,10 @@ const PortfolioOnboarding = () => {
             sourceEvidence: profile.sourceEvidence || {},
             summary: profile.summary || {}
           };
+          
+          entity.rawIdentifiers = crawlerIdentifiers;
 
-          // Update the rawIdentifiers for the specific row
+          // Update the rawIdentifiers for the specific row in UI state
           setImportedDataRows(currentRows => 
             currentRows.map(row => 
               row.externalReference === entity.externalReference 
@@ -499,7 +501,9 @@ const PortfolioOnboarding = () => {
           );
 
           // ── Pass ONLY e.normalizedDomain to Croftz POST ──
-          const normalizedDomain = profile.normalizedDomain || cleanWebsite;
+          const rawDomain = profile.normalizedDomain || cleanWebsite || "";
+          const normalizedDomain = rawDomain.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '');
+          
           if (normalizedDomain && entity.externalReference) {
             console.log(`[Croftz] Using normalizedDomain: "${normalizedDomain}" for externalRef: "${entity.externalReference}"`);
             initiateCorporateRegistryScreening(normalizedDomain, entity.externalReference);
@@ -510,7 +514,7 @@ const PortfolioOnboarding = () => {
         });
 
         // Persist to backend node-cache
-        importMonitoredEntities(updatedEntities).then(() => {
+        importMonitoredEntities(newEntities).then(() => {
           queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
         }).catch(err => console.error("Failed to persist to node cache", err));
       }

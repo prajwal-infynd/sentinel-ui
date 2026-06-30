@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -21,8 +21,13 @@ export default function Landing() {
   const [showPassword, setShowPassword] = useState(false);
 
   // If already logged in, redirect to dashboard
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate("/dashboard");
+    }
+  }, [user, isLoading, navigate]);
+
   if (user && !isLoading) {
-    navigate("/dashboard");
     return null;
   }
 

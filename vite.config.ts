@@ -18,6 +18,14 @@ export default defineConfig(({ mode }) => ({
         timeout: 300000,
         proxyTimeout: 300000,
       },
+      '/sentinel-api': {
+        target: 'https://sentinelapi.27x.ai',
+        changeOrigin: true,
+        secure: false,
+        timeout: 300000,
+        proxyTimeout: 300000,
+        rewrite: (path) => path.replace(/^\/sentinel-api/, '')
+      },
       '/croftz-api': {
         target: 'https://croftzgo.com',
         changeOrigin: true,
@@ -29,9 +37,17 @@ export default defineConfig(({ mode }) => ({
           proxy.on('proxyReq', (proxyReq, req, _res) => {
             proxyReq.removeHeader('Origin');
             proxyReq.removeHeader('Referer');
+            proxyReq.setHeader('Connection', 'close');
             // Forward the api key header if present
             const apiKey = req.headers['x-api-key'];
             if (apiKey) proxyReq.setHeader('x-api-key', apiKey);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error('Proxy Error:', err);
+            if (!res.headersSent) {
+              res.writeHead(500, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Proxy Error', message: err.message }));
+            }
           });
         }
       }
