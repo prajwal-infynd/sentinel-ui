@@ -13,14 +13,6 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      '/sentinel-api': {
-        target: 'https://sentinelapi.27x.ai',
-        changeOrigin: true,
-        secure: false,
-        timeout: 300000,
-        proxyTimeout: 300000,
-        rewrite: (path) => path.replace(/^\/sentinel-api/, '')
-      },
       '/croftz-api': {
         target: 'https://croftzgo.com',
         changeOrigin: true,
