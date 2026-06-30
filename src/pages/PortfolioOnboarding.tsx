@@ -217,7 +217,8 @@ const PortfolioOnboarding = () => {
 
       const initiateCorporateRegistryScreening = async (normalizedDomain: string, externalRef: string) => {
         try {
-          const endpointUrl = "/croftz-api/api/v1/corporate-registry-screening";
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+          const endpointUrl = `${API_BASE}/croftz/corporate-registry-screening`;
           const CROFTZ_KEY = import.meta.env.VITE_CROFTZ_API_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
 
           // ── Build form payload ──
@@ -355,7 +356,8 @@ const PortfolioOnboarding = () => {
       if (crawlerCompanyName) {
         payload.company_name = crawlerCompanyName;
       }
-      const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "/api/v1/crawler/extract-company-info";
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+      const crawlerUrl = `${API_BASE}/v1/crawler/extract-company-info`;
 
       // 5-minute timeout — crawler does heavy scraping, needs time
       const controller = new AbortController();
@@ -503,7 +505,6 @@ const PortfolioOnboarding = () => {
           // ── Pass ONLY e.normalizedDomain to Croftz POST ──
           const rawDomain = profile.normalizedDomain || cleanWebsite || "";
           const normalizedDomain = rawDomain.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '');
-          
           if (normalizedDomain && entity.externalReference) {
             console.log(`[Croftz] Using normalizedDomain: "${normalizedDomain}" for externalRef: "${entity.externalReference}"`);
             initiateCorporateRegistryScreening(normalizedDomain, entity.externalReference);

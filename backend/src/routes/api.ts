@@ -32,7 +32,7 @@ const FAIL_STATUSES = new Set(["failed", "error", "cancelled", "canceled"]);
 function parseAgentReply(raw: any): any {
   let reply = raw?.result?.reply ?? raw?.result?.data ?? raw?.result ?? raw?.data?.reply ?? raw?.data;
   if (typeof reply === "string") {
-    try { reply = JSON.parse(reply.replace(/```json/gi, "").replace(/```/g, "").trim()); } catch {}
+    try { reply = JSON.parse(reply.replace(/```json/gi, "").replace(/```/g, "").trim()); } catch { }
   }
   return reply;
 }
@@ -257,11 +257,11 @@ router.post("/portfolio/import", (req, res) => {
   const rows = req.body;
   const importCount = Array.isArray(rows) ? rows.length : 1;
   dashboardSummary.entityCount += importCount;
-  
+
   // Persist imported entities into node-cache
   const existingCache: any[] = myCache.get("crawled_entities") || [];
   const newEntities = Array.isArray(rows) ? rows : [rows];
-  
+
   // Format them for the frontend the same way as sample-preview
   const formattedNew = newEntities.map(row => ({
     masterEntityProfile: {
@@ -272,9 +272,9 @@ router.post("/portfolio/import", (req, res) => {
     },
     ...row
   }));
-  
+
   myCache.set("crawled_entities", [...formattedNew, ...existingCache]);
-  
+
   res.json({ imported: importCount });
 });
 router.get("/portfolio/sample-preview", (req, res) => {
@@ -283,17 +283,17 @@ router.get("/portfolio/sample-preview", (req, res) => {
     if (!fs.existsSync(dataPath)) {
       dataPath = path.join(process.cwd(), "..", "consolidated_entities.json");
     }
-    
+
     const rawData = fs.readFileSync(dataPath, "utf8");
     const parsedData = JSON.parse(rawData);
-    
+
     // The frontend expects an array of objects shaped { masterEntityProfile: { ... } }
     const formattedData = (parsedData.masterEntityProfiles || []).map((profile: any) => ({
       masterEntityProfile: profile
     }));
-    
+
     const cachedEntities = (myCache.get("crawled_entities") as any[]) || [];
-    
+
     res.json([...cachedEntities, ...formattedData]);
   } catch (err) {
     console.error("Error reading consolidated_entities.json:", err);
@@ -536,7 +536,7 @@ router.get("/unified-records", (req, res) => {
 router.post("/chat", async (req, res) => {
   try {
     const { message, history, stream, enable_thinking } = req.body;
-    
+
     const response = await fetch("https://devstudio.27x.ai/api/v1/agents/24a5ac86-de0c-4621-8809-5bf23b7b4ce5/chat", {
       method: "POST",
       headers: {
@@ -554,7 +554,7 @@ router.post("/chat", async (req, res) => {
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
-      
+
       if (!response.body) {
         return res.status(500).json({ error: "No response body from agent API" });
       }
@@ -583,13 +583,14 @@ router.post("/chat", async (req, res) => {
 router.post("/v1/crawler/extract-company-info", async (req, res) => {
   try {
     const { domains, company_name } = req.body;
-    
+
     const payload: any = { domains };
     if (company_name) {
       payload.company_name = company_name;
     }
-    
-    const response = await fetch("http://173.249.56.10:1234/api/v1/crawler/extract-company-info", {
+    const crawlerUrl = "http://173.249.56.10:1234/api/v1/crawler/extract-company-info";
+
+    const response = await fetch(crawlerUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -600,11 +601,52 @@ router.post("/v1/crawler/extract-company-info", async (req, res) => {
     if (!response.ok) {
       return res.status(response.status).json({ error: "Failed to fetch from crawler API" });
     }
-    
+
     const data = await response.json();
     res.json(data);
   } catch (error) {
     console.error("Error proxying crawler request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Croftz Corporate Registry Screening Proxy ---
+router.post("/croftz/corporate-registry-screening", async (req, res) => {
+  try {
+    const formData = new URLSearchParams(req.body as Record<string, string>);
+    const postResp = await fetch("https://croftzgo.com/api/v1/corporate-registry-screening", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-api-key": CROFTZ_KEY
+      },
+      body: formData.toString()
+    });
+    const postData = await postResp.json();
+    res.status(postResp.status).json(postData);
+  } catch (error) {
+    console.error("Error proxying Croftz POST:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/croftz/corporate-registry-screening", async (req, res) => {
+  try {
+    const crScreeningUid = req.query.crScreeningUid;
+    const url = crScreeningUid
+      ? `https://croftzgo.com/api/v1/corporate-registry-screening?crScreeningUid=${crScreeningUid}`
+      : "https://croftzgo.com/api/v1/corporate-registry-screening";
+
+    const getResp = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-api-key": CROFTZ_KEY
+      }
+    });
+    const getData = await getResp.json();
+    res.status(getResp.status).json(getData);
+  } catch (error) {
+    console.error("Error proxying Croftz GET:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
