@@ -217,7 +217,8 @@ const PortfolioOnboarding = () => {
 
       const initiateCorporateRegistryScreening = async (normalizedDomain: string, externalRef: string) => {
         try {
-          const endpointUrl = "/croftz-api/api/v1/corporate-registry-screening";
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+          const endpointUrl = `${API_BASE}/croftz/corporate-registry-screening`;
           const CROFTZ_KEY = import.meta.env.VITE_CROFTZ_API_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
 
           // ── Build form payload ──
@@ -499,7 +500,10 @@ const PortfolioOnboarding = () => {
           );
 
           // ── Pass ONLY e.normalizedDomain to Croftz POST ──
-          const normalizedDomain = profile.normalizedDomain || cleanWebsite;
+          let normalizedDomain = profile.normalizedDomain || cleanWebsite;
+          if (normalizedDomain) {
+            normalizedDomain = normalizedDomain.replace(/^https?:\/\//, '').split('/')[0];
+          }
           if (normalizedDomain && entity.externalReference) {
             console.log(`[Croftz] Using normalizedDomain: "${normalizedDomain}" for externalRef: "${entity.externalReference}"`);
             initiateCorporateRegistryScreening(normalizedDomain, entity.externalReference);

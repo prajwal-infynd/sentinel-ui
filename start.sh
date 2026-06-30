@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Stopping any existing processes on ports 8080 and 3002..."
+echo "Stopping any existing processes on ports 8080, 5173, and 3002..."
 
 # Kill process on port 3002 (Backend)
 BE_PID=$(lsof -t -i:3002)
@@ -16,6 +16,13 @@ if [ ! -z "$FE_PID" ]; then
   kill -9 $FE_PID
 fi
 
+# Kill lingering vite processes on default port 5173
+VITE_PID=$(lsof -t -i:5173)
+if [ ! -z "$VITE_PID" ]; then
+  echo "Killing process on port 5173 (PID: $VITE_PID)..."
+  kill -9 $VITE_PID
+fi
+
 echo "=================================================="
 echo "Starting both Frontend and Backend together..."
 echo "Backend: http://localhost:3002/api"
@@ -27,3 +34,4 @@ echo "=================================================="
 npx concurrently -c "blue,green" -n "BE,FE" \
   "cd backend && npm run dev" \
   "npm run dev"
+

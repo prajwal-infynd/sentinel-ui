@@ -588,8 +588,9 @@ router.post("/v1/crawler/extract-company-info", async (req, res) => {
     if (company_name) {
       payload.company_name = company_name;
     }
+    const crawlerUrl = process.env.VITE_CRAWLER_API_URL || "https://sentinelapi.27x.ai/api/v1/crawler/extract-company-info";
     
-    const response = await fetch("http://173.249.56.10:1234/api/v1/crawler/extract-company-info", {
+    const response = await fetch(crawlerUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -605,6 +606,47 @@ router.post("/v1/crawler/extract-company-info", async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error("Error proxying crawler request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// --- Croftz Corporate Registry Screening Proxy ---
+router.post("/croftz/corporate-registry-screening", async (req, res) => {
+  try {
+    const formData = new URLSearchParams(req.body as Record<string, string>);
+    const postResp = await fetch("https://croftzgo.com/api/v1/corporate-registry-screening", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "x-api-key": CROFTZ_KEY
+      },
+      body: formData.toString()
+    });
+    const postData = await postResp.json();
+    res.status(postResp.status).json(postData);
+  } catch (error) {
+    console.error("Error proxying Croftz POST:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/croftz/corporate-registry-screening", async (req, res) => {
+  try {
+    const crScreeningUid = req.query.crScreeningUid;
+    const url = crScreeningUid 
+      ? `https://croftzgo.com/api/v1/corporate-registry-screening?crScreeningUid=${crScreeningUid}`
+      : "https://croftzgo.com/api/v1/corporate-registry-screening";
+      
+    const getResp = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-api-key": CROFTZ_KEY
+      }
+    });
+    const getData = await getResp.json();
+    res.status(getResp.status).json(getData);
+  } catch (error) {
+    console.error("Error proxying Croftz GET:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
