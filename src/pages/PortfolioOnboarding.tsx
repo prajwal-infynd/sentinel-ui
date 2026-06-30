@@ -356,7 +356,8 @@ const PortfolioOnboarding = () => {
       if (crawlerCompanyName) {
         payload.company_name = crawlerCompanyName;
       }
-      const crawlerUrl = import.meta.env.VITE_CRAWLER_API_URL || "/api/v1/crawler/extract-company-info";
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+      const crawlerUrl = `${API_BASE}/v1/crawler/extract-company-info`;
 
       // 5-minute timeout — crawler does heavy scraping, needs time
       const controller = new AbortController();
