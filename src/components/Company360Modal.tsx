@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Building2, FileText, AlertCircle, Users, Target, Shield, Globe, Newspaper, ExternalLink, ShieldAlert } from "lucide-react";
+import { Building2, FileText, AlertCircle, Users, Target, Shield, Globe, Newspaper, ExternalLink, ShieldAlert, Database, Loader2, AlertTriangle, Activity } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Company360ModalProps {
@@ -340,11 +340,27 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
               }
 
               const rawCr = croftz;
-              if (!rawCr) return null;
-              
               // Handle both object and array response formats safely
               const cr = Array.isArray(rawCr) ? rawCr[0] : rawCr;
-              if (!cr) return null;
+              
+              if (!cr) {
+                // If it failed or hasn't started, don't show the empty state
+                if (fetchFailed) return null;
+                return (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
+                    </h3>
+                    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                      <Database className="h-10 w-10 mb-3 opacity-20" />
+                      <span className="text-[13px] font-semibold text-slate-500">No Registry Data Found</span>
+                      <span className="text-[12px] text-slate-400 text-center max-w-[300px] mt-1">
+                        We couldn't find a matching corporate registry entry for this entity in the Croftz database.
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
