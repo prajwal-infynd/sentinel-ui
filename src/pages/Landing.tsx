@@ -212,13 +212,7 @@ export default function Landing() {
                 </button>
               </div>
               
-              {isLogin && (
-                <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 text-center">
-                  <strong>Demo Accounts:</strong><br/>
-                  Super Admin: superadmin@sentinel.com / password<br/>
-                  User: user@sentinel.com / password
-                </div>
-              )}
+
             </div>
           </motion.div>
         </div>
