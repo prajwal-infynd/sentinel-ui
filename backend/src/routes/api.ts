@@ -3,6 +3,9 @@ import fs from "fs";
 import path from "path";
 import NodeCache from "node-cache";
 import crypto from "crypto";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 // In-memory only (MVP) — everything starts fresh on each server restart.
 const myCache = new NodeCache({ stdTTL: 0 }); // no expiry while the process runs
@@ -17,13 +20,13 @@ function setInvestigation(investigationId: string, data: any) {
   myCache.set(`investigation_${investigationId}`, data);
 }
 
-const CROFTZ_KEY = "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
-const AGENT_CHAT_URL = "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
-const AGENT_CHAT_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a5d822ca-4e36-42a3-8f4c-4c660db847ad__pllbvogOhiPt5TrzNFcFeCrGT7r3KfPKvX6yzLpXhw";
-const AGENT_POLL_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c606a23d-d21e-4935-9a7e-f32efdcc4125_p_NR0R0MQVMPOpa7HmjnyXV0UFEX1yi5TCypF-gKGYI";
+const CROFTZ_KEY = process.env.VITE_CROFTZ_API_KEY || process.env.CROFTZ_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
+const AGENT_CHAT_URL = process.env.VITE_AGENT_STUDIO_API_URL || process.env.AGENT_CHAT_URL || "https://devstudio.27x.ai/api/v1/agents/c8c10d95-27a5-4ada-9ffb-ef00a4b22c6a/chat";
+const AGENT_CHAT_KEY = process.env.AGENT_CHAT_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a5d822ca-4e36-42a3-8f4c-4c660db847ad__pllbvogOhiPt5TrzNFcFeCrGT7r3KfPKvX6yzLpXhw";
+const AGENT_POLL_KEY = process.env.AGENT_POLL_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c606a23d-d21e-4935-9a7e-f32efdcc4125_p_NR0R0MQVMPOpa7HmjnyXV0UFEX1yi5TCypF-gKGYI";
 // Key used for portfolio enrichment (company add flow) — separate from investigation flow
-const PORTFOLIO_AGENT_KEY = "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a9048072-0b88-4a63-9783-15672fbbaa7f_EhvvQ_Zvd6cXx0lfwgtDq6yQKHwlJ6jbQKZ_xvkMLG0";
-const SCRAPE_URL = "http://173.249.56.10:3000/page-source";
+const PORTFOLIO_AGENT_KEY = process.env.VITE_AGENT_STUDIO_API_KEY || process.env.PORTFOLIO_AGENT_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_a9048072-0b88-4a63-9783-15672fbbaa7f_EhvvQ_Zvd6cXx0lfwgtDq6yQKHwlJ6jbQKZ_xvkMLG0";
+const SCRAPE_URL = process.env.SCRAPE_URL || "http://173.249.56.10:3000/page-source";
 
 // Statuses that devstudio may return when a job finishes
 const DONE_STATUSES = new Set(["completed", "complete", "success", "done", "finished"]);
@@ -536,18 +539,28 @@ router.get("/unified-records", (req, res) => {
 router.post("/chat", async (req, res) => {
   try {
     const { message, history, stream, enable_thinking } = req.body;
+    console.log(`[Proxy] /chat request received. Stream: ${stream}, Thinking: ${enable_thinking}`);
 
-    const response = await fetch("https://devstudio.27x.ai/api/v1/agents/24a5ac86-de0c-4621-8809-5bf23b7b4ce5/chat", {
+    const agentUrl = process.env.VITE_AGENT_STUDIO_API_URL || process.env.AGENT_CHAT_URL || "https://devstudio.27x.ai/api/v1/agents/24a5ac86-de0c-4621-8809-5bf23b7b4ce5/chat";
+    const agentKey = process.env.VITE_AGENT_STUDIO_API_KEY || process.env.AGENT_CHAT_KEY || "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c6f80be7-6371-465e-ae32-6b7d2e11ec84_Dw5QHAZok3ysPWvTYVZ_yvgVMY8gAW1fuV-HDggKCkM";
+
+    console.log(`[Proxy] /chat forwarding to: ${agentUrl}`);
+    
+    const response = await fetch(agentUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": "ifk_0aee4bb8-832b-4fdb-b521-8df8e8cdea4e_c6f80be7-6371-465e-ae32-6b7d2e11ec84_Dw5QHAZok3ysPWvTYVZ_yvgVMY8gAW1fuV-HDggKCkM"
+        "x-api-key": agentKey
       },
       body: JSON.stringify({ message, history, stream, enable_thinking })
     });
 
+    console.log(`[Proxy] /chat received response status: ${response.status}`);
+
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Failed to fetch from agent API" });
+      const errorText = await response.text().catch(() => "Unable to read error text");
+      console.error(`[Proxy] /chat error response: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: "Failed to fetch from agent API", details: errorText });
     }
 
     if (stream) {
@@ -556,9 +569,11 @@ router.post("/chat", async (req, res) => {
       res.setHeader("Connection", "keep-alive");
 
       if (!response.body) {
+        console.error("[Proxy] /chat No response body for stream");
         return res.status(500).json({ error: "No response body from agent API" });
       }
 
+      console.log("[Proxy] /chat starting stream to client...");
       const reader = response.body.getReader();
       let done = false;
       while (!done) {
@@ -568,14 +583,16 @@ router.post("/chat", async (req, res) => {
           res.write(value);
         }
       }
+      console.log("[Proxy] /chat stream finished.");
       res.end();
     } else {
       const data = await response.json();
+      console.log("[Proxy] /chat successfully parsed JSON response.");
       res.json(data);
     }
-  } catch (error) {
-    console.error("Error proxying chat:", error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("[Proxy] Error proxying chat:", error?.message || error);
+    res.status(500).json({ error: "Internal server error", message: error?.message });
   }
 });
 
@@ -583,13 +600,15 @@ router.post("/chat", async (req, res) => {
 router.post("/v1/crawler/extract-company-info", async (req, res) => {
   try {
     const { domains, company_name } = req.body;
+    console.log(`[Proxy] /v1/crawler/extract-company-info request received. Domains:`, domains, `Company:`, company_name);
 
     const payload: any = { domains };
     if (company_name) {
       payload.company_name = company_name;
     }
-    const crawlerUrl = "http://173.249.56.10:1234/api/v1/crawler/extract-company-info";
-
+    const crawlerUrl = process.env.CRAWLER_TARGET_URL || "http://173.249.56.10:1234/api/v1/crawler/extract-company-info";
+    console.log(`[Proxy] /v1/crawler forwarding to crawlerUrl: ${crawlerUrl}`);
+    
     const response = await fetch(crawlerUrl, {
       method: "POST",
       headers: {
@@ -598,15 +617,20 @@ router.post("/v1/crawler/extract-company-info", async (req, res) => {
       body: JSON.stringify(payload)
     });
 
+    console.log(`[Proxy] /v1/crawler received response status: ${response.status}`);
+
     if (!response.ok) {
-      return res.status(response.status).json({ error: "Failed to fetch from crawler API" });
+      const errorText = await response.text().catch(() => "Unable to read error text");
+      console.error(`[Proxy] /v1/crawler error response: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({ error: "Failed to fetch from crawler API", details: errorText });
     }
 
     const data = await response.json();
+    console.log(`[Proxy] /v1/crawler successfully processed JSON response.`);
     res.json(data);
-  } catch (error) {
-    console.error("Error proxying crawler request:", error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("[Proxy] Error proxying crawler request:", error?.message || error);
+    res.status(500).json({ error: "Internal server error", message: error?.message });
   }
 });
 
@@ -614,7 +638,12 @@ router.post("/v1/crawler/extract-company-info", async (req, res) => {
 router.post("/croftz/corporate-registry-screening", async (req, res) => {
   try {
     const formData = new URLSearchParams(req.body as Record<string, string>);
-    const postResp = await fetch("https://croftzgo.com/api/v1/corporate-registry-screening", {
+    console.log(`[Proxy] POST /croftz/corporate-registry-screening received. FormData length:`, Array.from(formData.keys()).length);
+
+    const croftzUrl = "https://croftzgo.com/api/v1/corporate-registry-screening";
+    console.log(`[Proxy] POST /croftz forwarding to: ${croftzUrl} with CROFTZ_KEY provided: ${!!CROFTZ_KEY}`);
+
+    const postResp = await fetch(croftzUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -622,20 +651,40 @@ router.post("/croftz/corporate-registry-screening", async (req, res) => {
       },
       body: formData.toString()
     });
+
+    console.log(`[Proxy] POST /croftz response status: ${postResp.status}`);
+    
+    if (!postResp.ok) {
+      const errorText = await postResp.text().catch(() => "Unable to read error text");
+      console.error(`[Proxy] POST /croftz error response: ${postResp.status} - ${errorText}`);
+      // return it directly, but still attempt to parse if json
+      try {
+        const errorJson = JSON.parse(errorText);
+        return res.status(postResp.status).json(errorJson);
+      } catch {
+        return res.status(postResp.status).json({ error: "Croftz API Error", details: errorText });
+      }
+    }
+
     const postData = await postResp.json();
+    console.log(`[Proxy] POST /croftz successfully processed JSON response.`);
     res.status(postResp.status).json(postData);
-  } catch (error) {
-    console.error("Error proxying Croftz POST:", error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("[Proxy] Error proxying Croftz POST:", error?.message || error);
+    res.status(500).json({ error: "Internal server error", message: error?.message });
   }
 });
 
 router.get("/croftz/corporate-registry-screening", async (req, res) => {
   try {
     const crScreeningUid = req.query.crScreeningUid;
+    console.log(`[Proxy] GET /croftz/corporate-registry-screening received. crScreeningUid: ${crScreeningUid}`);
+
     const url = crScreeningUid
       ? `https://croftzgo.com/api/v1/corporate-registry-screening?crScreeningUid=${crScreeningUid}`
       : "https://croftzgo.com/api/v1/corporate-registry-screening";
+    
+    console.log(`[Proxy] GET /croftz forwarding to: ${url}`);
 
     const getResp = await fetch(url, {
       method: "GET",
@@ -643,11 +692,26 @@ router.get("/croftz/corporate-registry-screening", async (req, res) => {
         "x-api-key": CROFTZ_KEY
       }
     });
+
+    console.log(`[Proxy] GET /croftz response status: ${getResp.status}`);
+
+    if (!getResp.ok) {
+      const errorText = await getResp.text().catch(() => "Unable to read error text");
+      console.error(`[Proxy] GET /croftz error response: ${getResp.status} - ${errorText}`);
+      try {
+        const errorJson = JSON.parse(errorText);
+        return res.status(getResp.status).json(errorJson);
+      } catch {
+        return res.status(getResp.status).json({ error: "Croftz API Error", details: errorText });
+      }
+    }
+
     const getData = await getResp.json();
+    console.log(`[Proxy] GET /croftz successfully processed JSON response.`);
     res.status(getResp.status).json(getData);
-  } catch (error) {
-    console.error("Error proxying Croftz GET:", error);
-    res.status(500).json({ error: "Internal server error" });
+  } catch (error: any) {
+    console.error("[Proxy] Error proxying Croftz GET:", error?.message || error);
+    res.status(500).json({ error: "Internal server error", message: error?.message });
   }
 });
 

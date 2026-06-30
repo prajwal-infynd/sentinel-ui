@@ -60,10 +60,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     );
 
     // Log request body for POST/PATCH (skip sensitive auth)
-    if (["POST", "PATCH"].includes(req.method) && !req.path.includes("/auth/")) {
-      if (Object.keys(req.body || {}).length > 0) {
+    if (["POST", "PATCH", "PUT"].includes(req.method) && !req.path.includes("/auth/")) {
+      if (req.body && Object.keys(req.body).length > 0) {
         console.log(`  ${DIM}↳ body: ${JSON.stringify(req.body)}${RESET}`);
       }
+    }
+
+    // Log query parameters
+    if (req.query && Object.keys(req.query).length > 0) {
+      console.log(`  ${DIM}↳ query: ${JSON.stringify(req.query)}${RESET}`);
     }
 
     // Log errors
