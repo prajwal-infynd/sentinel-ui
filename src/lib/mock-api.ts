@@ -268,6 +268,19 @@ mock.onGet("/investigations/snapshot").reply(200, {
   ],
 });
 
+mock.onPost("/investigations/start").reply((config) => {
+  const { alertId } = JSON.parse(config.data);
+  return [200, { investigationId: `INV-${alertId || Date.now()}`, status: "started" }];
+});
+
+mock.onGet("/portfolio/sample-preview").reply(200, [
+  { name: "Global Tech Inc.", country: "US", revenue: 15000000000, riskScore: 85, alert: "Critical" },
+  { name: "Acme Corp", country: "UK", revenue: 500000000, riskScore: 65, alert: "Medium" },
+  { name: "Oceanic Airlines", country: "AU", revenue: 20000000, riskScore: 40, alert: "Low" },
+  { name: "Stark Industries", country: "US", revenue: 50000000000, riskScore: 92, alert: "Critical" },
+  { name: "Wayne Enterprises", country: "US", revenue: 30000000000, riskScore: 55, alert: "Medium" }
+]);
+
 mock.onPost("/portfolio/import").reply((config) => {
   try {
     const rows = JSON.parse(config.data);

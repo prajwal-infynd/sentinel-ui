@@ -98,15 +98,22 @@ const Dashboard = () => {
   
   const totalExposureValue = formattedEntities.reduce((acc: number, e: any) => acc + e.revenue, 0);
   
+  const formatCurrency = (value: number) => {
+    if (value >= 1e9) return `£${(value / 1e9).toFixed(1)}B`;
+    if (value >= 1e6) return `£${(value / 1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `£${(value / 1e3).toFixed(1)}K`;
+    return `£${value}`;
+  };
+
   const formattedExposure = totalExposureValue > 0 
-    ? `$${(totalExposureValue / 1000000).toFixed(1)}M` 
-    : "£640455.1M"; // fallback to mock if no real revenue data
+    ? formatCurrency(totalExposureValue)
+    : "£640.4B"; // fallback to mock if no real revenue data
 
   const uniqueCountries = new Set(formattedEntities.map((e: any) => e.country).filter(Boolean));
   const countryCount = uniqueCountries.size || 3;
 
   const topCriticalEntities = [...formattedEntities]
-    .filter((e: any) => e.riskScore >= 80 || e.alert === 'Critical' || e.riskScore > 0)
+    .filter((e: any) => e.riskScore >= 80 || e.alert === 'Critical' || e.severity === 'critical' || e.severity === 'high')
     .sort((a: any, b: any) => b.riskScore - a.riskScore)
     .slice(0, 5);
 
@@ -122,7 +129,7 @@ const Dashboard = () => {
 
   const dynamicCriticalAlerts = topCriticalEntities.length > 0 
     ? topCriticalEntities.map((e: any, idx: number) => {
-        const scenario = realisticScenarios[e.name.length % realisticScenarios.length];
+        const scenario = realisticScenarios[idx % realisticScenarios.length];
         return {
           id: e.id || idx,
           company: e.name,

@@ -124,9 +124,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
-        {renderGroup("Data Engine", mediaItems)}
-        {renderGroup("Crawl Engine", crawlItems)}
-        {(hasPermission("admin:*") || hasPermission("invite_user") || hasPermission("manage_subscription")) && renderGroup("System", systemItems)}
+        {renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>
         {!collapsed ? (

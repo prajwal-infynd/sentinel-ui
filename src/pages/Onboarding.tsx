@@ -102,9 +102,21 @@ export default function Onboarding() {
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
+  const [applications, setApplications] = useState(MOCK_DATA);
 
   const handleAddCompanySubmit = () => {
     if (!newCompanyName.trim()) return;
+    const newCompany = {
+      id: `APP-0${applications.length + 17}`,
+      name: newCompanyName,
+      industry: "Unknown",
+      applied: "Just now",
+      creditLimit: "£0",
+      safetyScore: 50,
+      checks: ["pending", "pending", "pending", "pending"],
+      status: "Pending",
+    };
+    setApplications([newCompany, ...applications]);
     toast({
       title: "Company Added",
       description: `${newCompanyName} has been successfully added to onboarding.`,
@@ -112,6 +124,13 @@ export default function Onboarding() {
     setIsAddCompanyOpen(false);
     setNewCompanyName("");
   };
+
+  const filteredData = applications.filter((app) => {
+    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          app.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === "All" || app.status === selectedFilter;
+    return matchesSearch && matchesFilter;
+  });
 
   const handleDocumentVerification = () => {
     toast({
@@ -255,7 +274,7 @@ export default function Onboarding() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {MOCK_DATA.map((row) => (
+                {filteredData.map((row) => (
                   <tr 
                     key={row.id} 
                     className="hover:bg-muted/50 transition-colors cursor-pointer"
