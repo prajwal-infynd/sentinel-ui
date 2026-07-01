@@ -4,7 +4,7 @@ import { GlobalHeader } from "@/components/GlobalHeader";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full relative bg-[#F8FAFC] overflow-hidden">
         {/* Advanced Ambient Glow (Light Mode Optimized) */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">

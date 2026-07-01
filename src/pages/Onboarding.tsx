@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { CompanyOnboardingModal } from "@/components/CompanyOnboardingModal";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const MOCK_DATA = [
   {
@@ -97,6 +98,7 @@ const MOCK_DATA = [
 
 export default function Onboarding() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
@@ -162,6 +164,9 @@ export default function Onboarding() {
         title: "Added to Monitor",
         description: `${row.name} has been added to your monitoring list.`,
       });
+      
+      // Auto-navigate to the Monitored Companies page
+      navigate("/monitor/companies");
     } catch (err) {
       console.error(err);
     }
