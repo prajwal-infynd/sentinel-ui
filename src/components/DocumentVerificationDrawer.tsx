@@ -3,7 +3,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { 
-  FolderStar, ChevronDown, Upload, Trash2, Search, Info, CloudUpload, ChevronLeft, ChevronRight, List
+  FolderOpen, ChevronDown, Upload, Trash2, Search, Info, CloudUpload, ChevronLeft, ChevronRight, List
 } from "lucide-react";
 
 interface DocumentVerificationDrawerProps {
@@ -20,7 +20,7 @@ export const DocumentVerificationDrawer: React.FC<DocumentVerificationDrawerProp
       <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6 shadow-sm flex items-center justify-between">
         <div className="flex gap-3 items-center">
           <div className="p-2 bg-slate-100 rounded-md">
-            <FolderStar className="w-5 h-5 text-slate-700" />
+            <FolderOpen className="w-5 h-5 text-slate-700" />
           </div>
           <span className="font-bold text-slate-700">Total Files:</span>
         </div>
