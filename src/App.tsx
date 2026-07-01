@@ -26,6 +26,7 @@ import MonitorNewsFeed from "./pages/monitor/MonitorNewsFeed";
 import MonitorWatchlists from "./pages/monitor/MonitorWatchlists";
 import MonitorRiskAnalytics from "./pages/monitor/MonitorRiskAnalytics";
 import MonitorReports from "./pages/monitor/MonitorReports";
+import MonitorAIAgent from "./pages/monitor/MonitorAIAgent";
 import MediaDashboard from "./pages/media/MediaDashboard";
 import MediaSources from "./pages/media/MediaSources";
 import MediaPipeline from "./pages/media/MediaPipeline";
@@ -69,10 +70,14 @@ const App = () => (
                 <Route path="companies" element={<PortfolioOnboarding key="force-reset-2" />} />
                 <Route path="watchlists" element={<MonitorWatchlists />} />
                 <Route path="risk-analytics" element={<MonitorRiskAnalytics />} />
+                <Route path="ai-agent" element={<MonitorAIAgent />} />
                 <Route path="reports" element={<MonitorReports />} />
               </Route>
               
               <Route path="/ai-agent" element={<AIAgents />} />
+              
+              {/* Legacy redirects */}
+              <Route path="/monitor/ai-agent" element={<Navigate to="/ai-agent" replace />} />
               
               {/* Legacy redirects */}
               <Route path="/dashboard" element={<Navigate to="/monitor/dashboard" replace />} />

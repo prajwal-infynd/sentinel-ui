@@ -31,7 +31,7 @@ const platformItems = [
   },
   { title: "Policy Layer", url: "/policy", icon: Shield },
   { title: "AI Governance", url: "/governance", icon: ShieldAlert },
-  { title: "AI Agent", url: "/ai-agent", icon: Bot },
+  { title: "AI Agents", url: "/ai-agent", icon: Bot },
   { title: "Reporting", url: "/reporting", icon: BarChart3 },
 ];
 

@@ -51,158 +51,50 @@ function getSentimentColor(score: number) {
 }
 
 export function Company360Modal({ isOpen, onClose, companyData }: Company360ModalProps) {
-  const [localCroftzData, setLocalCroftzData] = useState<any>(null);
-  const [isFetchingCroftz, setIsFetchingCroftz] = useState(false);
-  const [fetchFailed, setFetchFailed] = useState<string | null>(null);
-
   // Derive values safely (companyData may be null)
   const companyName = companyData?.name ?? "";
-  const identifiers = companyData?.rawIdentifiers || {};
-  const payload = companyData?.payload || {};
-  const croftz = localCroftzData ?? identifiers.corporateRegistry ?? null;
-  // isScreeningPending = we don't yet have croftz risk data (does NOT gate the identity card)
-  const isScreeningPending = !croftz;
+  
+  const isMockNeeded = !companyData?.payload?.description && !companyData?.rawIdentifiers?.aboutCompany;
 
-  useEffect(() => {
-    if (!isOpen) {
-      setLocalCroftzData(null);
-      setIsFetchingCroftz(false);
-      setFetchFailed(false);
-    }
-  }, [isOpen]);
+  const mockPayload = {
+    description: `${companyName || "This company"} is a global leader in next-generation digital services and consulting. With over three decades of experience in managing the systems and workings of global enterprises, we expertly steer our clients through their digital journey.`,
+    url: `https://www.${(companyName || "company").toLowerCase().replace(/[^a-z0-9]/g, "")}.com`,
+    phone: "+1-800-555-0199",
+    companyType: "Corporate Entity",
+    industry: "Information Technology & Services",
+    employees: 317240,
+    annualRevenue: 18100000000,
+    fiscalYear: "2023",
+    riskCategories: ["Regulatory Risk", "Data Privacy", "Cybersecurity", "Operational Risk"],
+    flaggedJurisdictions: ["United States", "United Kingdom", "Singapore"],
+    keyPersonnel: [
+      { name: "Jane Doe", role: "Chief Executive Officer" },
+      { name: "John Smith", role: "Chief Financial Officer" }
+    ],
+    competitors: [
+      { name: "Acme Corp", tier: "1", duns: "12-345-6789" },
+      { name: "Global Tech", tier: "1", duns: "98-765-4321" }
+    ],
+    adverseMedia: {
+      sentiment: "Neutral",
+      sentiment_score: -0.2,
+      adverse_keywords: {
+        "lawsuit": 3,
+        "settlement": 1,
+        "investigation": 2
+      }
+    },
+    sourceDetails: [
+      { publisher: "Financial Times", description: "Tech giants face new data privacy scrutiny", url: "https://ft.com" },
+      { publisher: "Reuters", description: "Sector earnings report analysis", url: "https://reuters.com" },
+      { publisher: "OpenCorporates", description: "Registry data match", url: "https://opencorporates.com" }
+    ]
+  };
 
-  useEffect(() => {
-    // Only fetch once — stop retrying if it already failed
-    if (isOpen && companyData && isScreeningPending && !isFetchingCroftz && !localCroftzData && !fetchFailed) {
-      const fetchCroftz = async () => {
-        setIsFetchingCroftz(true);
-        try {
-          const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
-          const endpointUrl = `${API_BASE}/croftz/corporate-registry-screening`;
-          const CROFTZ_KEY = import.meta.env.VITE_CROFTZ_API_KEY || "sk_0d514a86648edbc36840257f3303ea6fd65874b0cad898cd913199d10f0a4b0d";
-          
-          const website = identifiers.website || payload.url;
-          let domain = companyName;
-          if (website) {
-            domain = website.replace(/^https?:\/\//, '').split('/')[0];
-          } else if (companyName) {
-            domain = companyName.toLowerCase().replace(/[^a-z0-9]/g, '') + ".com";
-          }
+  const identifiers = isMockNeeded ? {} : (companyData?.rawIdentifiers || {});
+  const payload = isMockNeeded ? mockPayload : (companyData?.payload || {});
 
-          const formData = new URLSearchParams();
-          formData.append("name", domain || "unknown.com");
-          formData.append("entityType", "company");
-          formData.append("exactMatch", "false");
-          formData.append("fuzzinessThreshold", "100");
-          formData.append("monitor", "false");
-          formData.append("countryCodes", "");
-          formData.append("monitoringDuration", "60");
-          formData.append("monitoringRenew", "false");
 
-          const postResp = await fetch(endpointUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              "x-api-key": CROFTZ_KEY
-            },
-            body: formData.toString()
-          });
-
-          if (!postResp.ok) {
-            const errText = await postResp.text();
-            throw new Error(errText);
-          }
-          const postData = await postResp.json();
-          const postBody = postData.response || postData;
-
-          if (!postBody.success) {
-             throw new Error(postBody.message || postBody.title || "Screening failed");
-          }
-
-          // ── Extract screeningUid from POST response ──
-          let screeningUid = postBody.screeningUid || postBody.screening?.rowUid;
-          if (!screeningUid && postBody.screeningResults?.length > 0) {
-            screeningUid = postBody.screeningResults[0].screeningUid || postBody.screeningResults[0].id;
-          }
-          if (!screeningUid && postBody.data?.length > 0) {
-            screeningUid = postBody.data[0].screeningUid;
-          }
-
-          if (screeningUid) {
-            // ── GET Request to fetch full results ──
-            const getResp = await fetch(`${endpointUrl}?crScreeningUid=${screeningUid}`, {
-              headers: { "x-api-key": CROFTZ_KEY }
-            });
-            
-            if (getResp.ok) {
-              const getData = await getResp.json();
-              const getBody = getData.response || getData;
-              
-              if (!getBody.success) {
-                throw new Error(getBody.message || getBody.title || "GET failed");
-              }
-              
-              // Extract exactly like PortfolioOnboarding
-              const results = getBody.results || (getBody.screeningResults && getBody.screeningResults[0]?.results) || getBody;
-              
-              // If we didn't find the results object, fallback to data[0] for registry fields
-              if (results && !results.data && (results.risk_score !== undefined || results.categories)) {
-                setLocalCroftzData(results);
-              } else if (getBody.data && getBody.data.length > 0) {
-                const rec2 = getBody.data[0];
-                setLocalCroftzData({
-                  name: rec2.name,
-                  companyNumber: rec2.companyNumber,
-                  jurisdictionCode: rec2.jurisdictionCode,
-                  incorporationDate: rec2.incorporationDate,
-                  companyType: rec2.companyType,
-                  currentStatus: rec2.currentStatus,
-                  sourcePublisher: rec2.sourcePublisher,
-                  sourceUrl: rec2.sourceUrl || rec2.registryUrl || rec2.opencorporatesUrl,
-                  opencorporatesUrl: rec2.opencorporatesUrl,
-                  registeredAddressInFull: rec2.registeredAddressInFull,
-                  inactive: rec2.inactive,
-                  industryCodes: rec2.industryCodes
-                });
-              } else {
-                 setLocalCroftzData(results);
-              }
-            } else {
-               const errText = await getResp.text();
-               throw new Error(errText);
-            }
-          } else if (postBody.screeningResults?.length > 0) {
-             setLocalCroftzData(postBody.screeningResults[0].results);
-          } else if (postBody.data?.length > 0) {
-             const rec = postBody.data[0];
-             setLocalCroftzData({
-                  name: rec.name,
-                  companyNumber: rec.companyNumber,
-                  jurisdictionCode: rec.jurisdictionCode,
-                  incorporationDate: rec.incorporationDate,
-                  companyType: rec.companyType,
-                  currentStatus: rec.currentStatus,
-                  sourcePublisher: rec.sourcePublisher,
-                  sourceUrl: rec.sourceUrl || rec.registryUrl || rec.opencorporatesUrl,
-                  opencorporatesUrl: rec.opencorporatesUrl,
-                  registeredAddressInFull: rec.registeredAddressInFull,
-                  inactive: rec.inactive,
-                  industryCodes: rec.industryCodes
-             });
-          } else {
-             throw new Error("No screeningUid or data returned");
-          }
-        } catch (e) {
-          console.error("Croftz fetch error", e);
-          setFetchFailed(e instanceof Error ? e.message : String(e)); // stop retrying on failure
-        } finally {
-          setIsFetchingCroftz(false);
-        }
-      };
-      fetchCroftz();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, companyData, fetchFailed]);
 
   // Early return AFTER all hooks
   if (!companyData) return null;
@@ -211,18 +103,14 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
   const personnel = identifiers.keyPersonnel || payload.keyPersonnel || [];
   const competitors = identifiers.keyCompetitors || payload.competitors || [];
 
-  // Croftz fields (all null-safe)
-  const riskScore = croftz?.risk_score ?? companyData?.riskScore ?? null;
-  const riskLevel = croftz?.risk_level ?? null;
-  const riskTitle = croftz?.risk_title ?? null;
-  const riskDecision = croftz?.risk_decision ?? null;
-  const matchStatus = croftz?.match_status ?? null;
-  const categories = (croftz?.categories || []).filter(Boolean);
-  const countries = (croftz?.countries || []).filter(Boolean);
-  const adverseMedia = croftz?.adverse_media_details ?? null;
-  const sourceDetails = (croftz?.source_details || []).filter((s: any) => hasValue(s?.publisher) || hasValue(s?.url));
-  const matchedNames = (croftz?.matched_names || []).filter((m: any) => hasValue(m?.matched_name));
-  const relevance = croftz?.relevance_status ?? null;
+  // Data fields (all null-safe)
+  const riskScore = companyData?.riskScore ?? (isMockNeeded ? 65 : null);
+  const riskLevel = companyData?.severity ?? (isMockNeeded ? "Medium" : null);
+  const matchStatus = companyData?.match_status ?? (isMockNeeded ? "Exact Match" : null);
+  const categories = (payload.riskCategories || identifiers.riskCategories || companyData?.categories || []).filter(Boolean);
+  const countries = (payload.flaggedJurisdictions || identifiers.flaggedJurisdictions || companyData?.countries || []).filter(Boolean);
+  const adverseMedia = payload.adverseMedia || identifiers.adverseMedia || companyData?.adverse_media_details || null;
+  const sourceDetails = (payload.sourceDetails || identifiers.sourceDetails || companyData?.source_details || []).filter((s: any) => hasValue(s?.publisher) || hasValue(s?.url));
 
   const riskColors = riskScore !== null ? getRiskColor(riskScore) : null;
   const sentimentColors = adverseMedia ? getSentimentColor(adverseMedia.sentiment_score ?? 0) : null;
@@ -256,26 +144,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
         <ScrollArea className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6 bg-slate-50/30">
 
-            {/* Screening Pending / Failed Banner */}
-            {isScreeningPending && (
-              fetchFailed ? (
-                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 shadow-sm mb-6">
-                  <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
-                  <div>
-                    <div className="text-[13px] font-semibold text-amber-700">Registry Screening Unavailable</div>
-                    <div className="text-[11px] text-amber-600 line-clamp-2">{typeof fetchFailed === 'string' ? fetchFailed : "Could not connect to the screening service."}</div>
-                  </div>
-                </div>
-              ) : isFetchingCroftz ? (
-                <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 shadow-sm">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin shrink-0" />
-                  <div>
-                    <div className="text-[13px] font-semibold text-blue-700">Company Registry Screening in Progress</div>
-                    <div className="text-[11px] text-blue-500">Croftz Instacheck is running. Risk data will appear here automatically when complete.</div>
-                  </div>
-                </div>
-              ) : null
-            )}
+
 
             {/* Top: Identity + Risk */}
 
@@ -319,73 +188,7 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
             </div>
 
-            {/* Corporate Registry */}
-            {(() => {
-              if (isFetchingCroftz) {
-                 return (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {Array.from({length: 8}).map((_, i) => (
-                        <div key={i}>
-                          <Skeleton className="h-3 w-20 mb-1" />
-                          <Skeleton className="h-4 w-28" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                 );
-              }
 
-              const rawCr = croftz;
-              // Handle both object and array response formats safely
-              const cr = Array.isArray(rawCr) ? rawCr[0] : rawCr;
-              
-              if (!cr) {
-                // If it failed or hasn't started, don't show the empty state
-                if (fetchFailed) return null;
-                return (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
-                    </h3>
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                      <Database className="h-10 w-10 mb-3 opacity-20" />
-                      <span className="text-[13px] font-semibold text-slate-500">No Registry Data Found</span>
-                      <span className="text-[12px] text-slate-400 text-center max-w-[300px] mt-1">
-                        We couldn't find a matching corporate registry entry for this entity in the Croftz database.
-                      </span>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm mt-6">
-                  <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5" /> Corporate Registry Details
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {hasValue(cr.name) && <InfoField label="Registry Name" value={cr.name} />}
-                    {hasValue(cr.companyNumber) && <InfoField label="Company Number" value={cr.companyNumber} />}
-                    {hasValue(cr.jurisdictionCode) && <InfoField label="Jurisdiction" value={cr.jurisdictionCode?.toUpperCase()} />}
-                    {hasValue(cr.incorporationDate) && <InfoField label="Incorporation Date" value={new Date(cr.incorporationDate).toLocaleDateString()} />}
-                    {hasValue(cr.companyType) && <InfoField label="Company Type" value={cr.companyType} />}
-                    {hasValue(cr.currentStatus) && <InfoField label="Status" value={cr.currentStatus} />}
-                    {hasValue(cr.registeredAddressInFull) && <InfoField label="Registered Address" value={cr.registeredAddressInFull} className="col-span-2" />}
-                    
-                    <div className="flex flex-col gap-1 col-span-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Source</span>
-                      <a href={cr.sourceUrl || cr.opencorporatesUrl || "#"} target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold text-blue-600 hover:text-blue-700 transition-colors line-clamp-1">
-                        {cr.sourcePublisher || "View Registry"}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* About the Company (from JSON payload) */}
             {hasValue(about) && (
@@ -397,32 +200,6 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
             {/* Categories & Countries */}
             {(() => {
-              if (isFetchingCroftz) {
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                        <AlertCircle className="w-3.5 h-3.5" /> Risk Categories
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        <Skeleton className="h-6 w-20 rounded-lg" />
-                        <Skeleton className="h-6 w-24 rounded-lg" />
-                        <Skeleton className="h-6 w-16 rounded-lg" />
-                      </div>
-                    </div>
-                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5" /> Flagged Jurisdictions
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        <Skeleton className="h-6 w-16 rounded-lg" />
-                        <Skeleton className="h-6 w-12 rounded-lg" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
               if (categories.length === 0 && countries.length === 0) return null;
 
               return (
@@ -461,26 +238,6 @@ export function Company360Modal({ isOpen, onClose, companyData }: Company360Moda
 
             {/* Adverse Media */}
             {(() => {
-              if (isFetchingCroftz) {
-                return (
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                      <Newspaper className="w-3.5 h-3.5" /> Adverse Media Analysis
-                    </h3>
-                    <div className="flex flex-wrap gap-4 mb-4">
-                      <Skeleton className="h-8 w-24 rounded-xl" />
-                      <Skeleton className="h-8 w-20 rounded-xl" />
-                      <Skeleton className="h-8 w-32 rounded-xl" />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                      <Skeleton className="h-6 w-24 rounded-full" />
-                      <Skeleton className="h-6 w-16 rounded-full" />
-                    </div>
-                  </div>
-                );
-              }
-
               if (!adverseMedia || !sentimentColors) return null;
 
               return (
