@@ -333,7 +333,7 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
             <div className="grid grid-cols-2 gap-y-6 gap-x-8">
               <div>
                 <p className="text-xs text-slate-500 mb-1">Name</p>
-                <p className="font-bold text-slate-900">Martin Pescador</p>
+                <p className="font-bold text-slate-900">{displayName}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-1">Relevance</p>
@@ -368,38 +368,6 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
               <span className="font-bold text-slate-700">Sanction Details</span>
             </div>
             <ChevronDown className="w-5 h-5 text-slate-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative opacity-75 hover:opacity-100 transition-opacity">
-          <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-3 items-center">
-                <Badge className="bg-emerald-500 hover:bg-emerald-600">Low Risk</Badge>
-                <span className="text-emerald-600 font-semibold text-sm">100% Match</span>
-              </div>
-              <Switch checked={false} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Name</p>
-                <p className="font-bold text-slate-900">kingfisher</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Relevance</p>
-                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">For Review</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Countries</p>
-                <p className="font-bold text-slate-900">-</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">DOB</p>
-                <p className="font-bold text-slate-900">Not Available</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
