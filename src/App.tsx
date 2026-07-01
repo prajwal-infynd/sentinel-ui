@@ -69,16 +69,17 @@ const App = () => (
                 <Route path="companies" element={<PortfolioOnboarding key="force-reset-2" />} />
                 <Route path="watchlists" element={<MonitorWatchlists />} />
                 <Route path="risk-analytics" element={<MonitorRiskAnalytics />} />
-                <Route path="ai-agent" element={<AIAgents />} />
                 <Route path="reports" element={<MonitorReports />} />
               </Route>
+              
+              <Route path="/ai-agent" element={<AIAgents />} />
               
               {/* Legacy redirects */}
               <Route path="/dashboard" element={<Navigate to="/monitor/dashboard" replace />} />
               <Route path="/portfolio" element={<Navigate to="/monitor/companies" replace />} />
               <Route path="/alerts" element={<Navigate to="/monitor/alerts" replace />} />
               <Route path="/investigations" element={<Navigate to="/monitor/investigations" replace />} />
-              <Route path="/agents" element={<Navigate to="/monitor/ai-agent" replace />} />
+              <Route path="/agents" element={<Navigate to="/ai-agent" replace />} />
 
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/investigations/:id" element={<Investigation />} />

@@ -13,7 +13,6 @@ const tabs = [
   { name: 'Monitored Companies', path: '/monitor/companies', icon: Building2 },
   { name: 'Watchlists', path: '/monitor/watchlists', icon: Bookmark },
   { name: 'Risk Analytics', path: '/monitor/risk-analytics', icon: BarChart3 },
-  { name: 'AI Agent', path: '/monitor/ai-agent', icon: Bot },
   { name: 'Reports', path: '/monitor/reports', icon: FileText },
 ];
 
