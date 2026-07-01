@@ -63,7 +63,6 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
         <div className="h-20 w-20 rounded-full bg-slate-300 flex items-center justify-center mb-3">
           <span className="text-3xl text-white font-bold">{displayName.charAt(0)}</span>
         </div>
-        <Badge className="bg-red-600 hover:bg-red-700 text-white border-none absolute top-6 right-6">Match</Badge>
         <h2 className="text-xl font-bold text-slate-900">{displayName}</h2>
         
         <div className="w-full mt-6 space-y-3 text-sm">
