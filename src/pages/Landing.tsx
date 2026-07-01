@@ -15,8 +15,8 @@ export default function Landing() {
 
   // Form State
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("superadmin@sentinel.com");
+  const [password, setPassword] = useState("harish@123");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
