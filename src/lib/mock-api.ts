@@ -16,7 +16,7 @@ export const ROLES = {
 };
 
 let mockUsers = [
-  { id: 1, name: "Super Admin User", roleId: 1, email: "superadmin@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
+  { id: 1, name: "Super Admin User", roleId: 1, email: "superadmin@sentinel.com", password: "harish@123", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
   { id: 2, name: "Owner User", roleId: 2, email: "owner@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
   { id: 3, name: "Standard User", roleId: 3, email: "user@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
 ];
