@@ -36,6 +36,27 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
     { subject: 'Sanctions', A: 90, fullMark: 100 },
   ];
 
+  const data = {
+    registry: {
+      registrationNumber: `CRN-${Math.floor(Math.random() * 10000000)}`,
+      incorporationDate: "2018-05-12",
+      jurisdiction: "United Kingdom",
+      companyType: "Private Limited Company",
+      status: "Active",
+      registeredAddress: "123 Business Road, London, UK, EC1A 1BB"
+    },
+    personnel: {
+      directors: [
+        { name: "John Doe", role: "Director", appointed: "2018-05-12" },
+        { name: "Jane Smith", role: "Secretary", appointed: "2019-11-01" }
+      ],
+      shareholders: [
+        { name: "Global Holdings LLC", percentage: 60 },
+        { name: "John Doe", percentage: 40 }
+      ]
+    }
+  };
+
   const renderSidebar = () => (
     <div className="w-80 border-r bg-slate-50/50 p-6 flex flex-col h-full overflow-y-auto">
       <div className="flex flex-col items-center mb-6">
@@ -385,6 +406,85 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
     </div>
   );
 
+  const renderKeyData = () => (
+    <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+        <FileText className="w-6 h-6 text-slate-400" />
+        Key Corporate Data
+      </h3>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+          <h4 className="font-bold text-slate-800 text-lg">Corporate Registry Details</h4>
+        </div>
+        <div className="p-6 grid grid-cols-2 gap-6">
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Registration Number</p>
+            <p className="font-semibold text-slate-900">{data.registry.registrationNumber}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Incorporation Date</p>
+            <p className="font-semibold text-slate-900">{data.registry.incorporationDate}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Jurisdiction</p>
+            <p className="font-semibold text-slate-900">{data.registry.jurisdiction}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Company Type</p>
+            <p className="font-semibold text-slate-900">{data.registry.companyType}</p>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Status</p>
+            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none">{data.registry.status}</Badge>
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 mb-1">Registered Address</p>
+            <p className="font-semibold text-slate-900">{data.registry.registeredAddress}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200">
+          <h4 className="font-bold text-slate-800 text-lg">Key Personnel</h4>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <h5 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">Directors & Officers</h5>
+            <div className="space-y-3">
+              {data.personnel.directors.map((d, i) => (
+                <div key={i} className="flex justify-between items-center p-3 border border-slate-100 rounded-lg bg-slate-50/50">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-900">{d.name}</span>
+                    <span className="text-xs text-slate-500">Appointed: {d.appointed}</span>
+                  </div>
+                  <Badge variant="outline" className="bg-white">{d.role}</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h5 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">Major Shareholders</h5>
+            <div className="space-y-3">
+              {data.personnel.shareholders.map((s, i) => (
+                <div key={i} className="flex justify-between items-center p-3 border border-slate-100 rounded-lg bg-slate-50/50">
+                  <span className="font-bold text-slate-900">{s.name}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-500" style={{ width: `${s.percentage}%` }}></div>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-600">{s.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
@@ -398,8 +498,9 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
             {activeTab === "Risk Analysis" && renderRiskAnalysis()}
             {activeTab === "Risk Weightage" && renderRiskWeightage()}
             {activeTab === "Person AML Screening" && renderPersonAMLScreening()}
+            {activeTab === "Key Data" && renderKeyData()}
             {/* Fallback for other tabs */}
-            {!["Risk Analysis", "Risk Weightage", "Person AML Screening"].includes(activeTab) && (
+            {!["Risk Analysis", "Risk Weightage", "Person AML Screening", "Key Data"].includes(activeTab) && (
               <div className="flex flex-col items-center justify-center h-[500px] text-slate-400">
                 <HelpCircle className="w-16 h-16 mb-4 opacity-20" />
                 <p>Content for {activeTab} is not available in this mockup.</p>
