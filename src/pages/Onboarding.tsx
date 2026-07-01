@@ -8,7 +8,8 @@ import {
   ChevronRight, Plus, FileText 
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { CompanyOnboardingModal } from "@/components/CompanyOnboardingModal";
+import { CompanyOnboardingDrawer } from "@/components/CompanyOnboardingDrawer";
+import { DocumentVerificationDrawer } from "@/components/DocumentVerificationDrawer";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
@@ -103,6 +104,7 @@ export default function Onboarding() {
   const [selectedFilter, setSelectedFilter] = useState("All");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
+  const [isDocVerifyOpen, setIsDocVerifyOpen] = useState(false);
   const [newCompanyName, setNewCompanyName] = useState("");
   const [applications, setApplications] = useState(MOCK_DATA);
 
@@ -135,10 +137,7 @@ export default function Onboarding() {
   });
 
   const handleDocumentVerification = () => {
-    toast({
-      title: "Coming soon",
-      description: "Document verification feature is currently under development.",
-    });
+    setIsDocVerifyOpen(true);
   };
 
   const handleAddToMonitor = (e: React.MouseEvent, row: any) => {
@@ -349,12 +348,17 @@ export default function Onboarding() {
       </div>
 
       {selectedCompany && (
-        <CompanyOnboardingModal
+        <CompanyOnboardingDrawer
           isOpen={!!selectedCompany}
           onClose={() => setSelectedCompany(null)}
           companyName={selectedCompany}
         />
       )}
+
+      <DocumentVerificationDrawer 
+        isOpen={isDocVerifyOpen}
+        onClose={() => setIsDocVerifyOpen(false)}
+      />
 
       {/* Add Company Dialog */}
       <Dialog open={isAddCompanyOpen} onOpenChange={setIsAddCompanyOpen}>
