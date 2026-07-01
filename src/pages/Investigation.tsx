@@ -120,7 +120,10 @@ const Investigation = () => {
     poll();
     return () => { stopped = true; };
   }, [isCroftzAlert, croftzInvestigationId]);
-  const activeData: any = liveInvData || (isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null));
+  // liveInvData can be a raw string if the AI agent's reply failed to parse as JSON server-side
+  // (e.g. it was truncated mid chain-of-thought and never emitted valid structured data).
+  const liveInvDataObj = liveInvData && typeof liveInvData === "object" ? liveInvData : null;
+  const activeData: any = liveInvDataObj || (isMockAgent ? mockAgentData.result.reply : (isKlodev ? klodevData : null));
   const entity = caseData?.entity || location.state?.entity || {
     name: "Global Tech Inc.",
     entity_type: "company",
@@ -468,8 +471,8 @@ const Investigation = () => {
             </div>
             <h1 className="text-2xl font-bold tracking-tight mb-2 text-foreground">{activeData ? activeData.triggerEvent : (entity.latest_signal || "Adverse media hit — suspected fraud exposure")}</h1>
             <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground">
-              <span className="flex items-center gap-1.5">{isCompany ? <Building className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />} {activeData ? activeData.masterEntityProfile.fullName : entity.name}</span>
-              <span className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> {activeData ? activeData.masterEntityProfile.jurisdiction : entity.jurisdiction}</span>
+              <span className="flex items-center gap-1.5">{isCompany ? <Building className="h-4 w-4 text-primary" /> : <User className="h-4 w-4 text-primary" />} {activeData ? (activeData.masterEntityProfile?.fullName || entity.name) : entity.name}</span>
+              <span className="flex items-center gap-1.5"><Globe className="h-4 w-4 text-primary" /> {activeData ? (activeData.masterEntityProfile?.jurisdiction || entity.jurisdiction) : entity.jurisdiction}</span>
               <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary" /> {activeData ? activeData.timestamp : "2024-03-15 14:23 UTC"}</span>
               <span className="flex items-center gap-1.5"><ExternalLink className="h-4 w-4 text-primary" /> {activeData ? activeData.source : "Sentinel AI Source"}</span>
             </div>
@@ -743,7 +746,7 @@ const Investigation = () => {
             <div className="rounded-2xl border border-border/50 bg-white/50 shadow-sm p-5 space-y-5">
               <h3 className="text-base font-bold tracking-tight flex items-center gap-2"><Brain className="h-5 w-5 text-indigo-500" /> AI-Generated Summary</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {activeData ? activeData.summary.aiGeneratedSummary : (
+                {activeData?.summary?.aiGeneratedSummary || (
                   <>
                     Sentinel AI analysis of recent signals for <span className="font-bold text-foreground">{entity.name}</span> indicates a {entity.latest_signal?.toLowerCase() || 'potential risk exposure'}. 
                     {isCompany ? " The corporate entity's recent activities have matched against key regulatory flags, triggering a heightened risk profile." : " The individual has been identified across multiple data points suggesting involvement in monitored activities."}
@@ -753,7 +756,7 @@ const Investigation = () => {
               <div className="space-y-3 pt-2">
                 <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Matched Fields</h4>
                 <div className="flex flex-wrap gap-2">
-                  {(activeData ? activeData.summary.matchedFields : ["Full name match", "DOB confirmed", "UK jurisdiction", "Known associate"]).map((f: string) => (
+                  {(activeData?.summary?.matchedFields || ["Full name match", "DOB confirmed", "UK jurisdiction", "Known associate"]).map((f: string) => (
                     <Badge key={f} variant="outline" className="text-[10px] font-bold uppercase tracking-wider bg-white">{f}</Badge>
                   ))}
                 </div>
@@ -861,7 +864,7 @@ const Investigation = () => {
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-4 relative z-10">Sentinel Intelligence Network</div>
               <div className="prose prose-sm text-sm text-muted-foreground max-w-none space-y-4 relative z-10">
                 {activeData ? (
-                  <p>{activeData.sourceEvidence.description}</p>
+                  <p>{activeData.sourceEvidence?.description || "No source evidence description available."}</p>
                 ) : (
                   <>
                     <p>Recent sweeps have identified <mark className="bg-warning/20 text-warning-foreground font-semibold px-1 rounded">{entity.name}</mark> ({entity.jurisdiction}) in connection with {entity.latest_signal || "elevated risk activities"}.</p>
@@ -875,7 +878,7 @@ const Investigation = () => {
               <h3 className="text-base font-bold tracking-tight mb-5 flex items-center gap-2"><Shield className="h-5 w-5 text-indigo-500" /> Sanctions Match</h3>
               <div className="space-y-4 text-sm">
                 {activeData ? (
-                  activeData.sourceEvidence.sanctionsMatch && activeData.sourceEvidence.sanctionsMatch.length > 0 ? (
+                  activeData.sourceEvidence?.sanctionsMatch && activeData.sourceEvidence.sanctionsMatch.length > 0 ? (
                     activeData.sourceEvidence.sanctionsMatch.map((match: any, idx: number) => (
                       <div key={idx} className="p-4 rounded-xl bg-warning/5 border border-warning/30 shadow-sm relative overflow-hidden">
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-warning" />
@@ -919,12 +922,12 @@ const Investigation = () => {
               <h3 className="text-base font-bold tracking-tight mb-6">Master Entity Profile</h3>
               <div className="grid sm:grid-cols-2 gap-6">
                 {(activeData ? [
-                  ["Company Name", activeData.masterEntityProfile.fullName],
-                  ["Aliases", activeData.masterEntityProfile.aliases.join(", ")],
-                  ["Incorporation Date", activeData.masterEntityProfile.dateOfBirth || "N/A"],
-                  ["Jurisdiction", activeData.masterEntityProfile.jurisdiction],
-                  ["Identifiers", activeData.masterEntityProfile.identifiers.map((i:any) => `${i.type}: ${i.value}`).join(" | ")],
-                  ["Linked Jurisdictions", activeData.masterEntityProfile.linkedJurisdictions.join(", ")]
+                  ["Company Name", activeData.masterEntityProfile?.fullName || entity.name],
+                  ["Aliases", (activeData.masterEntityProfile?.aliases || []).join(", ") || "None registered"],
+                  ["Incorporation Date", activeData.masterEntityProfile?.dateOfBirth || "N/A"],
+                  ["Jurisdiction", activeData.masterEntityProfile?.jurisdiction || entity.jurisdiction],
+                  ["Identifiers", (activeData.masterEntityProfile?.identifiers || []).map((i:any) => `${i.type}: ${i.value}`).join(" | ") || "N/A"],
+                  ["Linked Jurisdictions", (activeData.masterEntityProfile?.linkedJurisdictions || []).join(", ") || "N/A"]
                 ] : [
                   [isCompany ? "Company Name" : "Full Name", entity.name],
                   ["Aliases", isCompany ? "None registered" : "J. Doe, Johan Doe, JMD"],
@@ -944,10 +947,10 @@ const Investigation = () => {
               <h3 className="text-base font-bold tracking-tight mb-6">Risk Indicators</h3>
               <div className="space-y-4">
                 {(activeData ? [
-                  { label: "Sanctions Lists", count: activeData.masterEntityProfile.riskIndicators.sanctionsLists || 0, color: "text-success bg-success/10 border-success/20" },
-                  { label: "PEP Associations", count: activeData.masterEntityProfile.riskIndicators.pepAssociations || 0, color: "text-success bg-success/10 border-success/20" },
-                  { label: "Adverse Media", count: activeData.masterEntityProfile.riskIndicators.adverseMedia || 0, color: "text-destructive bg-destructive/10 border-destructive/20" },
-                  { label: "Watchlist Memberships", count: activeData.masterEntityProfile.riskIndicators.watchlistMemberships || 0, color: "text-success bg-success/10 border-success/20" },
+                  { label: "Sanctions Lists", count: activeData.masterEntityProfile?.riskIndicators?.sanctionsLists || 0, color: "text-success bg-success/10 border-success/20" },
+                  { label: "PEP Associations", count: activeData.masterEntityProfile?.riskIndicators?.pepAssociations || 0, color: "text-success bg-success/10 border-success/20" },
+                  { label: "Adverse Media", count: activeData.masterEntityProfile?.riskIndicators?.adverseMedia || 0, color: "text-destructive bg-destructive/10 border-destructive/20" },
+                  { label: "Watchlist Memberships", count: activeData.masterEntityProfile?.riskIndicators?.watchlistMemberships || 0, color: "text-success bg-success/10 border-success/20" },
                 ] : [
                   { label: "Sanctions Lists", count: 0, color: "text-success bg-success/10 border-success/20" },
                   { label: "PEP Associations", count: 1, color: "text-warning bg-warning/10 border-warning/20" },
@@ -1063,7 +1066,7 @@ const Investigation = () => {
               
               <div className="overflow-x-auto rounded-xl border border-border/50">
                 <Table>
-                  {activeData && activeData.masterEntityProfile.keyPersonnel ? (
+                  {activeData && activeData.masterEntityProfile?.keyPersonnel ? (
                     <>
                       <TableHeader className="bg-slate-50/80">
                         <TableRow className="border-border/50">
@@ -1222,7 +1225,7 @@ const Investigation = () => {
             </div>
             <h3 className="text-base font-bold tracking-tight flex items-center gap-2 relative z-10"><Brain className="h-5 w-5 text-indigo-500" /> AI Reasoning Chain</h3>
             <div className="space-y-6 relative z-10">
-              {(activeData ? activeData.aiReasoningChain.map((s:any) => ({ step: s.title, detail: s.details })) : [
+              {(activeData?.aiReasoningChain ? activeData.aiReasoningChain.map((s:any) => ({ step: s.title, detail: s.details })) : [
                 { step: "Sources Checked", detail: "OFAC SDN, EU Consolidated, UN Sanctions, UK HMT, 2,847 media sources" },
                 { step: "Entities Extracted", detail: "3 named entities from FT article matched against portfolio: John Doe (94%), BVI Holdings (67%), J. Doe Associates (45%)" },
                 { step: "Matching Confidence", detail: "Primary entity: 94% confidence based on full name, DOB, and jurisdiction alignment" },

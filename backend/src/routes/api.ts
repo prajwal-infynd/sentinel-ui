@@ -138,6 +138,25 @@ async function processInvestigation(investigationId: string, alert: any, crawlDa
     const reply = parseAgentReply(pollResult);
 
     const screening = myCache.get(`screening_${alert.screeningId}`) as any;
+
+    // parseAgentReply couldn't turn the reply into an object — the agent likely hit its
+    // token limit mid chain-of-thought and never emitted the JSON payload. Surface this as
+    // an error instead of caching the raw reasoning text as "completed" investigation data.
+    if (!reply || typeof reply !== "object") {
+      setInvestigation(investigationId, {
+        ...existing,
+        status: "error",
+        error: "AI agent did not return valid structured data",
+        rawResult: pollResult.result,
+        alert,
+        adverseMedia: screening?.adverseMedia || [],
+        screeningData: screening?.screeningData || null,
+        completedAt: new Date().toISOString()
+      });
+      console.error(`[Investigation] ${investigationId} → agent reply was not valid JSON`);
+      return;
+    }
+
     setInvestigation(investigationId, {
       ...existing,
       status: "completed",
