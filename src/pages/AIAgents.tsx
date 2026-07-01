@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/DashboardLayout";
 
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -54,8 +55,10 @@ const AIAgents = () => {
   };
 
   return (
-    <div className="w-full h-full">
-      <div className="space-y-6 p-6">
+    <DashboardLayout>
+      <div className="min-h-screen bg-[#F8F9FC] font-sans text-slate-800">
+        <div className="max-w-screen-2xl mx-auto px-6 py-8">
+          <div className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
           <div>
             <div className="mb-2">
@@ -423,7 +426,9 @@ const AIAgents = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
