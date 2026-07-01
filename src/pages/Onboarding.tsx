@@ -139,12 +139,32 @@ export default function Onboarding() {
     });
   };
 
-  const handleAddToMonitor = (e: React.MouseEvent, companyName: string) => {
+  const handleAddToMonitor = (e: React.MouseEvent, row: any) => {
     e.stopPropagation();
-    toast({
-      title: "Added to Monitor",
-      description: `${companyName} has been added to your monitoring list.`,
-    });
+    try {
+      const existingStr = localStorage.getItem('sentinel_portfolio_rows');
+      const existingRows = existingStr ? JSON.parse(existingStr) : [];
+      
+      if (!existingRows.some((r: any) => r.name === row.name)) {
+        existingRows.push({
+          name: row.name,
+          entityType: "company",
+          riskScore: row.safetyScore ? Math.max(0, 100 - row.safetyScore) : 50,
+          jurisdiction: "Unknown",
+          identifiers: {
+            sector: row.industry || "Unknown",
+          }
+        });
+        localStorage.setItem('sentinel_portfolio_rows', JSON.stringify(existingRows));
+      }
+      
+      toast({
+        title: "Added to Monitor",
+        description: `${row.name} has been added to your monitoring list.`,
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const renderChecks = (checks: string[]) => {
@@ -304,7 +324,7 @@ export default function Onboarding() {
                           variant="outline" 
                           size="sm" 
                           className="h-8 text-xs gap-1"
-                          onClick={(e) => handleAddToMonitor(e, row.name)}
+                          onClick={(e) => handleAddToMonitor(e, row)}
                         >
                           <Plus className="w-3 h-3" />
                           Add to Monitor
