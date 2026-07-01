@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { 
   Printer, Download, ChevronDown, ChevronRight, Globe, AlertCircle, 
-  CheckCircle2, Search, FileText, Activity, ShieldAlert, FileWarning, HelpCircle
+  CheckCircle2, Search, FileText, Activity, ShieldAlert, FileWarning, HelpCircle, Database
 } from "lucide-react";
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer 
@@ -110,7 +110,8 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
           { id: "Key Data", icon: FileText },
           { id: "Risk Analysis", icon: Activity },
           { id: "Risk Weightage", icon: ShieldAlert },
-          { id: "Person AML Screening", icon: Search }
+          { id: "Person AML Screening", icon: Search },
+          { id: "Searched Databases", icon: Database }
         ].map((item) => (
           <button
             key={item.id}
@@ -453,6 +454,42 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
     </div>
   );
 
+  const renderSearchedDatabases = () => {
+    const databases = [
+      "UNSCR Sanctions List", "CoE Parliamentary Assembly",
+      "US OFAC Consolidated List", "DEA Most Wanted",
+      "EU Sanctions List", "EU Designated Terrorists",
+      "OFAC SDN List", "EU Members of Parliament",
+      "UK HM Treasury Financial Sanctions Targets", "GB Consolidated List of Targets",
+      "UAE Local Terrorist List", "Personas de Interes",
+      "India SEBI Debarred Entities List", "SAT 69B",
+      "UAE National List of Terrorist Individuals and Entities", "Swiss SECO Sanctions",
+      "India Ministry of Corporate Affairs - List of Proclaimed Offenders", "UK Bank of England Sanctions list",
+      "Interpol Red Notices", "UK Most Wanted"
+    ];
+
+    return (
+      <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+            <Database className="w-6 h-6 text-slate-400" />
+            Searched Databases
+          </h3>
+          <span className="text-sm text-slate-500 font-medium">{databases.length} Databases Searched</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {databases.map((db, idx) => (
+            <div key={idx} className="flex items-center gap-3 p-4 bg-white border border-slate-200 rounded-xl hover:shadow-sm transition-all hover:border-emerald-200">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <span className="font-medium text-slate-700">{db}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
@@ -467,8 +504,9 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
             {activeTab === "Risk Weightage" && renderRiskWeightage()}
             {activeTab === "Person AML Screening" && renderPersonAMLScreening()}
             {activeTab === "Key Data" && renderKeyData()}
+            {activeTab === "Searched Databases" && renderSearchedDatabases()}
             {/* Fallback for other tabs */}
-            {!["Risk Analysis", "Risk Weightage", "Person AML Screening", "Key Data"].includes(activeTab) && (
+            {!["Risk Analysis", "Risk Weightage", "Person AML Screening", "Key Data", "Searched Databases"].includes(activeTab) && (
               <div className="flex flex-col items-center justify-center h-[500px] text-slate-400">
                 <HelpCircle className="w-16 h-16 mb-4 opacity-20" />
                 <p>Content for {activeTab} is not available in this mockup.</p>
