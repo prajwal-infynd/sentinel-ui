@@ -1,7 +1,7 @@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import {
-  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert, Activity, Brain
+  LayoutDashboard, Briefcase, AlertTriangle, Search, Bot, Database, Shield, BarChart3, Settings, Zap, Users, Newspaper, ShieldAlert, Activity, Brain, UserPlus
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -13,14 +13,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 const mainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Monitoring", url: "/portfolio", icon: Briefcase },
-  { title: "Live Alerts", url: "/alerts", icon: AlertTriangle },
-  { title: "Investigations", url: "/investigations", icon: Search },
+  { title: "Onboarding", url: "/onboarding", icon: UserPlus },
+  { title: "Monitoring", url: "/monitor/dashboard", icon: Briefcase },
 ];
 
 const platformItems = [
-  { title: "AI Agents", url: "/agents", icon: Bot },
   { 
     title: "Data Sources", 
     url: "/architecture", 
@@ -29,6 +26,7 @@ const platformItems = [
       { title: "External Data", url: "/architecture/external" },
       { title: "Custom Data", url: "/architecture/custom" },
       { title: "Infynd Data", url: "/architecture/infynd" },
+      { title: "Crawling Data", url: "/architecture/crawling" },
     ]
   },
   { title: "Policy Layer", url: "/policy", icon: Shield },

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import DemoEntry from "./pages/DemoEntry";
 import PortfolioOnboarding from "./pages/PortfolioOnboarding";
+import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import LiveAlerts from "./pages/LiveAlerts";
 import Investigation from "./pages/Investigation";
@@ -14,11 +15,17 @@ import AIAgents from "./pages/AIAgents";
 import ExternalData from "./pages/data/ExternalData";
 import CustomData from "./pages/data/CustomData";
 import InfyndData from "./pages/data/InfyndData";
+import CrawlingData from "./pages/data/CrawlingData";
 import PolicyConfig from "./pages/PolicyConfig";
 import AIGovernance from "./pages/AIGovernance";
 import Reporting from "./pages/Reporting";
 import DemoClosing from "./pages/DemoClosing";
 import NotFound from "./pages/NotFound";
+import { MonitorLayout } from "@/components/MonitorLayout";
+import MonitorNewsFeed from "./pages/monitor/MonitorNewsFeed";
+import MonitorWatchlists from "./pages/monitor/MonitorWatchlists";
+import MonitorRiskAnalytics from "./pages/monitor/MonitorRiskAnalytics";
+import MonitorReports from "./pages/monitor/MonitorReports";
 import MediaDashboard from "./pages/media/MediaDashboard";
 import MediaSources from "./pages/media/MediaSources";
 import MediaPipeline from "./pages/media/MediaPipeline";
@@ -54,16 +61,33 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/demo" element={<DemoEntry />} />
-              <Route path="/portfolio" element={<PortfolioOnboarding key="force-reset-2" />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/alerts" element={<LiveAlerts />} />
-              <Route path="/investigations" element={<InvestigationsList />} />
+              <Route path="/monitor" element={<MonitorLayout />}>
+                <Route index element={<Navigate to="/monitor/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="news-feed" element={<MonitorNewsFeed />} />
+                <Route path="investigations" element={<InvestigationsList />} />
+                <Route path="companies" element={<PortfolioOnboarding key="force-reset-2" />} />
+                <Route path="watchlists" element={<MonitorWatchlists />} />
+                <Route path="risk-analytics" element={<MonitorRiskAnalytics />} />
+                <Route path="ai-agent" element={<AIAgents />} />
+                <Route path="reports" element={<MonitorReports />} />
+              </Route>
+              
+              {/* Legacy redirects */}
+              <Route path="/dashboard" element={<Navigate to="/monitor/dashboard" replace />} />
+              <Route path="/portfolio" element={<Navigate to="/monitor/companies" replace />} />
+              <Route path="/alerts" element={<Navigate to="/monitor/alerts" replace />} />
+              <Route path="/investigations" element={<Navigate to="/monitor/investigations" replace />} />
+              <Route path="/agents" element={<Navigate to="/monitor/ai-agent" replace />} />
+
+              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/investigations/:id" element={<Investigation />} />
-              <Route path="/agents" element={<AIAgents />} />
+              
               <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
               <Route path="/architecture/external" element={<ExternalData />} />
               <Route path="/architecture/custom" element={<CustomData />} />
               <Route path="/architecture/infynd" element={<InfyndData />} />
+              <Route path="/architecture/crawling" element={<CrawlingData />} />
               <Route path="/policy" element={<PolicyConfig />} />
               <Route path="/governance" element={<AIGovernance />} />
               <Route path="/reporting" element={<Reporting />} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { AlertTriangle, Sparkles, Brain, AlertCircle, Database, ShieldCheck, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -138,19 +138,12 @@ const Dashboard = () => {
     : mockCriticalAlerts;
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-[#F8F9FC] font-sans pb-12 text-slate-800">
+    <>
+      <div className="font-sans text-slate-800">
         
         {/* Main Content Area */}
-        <div className="max-w-screen-2xl mx-auto px-6 py-8">
+        <div className="mx-auto">
           
-          {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Dashboard</h1>
-            <p className="text-[14px] text-slate-500 max-w-4xl leading-relaxed">
-              An AI-powered risk analyst continuously monitoring every customer on your portfolio — proactively telling you what matters before it becomes a problem.
-            </p>
-          </div>
 
           {/* KPI Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -305,7 +298,7 @@ const Dashboard = () => {
 
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 };
 

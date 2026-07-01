@@ -7,7 +7,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, Loader2, FileJson, ArrowRight, S
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { KybMonitorModal } from "@/components/portfolio/KybMonitorModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -19,7 +19,7 @@ import { toast } from "@/components/ui/use-toast";
 import { importMonitoredEntities, fetchSamplePreview, startAdverseMediaScreening, agentPortfolioEnrich, type MonitoredEntityImportRow } from "@/lib/dashboard-data";
 import { runMediaAgent } from "@/lib/media-agent-data";
 import { Company360Modal } from "@/components/Company360Modal";
-
+import { useInvestigations } from "@/context/InvestigationsContext";
 const normalizeKey = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 
 const splitMultiValue = (value: unknown) =>
@@ -135,6 +135,7 @@ const getPageNumbers = (currentPage: number, totalPages: number) => {
 };
 
 const PortfolioOnboarding = () => {
+  const { addCase } = useInvestigations();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -152,7 +153,14 @@ const PortfolioOnboarding = () => {
   // Modal State
   const [selectedCompany360, setSelectedCompany360] = useState<any | null>(null);
 
-  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>([]);
+  const [importedDataRows, setImportedDataRows] = useState<MonitoredEntityImportRow[]>(() => {
+    const saved = localStorage.getItem('sentinel_portfolio_rows');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sentinel_portfolio_rows', JSON.stringify(importedDataRows));
+  }, [importedDataRows]);
 
   const [parseError, setParseError] = useState<string | null>(null);
   const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
@@ -385,9 +393,22 @@ const PortfolioOnboarding = () => {
         description: "Sending extracted data to Agent Studio for enrichment...",
       });
 
-      const { result: agentFinalResult } = await agentPortfolioEnrich(crawlerData);
-      if (!agentFinalResult) throw new Error("Agent Studio returned empty result");
-      console.log("AGENT STUDIO FINAL RESULT:", agentFinalResult);
+      let agentFinalResult = null;
+      try {
+        const enrichResponse = await agentPortfolioEnrich(crawlerData);
+        agentFinalResult = enrichResponse?.result;
+        if (!agentFinalResult) throw new Error("Agent Studio returned empty result");
+        console.log("AGENT STUDIO FINAL RESULT:", agentFinalResult);
+      } catch (enrichErr) {
+        console.warn("Agent Studio enrichment failed, falling back to raw crawler data:", enrichErr);
+        toast({
+          title: "AI Enrichment Failed",
+          description: "Using raw crawler data instead.",
+          variant: "destructive"
+        });
+        // Fallback to raw crawler data if the AI agent crashes (status 500)
+        agentFinalResult = crawlerData;
+      }
 
       // ── Close dialog IMMEDIATELY ──
       setIsCrawlerDialogOpen(false);
@@ -451,12 +472,25 @@ const PortfolioOnboarding = () => {
         ).split("|")[0].trim();
 
         startAdverseMediaScreening(companyFullName, crawlerData)
-          .then(({ alertCount }) => {
+          .then(({ alertCount, alerts }) => {
             if (alertCount > 0) {
               toast({
                 title: `Adverse Media Found`,
                 description: `${alertCount} alert(s) detected for ${companyFullName}. Check the Alerts page.`
               });
+              
+              if (alerts && alerts.length > 0) {
+                const highestScore = Math.max(...alerts.map(a => a.riskScore || 0), 60);
+                addCase({
+                  entity: {
+                    name: companyFullName || "Unknown Entity",
+                    entity_type: "company",
+                    jurisdiction: profile.jurisdiction || profile.ipCountry || "Unknown",
+                    latest_signal: alerts[0].title || "Adverse Media Mention",
+                    risk_score: highestScore
+                  }
+                });
+              }
             }
           })
           .catch(err => console.warn("[Adverse Media] Screening unavailable:", err));
@@ -807,6 +841,30 @@ const PortfolioOnboarding = () => {
       // Persist to node-cache
       importMonitoredEntities(mapped).then(() => {
         queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
+        
+        // Trigger adverse media screening for each uploaded entity
+        mapped.forEach(entity => {
+          if (entity.name && entity.name !== "Unknown Entity") {
+            startAdverseMediaScreening(entity.name, null).then(({ alerts }) => {
+              if (alerts && alerts.length > 0) {
+                const highestScore = Math.max(...alerts.map((a: any) => a.riskScore || 0), 60);
+                addCase({
+                  entity: {
+                    name: entity.name,
+                    entity_type: entity.entityType || "company",
+                    jurisdiction: entity.jurisdiction || "Unknown",
+                    latest_signal: alerts[0].title || "Adverse Media Mention",
+                    risk_score: highestScore
+                  }
+                });
+                toast({
+                  title: `Adverse Media Found`,
+                  description: `${alerts.length} alert(s) detected for ${entity.name}. Check the Alerts page.`
+                });
+              }
+            }).catch(e => console.warn("Background screening failed", e));
+          }
+        });
       }).catch(err => console.error("Failed to persist to node cache", err));
       
       toast({ title: "File parsed", description: `${mapped.length} monitored entities are ready for import.` });
@@ -855,6 +913,30 @@ const PortfolioOnboarding = () => {
       // Persist to node-cache
       importMonitoredEntities(mapped).then(() => {
         queryClient.invalidateQueries({ queryKey: ["portfolio-sample"] });
+        
+        // Trigger adverse media screening for each pasted entity
+        mapped.forEach(entity => {
+          if (entity.name && entity.name !== "Unknown Entity") {
+            startAdverseMediaScreening(entity.name, null).then(({ alerts }) => {
+              if (alerts && alerts.length > 0) {
+                const highestScore = Math.max(...alerts.map((a: any) => a.riskScore || 0), 60);
+                addCase({
+                  entity: {
+                    name: entity.name,
+                    entity_type: entity.entityType || "company",
+                    jurisdiction: entity.jurisdiction || "Unknown",
+                    latest_signal: alerts[0].title || "Adverse Media Mention",
+                    risk_score: highestScore
+                  }
+                });
+                toast({
+                  title: `Adverse Media Found`,
+                  description: `${alerts.length} alert(s) detected for ${entity.name}. Check the Alerts page.`
+                });
+              }
+            }).catch(e => console.warn("Background screening failed", e));
+          }
+        });
       }).catch(err => console.error("Failed to persist to node cache", err));
 
       toast({ title: "JSON Data Imported", description: `${mapped.length} entities are ready for onboarding.` });
@@ -866,8 +948,8 @@ const PortfolioOnboarding = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-[#F8F9FC] font-sans pb-12 text-slate-800">
+    <div className="w-full h-full">
+      <div className="font-sans text-slate-800">
         
         {/* Main Content Area */}
         <div className="max-w-screen-2xl mx-auto px-6 py-8">
@@ -1347,7 +1429,7 @@ const PortfolioOnboarding = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </div>
   );
 };
 

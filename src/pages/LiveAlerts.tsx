@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Filter, Sparkles, ExternalLink, AlertTriangle, TrendingDown, Clock, Tag, Shield, Loader2 } from "lucide-react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { useQuery } from "@tanstack/react-query";
 import { fetchAlerts, startInvestigation } from "@/lib/dashboard-data";
 import { useNavigate } from "react-router-dom";
@@ -105,7 +105,7 @@ const LiveAlerts = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="w-full h-full">
       <div className="flex h-[calc(100vh-3.5rem)] bg-white overflow-hidden">
 
         {/* Left Sidebar — Filters */}
@@ -197,10 +197,10 @@ const LiveAlerts = () => {
                           <button
                             onClick={() => handleView(alert, entityName)}
                             disabled={isLoadingThis}
-                            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 disabled:opacity-60"
+                            className="bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 disabled:opacity-60"
                           >
-                            {isLoadingThis && <Loader2 className="w-3 h-3 animate-spin" />}
-                            View
+                            {isLoadingThis ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+                            Move to Investigation
                           </button>
                         </div>
                       </div>
@@ -284,7 +284,7 @@ const LiveAlerts = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

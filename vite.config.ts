@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
+
       '/croftz-api': {
         target: 'https://croftzgo.com',
         changeOrigin: true,

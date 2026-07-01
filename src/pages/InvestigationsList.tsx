@@ -5,7 +5,7 @@ import {
   Search, Filter, Plus, ArrowUpRight, Clock, ShieldAlert,
   Building, User, AlertTriangle, CheckCircle2, ChevronRight, UploadCloud
 } from "lucide-react";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -100,7 +100,7 @@ const InvestigationsList = () => {
   }, [cases, searchQuery, activeFilter]);
 
   return (
-    <DashboardLayout>
+    <div className="w-full h-full">
       <div className="p-6 space-y-6 max-w-7xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
           <div>
@@ -311,7 +311,7 @@ const InvestigationsList = () => {
           </div>
         </motion.div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
