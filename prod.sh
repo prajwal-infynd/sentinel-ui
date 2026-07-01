@@ -10,6 +10,9 @@ fi
 
 mkdir -p logs
 
+echo "Installing backend dependencies..."
+(cd backend && npm install)
+
 echo "Starting backend on port 3600 in background..."
 nohup env NODE_OPTIONS='--dns-result-order=ipv4first' PORT=3600 npx ts-node backend/src/server.ts \
     > logs/backend.log 2>&1 &
