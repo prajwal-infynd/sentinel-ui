@@ -174,13 +174,55 @@ mock.onPost("/auth/notify-admin").reply((config) => {
   return [200, { status: "notification_sent", medium: "SES", recipient: "admin@sentinel.com" }];
 });
 
+// GET /admin/pending-users
+// Returns all users awaiting admin approval — mirrors Cognito ListUsers filtered by status
+mock.onGet("/admin/pending-users").reply(() => {
+  const pending = mockUsers.filter(u => u.status === "awaiting_approval").map(u => ({
+    id: u.id, name: u.name, firstName: u.firstName, lastName: u.lastName,
+    email: u.email, companyName: u.companyName, status: u.status,
+    role: ROLES[u.roleId as keyof typeof ROLES]?.name,
+  }));
+  return [200, pending];
+});
+
+// POST /admin/users/:id/approve
+// Mirrors: Cognito AdminEnableUser + AdminUpdateUserAttributes (set status=Active)
+// In production: also triggers SES welcome email via Lambda
+mock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/approve/);
+  if (match) {
+    const id = parseInt(match[1]);
+    const userIndex = mockUsers.findIndex(u => u.id === id);
+    if (userIndex !== -1) {
+      mockUsers[userIndex].status = "Active";
+      mockUsers[userIndex].roleId = 3; // Promote to standard User on approval
+      console.log(`[MOCK SES] Welcome email sent to: ${mockUsers[userIndex].email}`);
+      return [200, { success: true, message: "User approved and welcome email sent via SES." }];
+    }
+  }
+  return [404, { message: "User not found" }];
+});
+
+// POST /admin/users/:id/reject
+// Mirrors: Cognito AdminDeleteUser — remove user from pool on rejection  
+mock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/reject/);
+  if (match) {
+    const id = parseInt(match[1]);
+    mockUsers = mockUsers.filter(u => u.id !== id);
+    return [200, { success: true }];
+  }
+  return [404, { message: "User not found" }];
+});
+
 mock.onGet("/admin/users").reply(() => {
   const safeUsers = mockUsers.map((user) => {
-    const { password, ...rest } = user;
     return {
-      ...rest,
+      id: user.id, name: user.name, email: user.email,
+      companyName: user.companyName, tokensUsed: user.tokensUsed, cost: user.cost,
+      status: user.status,
       role: ROLES[user.roleId as keyof typeof ROLES]?.name,
-      permissions: computePermissions(user)
+      computedPermissions: computePermissions(user),
     };
   });
   return [200, safeUsers];

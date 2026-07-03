@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2, Search, Loader2 } from "lucide-react";
+import { Users, CreditCard, Activity, PieChart, TrendingUp, ShieldAlert, CheckCircle2, UserPlus, Database, MoreHorizontal, ShieldOff, Trash2, Search, Loader2, Clock, X, UserCheck, Building2 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,11 @@ import { fetchAuditLogs } from "@/lib/policy-data";
 
 const fetchUsers = async (): Promise<User[]> => {
   const { data } = await apiClient.get("/admin/users");
+  return data;
+};
+
+const fetchPendingUsers = async () => {
+  const { data } = await apiClient.get("/admin/pending-users");
   return data;
 };
 
@@ -49,6 +54,7 @@ export default function AdminPortal() {
   const [inviteRoleId, setInviteRoleId] = useState(3);
   const [invitePermissions, setInvitePermissions] = useState<string[]>([]);
   const [isInviting, setIsInviting] = useState(false);
+  const [approvingId, setApprovingId] = useState<number | null>(null);
 
   const { data: globalLogs, isLoading: isLogsLoading } = useQuery({ 
     queryKey: ["global-audit-logs"], 
@@ -59,6 +65,26 @@ export default function AdminPortal() {
     queryKey: ["admin-users"],
     queryFn: fetchUsers
   });
+
+  const { data: pendingUsers = [], refetch: refetchPending } = useQuery({
+    queryKey: ["admin-pending-users"],
+    queryFn: fetchPendingUsers,
+    refetchInterval: 5000, // Poll every 5s for demo
+  });
+
+  const approveUser = async (id: number) => {
+    setApprovingId(id);
+    await apiClient.post(`/admin/users/${id}/approve`);
+    refetch(); refetchPending();
+    toast({ title: "User Approved ✓", description: "User is now Active. Welcome email sent via SES." });
+    setApprovingId(null);
+  };
+
+  const rejectUser = async (id: number) => {
+    await apiClient.post(`/admin/users/${id}/reject`);
+    refetch(); refetchPending();
+    toast({ title: "User Rejected", description: "User has been removed from the approval queue.", variant: "destructive" });
+  };
 
   const filteredUsers = users.filter((u: any) => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -178,6 +204,67 @@ export default function AdminPortal() {
             </Dialog>
           )}
         </motion.div>
+
+        {/* Pending Approvals — Cognito awaiting_approval users */}
+        {pendingUsers.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <Card className="border-amber-200 bg-amber-50/50 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base text-amber-900">Pending Approvals</CardTitle>
+                      <CardDescription className="text-amber-700 text-xs">{pendingUsers.length} account{pendingUsers.length > 1 ? "s" : ""} awaiting admin sign-off</CardDescription>
+                    </div>
+                  </div>
+                  <Badge className="bg-amber-200 text-amber-800 border-none font-bold">{pendingUsers.length} pending</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {pendingUsers.map((u: any) => (
+                    <div key={u.id} className="flex items-center justify-between bg-white border border-amber-100 rounded-xl px-4 py-3 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-sm">
+                          {u.firstName?.[0]}{u.lastName?.[0]}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 text-sm">{u.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span>{u.email}</span>
+                            {u.companyName && <><span>·</span><span className="flex items-center gap-0.5"><Building2 className="w-3 h-3" />{u.companyName}</span></>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => rejectUser(u.id)}
+                          className="h-8 border-red-200 text-red-600 hover:bg-red-50 gap-1 font-medium"
+                        >
+                          <X className="w-3.5 h-3.5" /> Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => approveUser(u.id)}
+                          disabled={approvingId === u.id}
+                          className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1 font-medium"
+                        >
+                          {approvingId === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
