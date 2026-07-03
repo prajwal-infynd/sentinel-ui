@@ -415,10 +415,20 @@ const AIAgents = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="capabilities" className="m-0 h-full flex items-center justify-center text-slate-400">
-                <div className="text-center">
-                  <Database className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                  <p>Capabilities settings are not available in this mockup.</p>
+              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mb-8 text-center md:text-left">
+                  <h2 className="text-2xl font-bold text-slate-900">Capabilities</h2>
+                  <p className="text-slate-500 mt-2">Configure autonomous capabilities and guardrails for this agent.</p>
+                </div>
+                
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-900">Human approval</h3>
+                    <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
+                      Agent will pause and wait for your explicit approval before taking any action. You will receive an email notification when approval is needed.
+                    </p>
+                  </div>
+                  <Switch defaultChecked={true} className="data-[state=checked]:bg-indigo-600 mt-1" />
                 </div>
               </TabsContent>
               <TabsContent value="workflow" className="m-0 h-full flex items-center justify-center text-slate-400">
