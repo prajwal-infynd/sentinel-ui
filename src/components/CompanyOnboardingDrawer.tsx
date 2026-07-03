@@ -105,7 +105,6 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
 
       <div className="space-y-2 flex-1">
         {[
-          { id: "Options", icon: Activity },
           { id: "Key Data", icon: FileText },
           { id: "Risk Analysis", icon: Activity },
           { id: "Searched Databases", icon: Database }
