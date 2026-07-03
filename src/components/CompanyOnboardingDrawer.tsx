@@ -24,7 +24,9 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
   companyName,
 }) => {
   const [activeTab, setActiveTab] = useState("Risk Analysis");
-  const [showRiskWeightage, setShowRiskWeightage] = useState(false);
+  const [showCountryRisk, setShowCountryRisk] = useState(false);
+  const [showCategoryRisk, setShowCategoryRisk] = useState(false);
+  const [showCriminalRisk, setShowCriminalRisk] = useState(false);
   
   const displayName = companyName;
 
@@ -170,155 +172,126 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all cursor-pointer">
-          <div className="flex items-center gap-4">
-            <Globe className="w-5 h-5 text-slate-400" />
-            <div>
-              <h4 className="font-bold text-slate-900">Country Risk</h4>
-              <p className="text-sm text-slate-500">Highest Risk Country is: United States</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none">Low</Badge>
-            <ChevronDown className="w-5 h-5 text-slate-400" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all cursor-pointer">
-          <div className="flex items-center gap-4">
-            <FileWarning className="w-5 h-5 text-slate-400" />
-            <div>
-              <h4 className="font-bold text-slate-900">Category Risk</h4>
-              <p className="text-sm text-slate-500">Highest Risk Category is: Warnings and Regulatory Enforcement</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none">High</Badge>
-            <ChevronDown className="w-5 h-5 text-slate-400" />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all cursor-pointer">
-          <div className="flex items-center gap-4">
-            <ShieldAlert className="w-5 h-5 text-slate-400" />
-            <div>
-              <h4 className="font-bold text-slate-900">Criminal Record Risk</h4>
-              <p className="text-sm text-slate-500">Highest Criminal Risk is: crime_convicted</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none">High</Badge>
-            <ChevronDown className="w-5 h-5 text-slate-400" />
-          </div>
-        </div>
-
-        {/* Risk Weightage Expandable Section */}
+        {/* Country Risk */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
-          <div 
-            className="flex items-center justify-between p-4 cursor-pointer"
-            onClick={() => setShowRiskWeightage(!showRiskWeightage)}
-          >
+          <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setShowCountryRisk(!showCountryRisk)}>
             <div className="flex items-center gap-4">
-              <CheckCircle2 className="w-5 h-5 text-slate-400" />
+              <Globe className="w-5 h-5 text-slate-400" />
               <div>
-                <h4 className="font-bold text-slate-900">Risk Scoring Weightage</h4>
-                <p className="text-sm text-slate-500">View detailed parameter breakdown and scores</p>
+                <h4 className="font-bold text-slate-900">Country Risk</h4>
+                <p className="text-sm text-slate-500">Highest Risk Country is: United States</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showRiskWeightage ? 'rotate-180' : ''}`} />
+              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none">Low</Badge>
+              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showCountryRisk ? 'rotate-180' : ''}`} />
             </div>
           </div>
-          
-          {showRiskWeightage && (
+          {showCountryRisk && (
             <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-              {renderRiskWeightageContent()}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 w-1/3">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <span className="text-sm font-semibold text-slate-700">United States</span>
+                </div>
+                <div className="w-24">
+                  <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
+                </div>
+                <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
+                  <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">30</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">25.22</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">7.57</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Category Risk */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
+          <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setShowCategoryRisk(!showCategoryRisk)}>
+            <div className="flex items-center gap-4">
+              <FileWarning className="w-5 h-5 text-slate-400" />
+              <div>
+                <h4 className="font-bold text-slate-900">Category Risk</h4>
+                <p className="text-sm text-slate-500">Highest Risk Category is: Warnings and Regulatory Enforcement</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none">High</Badge>
+              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showCategoryRisk ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+          {showCategoryRisk && (
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 w-1/3">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <span className="text-sm font-semibold text-slate-700">Warnings and regulatory enforcement</span>
+                </div>
+                <div className="w-24">
+                  <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
+                </div>
+                <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
+                  <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">50</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">95</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">47.50</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Criminal Record Risk */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
+          <div className="flex items-center justify-between p-4 cursor-pointer" onClick={() => setShowCriminalRisk(!showCriminalRisk)}>
+            <div className="flex items-center gap-4">
+              <ShieldAlert className="w-5 h-5 text-slate-400" />
+              <div>
+                <h4 className="font-bold text-slate-900">Criminal Record Risk</h4>
+                <p className="text-sm text-slate-500">Highest Criminal Risk is: crime_convicted</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none">High</Badge>
+              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showCriminalRisk ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+          {showCriminalRisk && (
+            <div className="p-0 border-t border-slate-100 bg-slate-50/50">
+              <div className="p-6 flex items-center justify-between border-b border-slate-100">
+                <div className="flex items-center gap-3 w-1/3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <span className="text-sm font-semibold text-slate-700">Penalty</span>
+                </div>
+                <div className="w-24">
+                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none w-full justify-center">No Match</Badge>
+                </div>
+                <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
+                  <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">20</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">90</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">0.00</span></div>
+                </div>
+              </div>
+              <div className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-3 w-1/3">
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <span className="text-sm font-semibold text-slate-700">Crime Convicted</span>
+                </div>
+                <div className="w-24">
+                  <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
+                </div>
+                <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
+                  <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">20</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">100</span></div>
+                  <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">20.00</span></div>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-
-  const renderRiskWeightageContent = () => (
-    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-slate-400" />
-            <h4 className="font-bold text-slate-800 text-lg">Category Parameters</h4>
-          </div>
-          <div className="p-6 flex items-center justify-between border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-3 w-1/3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-sm font-semibold text-slate-700">Warnings and regulatory enforcement</span>
-            </div>
-            <div className="w-24">
-              <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
-            </div>
-            <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
-              <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">50</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">95</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">47.50</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-slate-400" />
-            <h4 className="font-bold text-slate-800 text-lg">Criminal Records Parameters</h4>
-          </div>
-          <div className="p-6 flex items-center justify-between border-b border-slate-100">
-            <div className="flex items-center gap-3 w-1/3">
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              <span className="text-sm font-semibold text-slate-700">Penalty</span>
-            </div>
-            <div className="w-24">
-              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-none w-full justify-center">No Match</Badge>
-            </div>
-            <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
-              <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">20</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">90</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">0.00</span></div>
-            </div>
-          </div>
-          <div className="p-6 flex items-center justify-between border-b border-slate-100">
-            <div className="flex items-center gap-3 w-1/3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-sm font-semibold text-slate-700">Crime Convicted</span>
-            </div>
-            <div className="w-24">
-              <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
-            </div>
-            <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
-              <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">20</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">100</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">20.00</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-slate-400" />
-            <h4 className="font-bold text-slate-800 text-lg">Country Parameters</h4>
-          </div>
-          <div className="p-6 flex items-center justify-between border-b border-slate-100 last:border-0">
-            <div className="flex items-center gap-3 w-1/3">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-sm font-semibold text-slate-700">United States</span>
-            </div>
-            <div className="w-24">
-              <Badge className="bg-red-600 text-white border-none w-full justify-center">Match</Badge>
-            </div>
-            <div className="flex items-center gap-8 w-1/3 justify-end text-sm">
-              <div className="flex flex-col"><span className="text-slate-500">Weightage:</span><span className="font-bold">30</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Absolute Score:</span><span className="font-bold">25.22</span></div>
-              <div className="flex flex-col"><span className="text-slate-500">Weighted Score:</span><span className="font-bold">7.57</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
   );
 
 
