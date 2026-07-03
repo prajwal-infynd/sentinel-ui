@@ -19,17 +19,61 @@ export const ROLES = {
   4: { id: 4, name: "Trial User", basePermissions: ["manage_subscription", "crud:*"] },
 };
 
-// Mock user store — mirrors Cognito UserPool User records
-// status: "Active" | "otp_pending" | "awaiting_approval"
-let mockUsers: any[] = [
+// ─── Persistent Mock Store ────────────────────────────────────────────────────
+// Uses localStorage so mock state (signups, approvals) survives page refreshes
+// and cross-tab navigation during demos. In production, Cognito/RDS handles this.
+
+const SEED_USERS = [
   { id: 1, firstName: "Super", lastName: "Admin", name: "Super Admin", companyName: "Sentinel Inc", roleId: 1, email: "superadmin@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
   { id: 2, firstName: "Owner", lastName: "User", name: "Owner User", companyName: "Sentinel Inc", roleId: 2, email: "owner@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
   { id: 3, firstName: "Standard", lastName: "User", name: "Standard User", companyName: "Acme Corp", roleId: 3, email: "user@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
 ];
 
-// In-memory OTP store — mirrors Cognito's internal session tokens
-// In production: Cognito manages this entirely; SES delivers the email
-const otpStore: Record<string, { otp: string; expiresAt: number }> = {};
+const MOCK_STORE_KEY = "sentinel_mock_users";
+const MOCK_OTP_STORE_KEY = "sentinel_mock_otps";
+
+// Load or seed user store
+const loadUsers = (): any[] => {
+  try {
+    const stored = localStorage.getItem(MOCK_STORE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      // Ensure seed users always exist (merge by email)
+      const merged = [...SEED_USERS];
+      for (const u of parsed) {
+        if (!merged.find(s => s.email.toLowerCase() === u.email.toLowerCase())) {
+          merged.push(u);
+        } else {
+          // Preserve status changes made to seed users
+          const idx = merged.findIndex(s => s.email.toLowerCase() === u.email.toLowerCase());
+          if (u.status && u.status !== "Active") merged[idx] = { ...merged[idx], ...u };
+        }
+      }
+      return merged;
+    }
+  } catch { /* ignore */ }
+  return [...SEED_USERS];
+};
+
+const saveUsers = (users: any[]) => {
+  try { localStorage.setItem(MOCK_STORE_KEY, JSON.stringify(users)); } catch { /* ignore */ }
+};
+
+let mockUsers: any[] = loadUsers();
+
+// OTP store — persisted to localStorage with TTL check
+const loadOtps = (): Record<string, { otp: string; expiresAt: number }> => {
+  try {
+    const stored = localStorage.getItem(MOCK_OTP_STORE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch { return {}; }
+};
+const saveOtps = (store: Record<string, { otp: string; expiresAt: number }>) => {
+  try { localStorage.setItem(MOCK_OTP_STORE_KEY, JSON.stringify(store)); } catch { /* ignore */ }
+};
+
+const otpStore = loadOtps();
+
 const MOCK_OTP = "123456"; // In production: Cognito generates & sends this via SES
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes — same as Cognito default
 
@@ -42,6 +86,7 @@ const computePermissions = (user: any) => {
   }
   return Array.from(permissions);
 };
+
 
 // --- LOGIN FLOW ---
 // Step 1: POST /auth/initiate-login
@@ -59,6 +104,7 @@ mock.onPost("/auth/initiate-login").reply((config) => {
   if (user.status === "otp_pending") {
     // User signed up but never verified OTP — redirect to OTP verify with flag
     otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+    saveOtps(otpStore);
     return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: true, message: "Your email is not yet verified. Please confirm your OTP." }];
   }
 
@@ -68,6 +114,7 @@ mock.onPost("/auth/initiate-login").reply((config) => {
 
   // Happy path — issue OTP (Cognito triggers SES Lambda in production)
   otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  saveOtps(otpStore);
   return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: false }];
 });
 
@@ -89,12 +136,14 @@ mock.onPost("/auth/respond-to-challenge").reply((config) => {
   }
 
   delete otpStore[email];
+  saveOtps(otpStore);
   const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) return [404, { code: "UserNotFoundException", message: "User not found." }];
 
   // Mark email as verified if otp_pending
   if (user.status === "otp_pending") {
     user.status = "awaiting_approval";
+    saveUsers(mockUsers);
     return [200, { status: "awaiting_approval", message: "Email verified. Your account is now pending admin approval." }];
   }
 
@@ -126,6 +175,7 @@ mock.onPost("/auth/signup").reply((config) => {
     if (existing.status === "otp_pending") {
       // Resend OTP — mirrors Cognito ResendConfirmationCode
       otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+      saveOtps(otpStore);
       return [200, { status: "otp_pending", message: "OTP resent to your email." }];
     }
     return [400, { code: "UsernameExistsException", message: "An account with this email already exists." }];
@@ -147,9 +197,11 @@ mock.onPost("/auth/signup").reply((config) => {
     status: "otp_pending", // mirrors Cognito UNCONFIRMED
   };
   mockUsers.push(newUser);
+  saveUsers(mockUsers);
 
   // Issue OTP — in production: Cognito triggers SES delivery automatically
   otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  saveOtps(otpStore);
 
   return [201, { status: "otp_pending", deliveryMedium: "EMAIL", destination: email.replace(/(.{2}).*(@.*)/, "$1***$2") }];
 });
@@ -161,6 +213,7 @@ mock.onPost("/auth/resend-otp").reply((config) => {
   const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
   if (!user) return [404, { code: "UserNotFoundException", message: "User not found." }];
   otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  saveOtps(otpStore);
   return [200, { status: "otp_sent", deliveryMedium: "EMAIL", destination: email.replace(/(.{2}).*(@.*)/, "$1***$2") }];
 });
 
@@ -196,6 +249,7 @@ mock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
     if (userIndex !== -1) {
       mockUsers[userIndex].status = "Active";
       mockUsers[userIndex].roleId = 3; // Promote to standard User on approval
+      saveUsers(mockUsers);
       console.log(`[MOCK SES] Welcome email sent to: ${mockUsers[userIndex].email}`);
       return [200, { success: true, message: "User approved and welcome email sent via SES." }];
     }
@@ -210,6 +264,7 @@ mock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
   if (match) {
     const id = parseInt(match[1]);
     mockUsers = mockUsers.filter(u => u.id !== id);
+    saveUsers(mockUsers);
     return [200, { success: true }];
   }
   return [404, { message: "User not found" }];
