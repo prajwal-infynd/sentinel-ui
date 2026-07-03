@@ -60,7 +60,7 @@ const App = () => (
             <Route path="/login" element={<Landing />} />
             
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Navigate to="/monitor/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/onboarding" replace />} />
               <Route path="/demo" element={<DemoEntry />} />
               <Route path="/monitor" element={<MonitorLayout />}>
                 <Route index element={<Navigate to="/monitor/dashboard" replace />} />

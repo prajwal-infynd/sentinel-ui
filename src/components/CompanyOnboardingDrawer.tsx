@@ -24,9 +24,9 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
   companyName,
 }) => {
   const [activeTab, setActiveTab] = useState("Risk Analysis");
+  const [showRiskWeightage, setShowRiskWeightage] = useState(false);
   
-  // Use a hardcoded person's name as requested to match UI
-  const displayName = companyName.includes("APP-") ? "Martin Pescador" : companyName;
+  const displayName = companyName;
 
   const radarData = [
     { subject: 'Criminal Record', A: 80, fullMark: 100 },
@@ -68,7 +68,7 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
         <div className="w-full mt-6 space-y-3 text-sm">
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Entity type:</span>
-            <span className="font-medium text-slate-900">Person</span>
+            <span className="font-medium text-slate-900">Company</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Relevance:</span>
@@ -108,8 +108,6 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
           { id: "Options", icon: Activity },
           { id: "Key Data", icon: FileText },
           { id: "Risk Analysis", icon: Activity },
-          { id: "Risk Weightage", icon: ShieldAlert },
-          { id: "Person AML Screening", icon: Search },
           { id: "Searched Databases", icon: Database }
         ].map((item) => (
           <button
@@ -214,18 +212,37 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
             <ChevronDown className="w-5 h-5 text-slate-400" />
           </div>
         </div>
+
+        {/* Risk Weightage Expandable Section */}
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
+          <div 
+            className="flex items-center justify-between p-4 cursor-pointer"
+            onClick={() => setShowRiskWeightage(!showRiskWeightage)}
+          >
+            <div className="flex items-center gap-4">
+              <CheckCircle2 className="w-5 h-5 text-slate-400" />
+              <div>
+                <h4 className="font-bold text-slate-900">Risk Scoring Weightage</h4>
+                <p className="text-sm text-slate-500">View detailed parameter breakdown and scores</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${showRiskWeightage ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+          
+          {showRiskWeightage && (
+            <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+              {renderRiskWeightageContent()}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 
-  const renderRiskWeightage = () => (
-    <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
-        <CheckCircle2 className="w-6 h-6 text-slate-400" />
-        Risk Scoring Weightage
-      </h3>
-
-      <div className="space-y-6">
+  const renderRiskWeightageContent = () => (
+    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-slate-400" />
@@ -303,76 +320,8 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
           </div>
         </div>
       </div>
-    </div>
   );
 
-  const renderPersonAMLScreening = () => (
-    <div className="max-w-4xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
-          <Search className="w-6 h-6 text-slate-400" />
-          AML Screening Result
-        </h3>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Search className="w-4 h-4 mr-2" /> Search Database</Button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative">
-          <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-3 items-center">
-                <Badge className="bg-red-600 hover:bg-red-700">High Risk</Badge>
-                <span className="text-emerald-600 font-semibold text-sm">100% Match</span>
-              </div>
-              <Switch checked={true} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-y-6 gap-x-8">
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Name</p>
-                <p className="font-bold text-slate-900">{displayName}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Relevance</p>
-                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">For Review</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Countries</p>
-                <Globe className="w-4 h-4 text-slate-700" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">DOB</p>
-                <p className="font-bold text-slate-900">Not Available</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Entity Type</p>
-                <p className="font-bold text-slate-900">Person</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Match Status</p>
-                <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200">Potential Match</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-1">Database</p>
-                <Badge className="bg-slate-500 text-white">Adverse Media</Badge>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-slate-50 border-t border-slate-100 p-4 flex justify-between items-center cursor-pointer hover:bg-slate-100">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-slate-400" />
-              <span className="font-bold text-slate-700">Sanction Details</span>
-            </div>
-            <ChevronDown className="w-5 h-5 text-slate-400" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderKeyData = () => (
     <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -500,12 +449,10 @@ export const CompanyOnboardingDrawer: React.FC<CompanyOnboardingDrawerProps> = (
         <ScrollArea className="flex-1 h-full">
           <div className="p-10 min-h-full">
             {activeTab === "Risk Analysis" && renderRiskAnalysis()}
-            {activeTab === "Risk Weightage" && renderRiskWeightage()}
-            {activeTab === "Person AML Screening" && renderPersonAMLScreening()}
             {activeTab === "Key Data" && renderKeyData()}
             {activeTab === "Searched Databases" && renderSearchedDatabases()}
             {/* Fallback for other tabs */}
-            {!["Risk Analysis", "Risk Weightage", "Person AML Screening", "Key Data", "Searched Databases"].includes(activeTab) && (
+            {!["Risk Analysis", "Key Data", "Searched Databases"].includes(activeTab) && (
               <div className="flex flex-col items-center justify-center h-[500px] text-slate-400">
                 <HelpCircle className="w-16 h-16 mb-4 opacity-20" />
                 <p>Content for {activeTab} is not available in this mockup.</p>

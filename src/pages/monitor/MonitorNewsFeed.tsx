@@ -13,8 +13,24 @@ import { Loader2 } from "lucide-react";
 export default function MonitorNewsFeed() {
   const [search, setSearch] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState("All Changes");
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const filterOptions = [
+    "All Changes",
+    "Credit Changes",
+    "Financial Changes",
+    "Director Changes",
+    "Ownership Changes",
+    "Compliance Events",
+    "Sanctions",
+    "PEP Exposure",
+    "Adverse Media",
+    "Legal Events",
+    "Digital",
+    "Employees"
+  ];
 
   const handleInvestigate = async (article: any) => {
     setLoadingId(article.id);
@@ -53,35 +69,39 @@ export default function MonitorNewsFeed() {
     article.entities.some(e => e.toLowerCase().includes(search.toLowerCase()))
   );
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 mb-2 flex items-center gap-2">
-            <Rss className="h-7 w-7 text-blue-600" />
-            Global News Feed
-          </h1>
-          <p className="text-sm text-slate-500">Live aggregated news mentions relevant to your monitored companies.</p>
+    <div className="flex gap-8 p-6 max-w-[1600px] mx-auto">
+      {/* Sidebar for Filters */}
+      <div className="w-56 shrink-0">
+        <div className="flex items-center gap-2 mb-6 text-slate-800 font-bold">
+          <Filter className="w-4 h-4" /> Filters
         </div>
-        <div className="flex gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Search news topics, entities..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 w-64 bg-white border-slate-200" 
-            />
-          </div>
-          <Button variant="outline" className="gap-2 bg-white text-slate-700 border-slate-200 hover:bg-slate-50">
-            <Filter className="h-4 w-4" /> Filters
-          </Button>
-          <Button variant="outline" className="gap-2 bg-white text-slate-700 border-slate-200 hover:bg-slate-50">
-            <Settings className="h-4 w-4" /> Config
-          </Button>
+        <div className="flex flex-col space-y-3">
+          {filterOptions.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`text-sm text-left transition-colors font-medium px-2 py-1 -ml-2 rounded-md ${
+                activeFilter === filter 
+                  ? "text-pink-600" 
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
-      </motion.div>
+      </div>
 
-      <div className="space-y-4">
+      {/* Main Content Area */}
+      <div className="flex-1 space-y-4">
+        {/* Header line */}
+        <div className="flex items-center justify-between text-sm text-slate-500 mb-4 pb-2 border-b border-slate-100">
+          <div>Showing <span className="font-bold text-slate-900">{filteredArticles.length} events</span> · Live stream</div>
+          <div className="flex items-center gap-1.5 text-emerald-600 font-semibold text-xs tracking-wider">
+            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> LIVE
+          </div>
+        </div>
+
         <AnimatePresence>
           {filteredArticles.length === 0 ? (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>

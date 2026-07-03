@@ -45,7 +45,12 @@ export const CompanyOnboardingModal: React.FC<CompanyOnboardingModalProps> = ({
         { name: "Global Holdings LLC", percentage: 60 },
         { name: "John Doe", percentage: 40 }
       ]
-    }
+    },
+    filings: [
+      { documentType: "Annual Return (Confirmation Statement)", filingDate: "2023-05-15", status: "Filed" },
+      { documentType: "Micro entity accounts", filingDate: "2023-02-28", status: "Filed" },
+      { documentType: "Appointment of Director", filingDate: "2019-11-01", status: "Filed" }
+    ]
   };
 
   const StatusBadge = ({ status }: { status: string }) => {
@@ -201,6 +206,33 @@ export const CompanyOnboardingModal: React.FC<CompanyOnboardingModalProps> = ({
                 </CardContent>
               </Card>
             </div>
+
+            {/* Company Filings Section */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 border-b bg-slate-50/50">
+                <CardTitle className="text-sm font-bold flex items-center gap-2 text-slate-800">
+                  <FileText className="w-4 h-4 text-slate-500" />
+                  Recent Company Filings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <ul className="divide-y">
+                  {data.filings.map((filing, i) => (
+                    <li key={i} className="flex justify-between items-center p-4">
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{filing.documentType}</p>
+                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3"/> Filed on {filing.filingDate}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="bg-slate-50 text-slate-600 border-slate-200">
+                        {filing.status}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
 
           </div>
         </ScrollArea>
