@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarLayout } from "@/components/SidebarLayout";
 import Index from "./pages/Index";
 import DemoEntry from "./pages/DemoEntry";
 import PortfolioOnboarding from "./pages/PortfolioOnboarding";
@@ -60,64 +62,58 @@ const App = () => (
             <Route path="/login" element={<Landing />} />
             
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Navigate to="/onboarding" replace />} />
-              <Route path="/demo" element={<DemoEntry />} />
-              <Route path="/monitor" element={<MonitorLayout />}>
-                <Route index element={<Navigate to="/monitor/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="news-feed" element={<MonitorNewsFeed />} />
-                <Route path="investigations" element={<InvestigationsList />} />
-                <Route path="companies" element={<PortfolioOnboarding key="force-reset-2" />} />
-                <Route path="watchlists" element={<MonitorWatchlists />} />
-                <Route path="risk-analytics" element={<MonitorRiskAnalytics />} />
-                <Route path="ai-agent" element={<MonitorAIAgent />} />
-                <Route path="reports" element={<MonitorReports />} />
+              <Route element={<SidebarLayout />}>
+                <Route path="/" element={<Navigate to="/onboarding" replace />} />
+                <Route path="/demo" element={<DemoEntry />} />
+                <Route path="/monitor" element={<MonitorLayout />}>
+                  <Route index element={<Navigate to="/monitor/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="news-feed" element={<MonitorNewsFeed />} />
+                  <Route path="investigations" element={<InvestigationsList />} />
+                  <Route path="companies" element={<PortfolioOnboarding key="force-reset-2" />} />
+                  <Route path="watchlists" element={<MonitorWatchlists />} />
+                  <Route path="risk-analytics" element={<MonitorRiskAnalytics />} />
+                  <Route path="ai-agent" element={<MonitorAIAgent />} />
+                  <Route path="reports" element={<MonitorReports />} />
+                </Route>
+                <Route path="/ai-agent" element={<AIAgents />} />
+                <Route path="/monitor/ai-agent" element={<Navigate to="/ai-agent" replace />} />
+                <Route path="/dashboard" element={<Navigate to="/monitor/dashboard" replace />} />
+                <Route path="/portfolio" element={<Navigate to="/monitor/companies" replace />} />
+                <Route path="/alerts" element={<Navigate to="/monitor/alerts" replace />} />
+                <Route path="/investigations" element={<Navigate to="/monitor/investigations" replace />} />
+                <Route path="/agents" element={<Navigate to="/ai-agent" replace />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/investigations/:id" element={<Investigation />} />
+                <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
+                <Route path="/architecture/external" element={<ExternalData />} />
+                <Route path="/architecture/custom" element={<CustomData />} />
+                <Route path="/architecture/infynd" element={<InfyndData />} />
+                <Route path="/architecture/crawling" element={<CrawlingData />} />
+                <Route path="/policy" element={<PolicyConfig />} />
+                <Route path="/governance" element={<AIGovernance />} />
+                <Route path="/reporting" element={<Reporting />} />
+                <Route path="/closing" element={<DemoClosing />} />
+                <Route path="/media" element={<MediaDashboard />} />
+                <Route path="/media/sources" element={<MediaSources />} />
+                <Route path="/media/pipeline" element={<MediaPipeline />} />
+                <Route path="/media/article/:id" element={<MediaArticleDetail />} />
+                <Route path="/media/entity" element={<MediaEntityView />} />
+                <Route path="/media/signals" element={<MediaSignals />} />
+                <Route path="/media/config" element={<MediaConfig />} />
+                <Route path="/media/alerts" element={<MediaAlerts />} />
+                <Route path="/media/workspace" element={<MediaWorkspace />} />
+                <Route path="/media/explainability" element={<MediaExplainability />} />
+                <Route path="/media/automation" element={<MediaAutomation />} />
+                <Route path="/crawl" element={<LiveCrawlEngine />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
-              
-              <Route path="/ai-agent" element={<AIAgents />} />
-              
-              {/* Legacy redirects */}
-              <Route path="/monitor/ai-agent" element={<Navigate to="/ai-agent" replace />} />
-              
-              {/* Legacy redirects */}
-              <Route path="/dashboard" element={<Navigate to="/monitor/dashboard" replace />} />
-              <Route path="/portfolio" element={<Navigate to="/monitor/companies" replace />} />
-              <Route path="/alerts" element={<Navigate to="/monitor/alerts" replace />} />
-              <Route path="/investigations" element={<Navigate to="/monitor/investigations" replace />} />
-              <Route path="/agents" element={<Navigate to="/ai-agent" replace />} />
-
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/investigations/:id" element={<Investigation />} />
-              
-              <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
-              <Route path="/architecture/external" element={<ExternalData />} />
-              <Route path="/architecture/custom" element={<CustomData />} />
-              <Route path="/architecture/infynd" element={<InfyndData />} />
-              <Route path="/architecture/crawling" element={<CrawlingData />} />
-              <Route path="/policy" element={<PolicyConfig />} />
-              <Route path="/governance" element={<AIGovernance />} />
-              <Route path="/reporting" element={<Reporting />} />
-              <Route path="/closing" element={<DemoClosing />} />
-              <Route path="/media" element={<MediaDashboard />} />
-              <Route path="/media/sources" element={<MediaSources />} />
-              <Route path="/media/pipeline" element={<MediaPipeline />} />
-              <Route path="/media/article/:id" element={<MediaArticleDetail />} />
-              <Route path="/media/entity" element={<MediaEntityView />} />
-              <Route path="/media/signals" element={<MediaSignals />} />
-              <Route path="/media/config" element={<MediaConfig />} />
-              <Route path="/media/alerts" element={<MediaAlerts />} />
-              <Route path="/media/workspace" element={<MediaWorkspace />} />
-              <Route path="/media/explainability" element={<MediaExplainability />} />
-              <Route path="/media/automation" element={<MediaAutomation />} />
-              <Route path="/crawl" element={<LiveCrawlEngine />} />
             </Route>
 
-            <Route element={<ProtectedRoute requirePermission="manage_subscription" />}>
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-
-            <Route element={<ProtectedRoute requirePermission="invite_user" />}>
-              <Route path="/admin" element={<AdminPortal />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<SidebarLayout />}>
+                <Route path="/admin" element={<AdminPortal />} />
+              </Route>
             </Route>
 
             <Route path="*" element={<NotFound />} />

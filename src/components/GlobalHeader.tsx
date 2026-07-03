@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Search, Bell, Activity, CheckCircle2, Trash2, LogOut, Clock, UserCheck, X, Loader2 } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Search, Bell, Activity, CheckCircle2, Trash2, LogOut, Clock, UserCheck, X, Loader2, Users, Shield, Building2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,25 @@ const fetchPendingUsers = async () => {
 export function GlobalHeader() {
   const { user, logout, hasPermission } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isAdmin = hasPermission("invite_user");
+  const isSuperAdmin = hasPermission("admin:*");
+  const isAdminPage = location.pathname === "/admin";
+
+  const params = new URLSearchParams(location.search);
+  const orgParam = params.get("org") || "all";
+
+  const { data: organizations = [] } = useQuery({
+    queryKey: ["admin-organizations"],
+    queryFn: async () => { const { data } = await apiClient.get("/admin/organizations"); return data; },
+    enabled: isSuperAdmin && isAdminPage,
+  });
+
+  const handleOrgChange = (orgId: string) => {
+    const p = new URLSearchParams(location.search);
+    if (orgId === "all") { p.delete("org"); } else { p.set("org", orgId); }
+    navigate(`${location.pathname}?${p.toString()}`, { replace: true });
+  };
 
   const [notifications, setNotifications] = useState([
     { id: 1, title: "Critical Risk: Adverse Media", desc: "Atos SE flagged for potential default risk based on recent executive turnover and credit downgrades.", time: "2 min ago", unread: true },
@@ -81,6 +100,20 @@ export function GlobalHeader() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input placeholder="Search entities, alerts, cases..." className="w-80 pl-9 h-9 bg-slate-100 border-0 focus-visible:ring-1 focus-visible:ring-indigo-500" />
         </div>
+        {isAdminPage && isSuperAdmin && (
+          <Select value={orgParam} onValueChange={handleOrgChange}>
+            <SelectTrigger className="w-[200px] h-9 bg-white border-slate-200 text-sm hidden md:flex">
+              <Building2 className="h-3.5 w-3.5 text-slate-400 mr-1.5 shrink-0" />
+              <SelectValue placeholder="All Organizations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Organizations</SelectItem>
+              {organizations.map((org: any) => (
+                <SelectItem key={org.id} value={String(org.id)}>{org.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
       <div className="flex items-center gap-4">
         <Badge variant="outline" className="hidden sm:flex gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 border-emerald-200 text-emerald-700 bg-emerald-50">
@@ -154,7 +187,7 @@ export function GlobalHeader() {
                         <button
                           onClick={(e) => approveUser(u.id, e)}
                           disabled={approvingId === u.id}
-                          className="h-7 px-2.5 flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors disabled:opacity-60"
+                          className="h-7 px-2.5 flex items-center gap-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors disabled:opacity-60"
                           title="Approve"
                         >
                           {approvingId === u.id
@@ -225,7 +258,25 @@ export function GlobalHeader() {
               <span className="text-xs text-slate-500 truncate">{user?.email}</span>
               <Badge variant="outline" className="w-fit mt-1 text-[10px] uppercase font-bold bg-slate-50 text-slate-600">{user?.role}</Badge>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 pb-1 border-b border-slate-100 mb-2">
+                <button
+                  onClick={() => navigate("/admin?tab=users")}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl hover:bg-indigo-50 text-indigo-700 transition-colors"
+                >
+                  <Users className="h-4 w-4" />
+                  Manage Users
+                </button>
+                {hasPermission("admin:*") && (
+                  <button
+                    onClick={() => navigate("/admin?tab=roles")}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl hover:bg-indigo-50 text-indigo-700 transition-colors"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Manage Roles
+                  </button>
+                )}
+              </div>
+            <div className="pt-1">
               <button
                 onClick={logout}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors"

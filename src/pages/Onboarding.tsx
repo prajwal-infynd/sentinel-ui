@@ -271,7 +271,7 @@ export default function Onboarding() {
                   variant={isActive ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSelectedFilter(baseName)}
-                  className={isActive ? "bg-pink-600 hover:bg-pink-700 text-white" : ""}
+                  className={isActive ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
                 >
                   {filter}
                 </Button>

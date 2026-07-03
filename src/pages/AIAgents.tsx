@@ -31,11 +31,11 @@ const pipelineSteps = [
 const getAgentConfig = (name: string) => {
   switch (name) {
     case "News Crawler": return { icon: Globe, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
-    case "NLP Extractor": return { icon: FileText, color: "text-fuchsia-600", bg: "bg-fuchsia-50", border: "border-fuchsia-100", hover: "group-hover:bg-fuchsia-100" };
-    case "Entity Matcher": return { icon: Network, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-100", hover: "group-hover:bg-emerald-100" };
-    case "Risk Scorer": return { icon: Activity, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-100", hover: "group-hover:bg-rose-100" };
-    case "Policy Engine": return { icon: ShieldCheck, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", hover: "group-hover:bg-amber-100" };
-    case "Alert Generator": return { icon: Bell, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100", hover: "group-hover:bg-indigo-100" };
+    case "NLP Extractor": return { icon: FileText, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
+    case "Entity Matcher": return { icon: Network, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
+    case "Risk Scorer": return { icon: Activity, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
+    case "Policy Engine": return { icon: ShieldCheck, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
+    case "Alert Generator": return { icon: Bell, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", hover: "group-hover:bg-blue-100" };
     default: return { icon: Bot, color: "text-slate-600", bg: "bg-slate-50", border: "border-slate-100", hover: "group-hover:bg-slate-100" };
   }
 };
@@ -45,6 +45,13 @@ const AIAgents = () => {
   const [pausedAgents, setPausedAgents] = useState<Set<string>>(new Set());
   const [editingAgent, setEditingAgent] = useState<string | null>(null);
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
+  const [customAgents, setCustomAgents] = useState<any[]>([]);
+  const [newAgent, setNewAgent] = useState({
+    name: "", description: "", role: "Data Extraction", systemPrompt: "",
+    model: "Amazon Bedrock GLM 5", piiProtection: false, generativeUI: true,
+    persona: "", goal: "", knowledgeBase: false, memory: false, scheduler: false,
+    humanApproval: true, approvalChat: true, approvalEmail: false,
+  });
 
   const togglePause = (agentName: string) => {
     setPausedAgents(prev => {
@@ -108,7 +115,7 @@ const AIAgents = () => {
         </motion.div>
 
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent, index) => {
+          {[...agents, ...customAgents].map((agent, index) => {
             const isPaused = pausedAgents.has(agent.name);
             const displayStatus = isPaused ? "paused" : agent.status;
             const config = getAgentConfig(agent.name);
@@ -126,7 +133,7 @@ const AIAgents = () => {
                     <div>
                       <div className="text-base font-bold tracking-tight text-slate-900">{agent.name}</div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className={`h-2 w-2 rounded-full ${displayStatus === "running" ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" : displayStatus === "paused" ? "bg-amber-500" : displayStatus === "completed" ? "bg-indigo-500" : "bg-slate-400"}`} />
+                        <div className={`h-2 w-2 rounded-full ${displayStatus === "running" ? "bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" : displayStatus === "paused" ? "bg-slate-400" : displayStatus === "completed" ? "bg-blue-500" : "bg-slate-400"}`} />
                         <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{displayStatus}</span>
                       </div>
                     </div>
@@ -497,43 +504,216 @@ const AIAgents = () => {
         </DialogContent>
       </Dialog>
       <Dialog open={isCreatingAgent} onOpenChange={setIsCreatingAgent}>
-        <DialogContent aria-describedby={undefined} className="max-w-2xl bg-white shadow-xl p-0 overflow-hidden border-slate-200">
-          <DialogHeader className="p-6 pb-4 border-b border-slate-100 bg-slate-50/50">
-            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              <Bot className="h-5 w-5 text-indigo-600" /> Build Custom AI Agent
-            </DialogTitle>
-            <DialogDescription className="mt-1">Design a new autonomous agent to join your orchestration pipeline.</DialogDescription>
-          </DialogHeader>
-          <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-slate-700">Agent Name</Label>
-              <Input placeholder="e.g. Sanctions Evaluator" className="h-11 bg-white border-slate-200 focus-visible:ring-indigo-500" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-slate-700">Specialized Role</Label>
-              <div className="relative group">
-                <select className="appearance-none flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors group-hover:border-indigo-200 cursor-pointer">
-                  <option>Data Extraction</option>
-                  <option>Risk Scoring</option>
-                  <option>Entity Matching</option>
-                  <option>Compliance Analyst</option>
-                  <option>Adverse Media Crawler</option>
-                  <option>Custom Role</option>
-                </select>
-                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                  <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                </div>
+        <DialogContent aria-describedby={undefined} className="max-w-6xl bg-[#FAFAFA] shadow-2xl p-0 overflow-hidden border-slate-200 h-[85vh] flex flex-col">
+          <Tabs defaultValue="profile" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-6 pt-6 bg-white border-b border-slate-100 flex-shrink-0 flex justify-between items-end">
+              <div>
+                <DialogTitle className="text-xl font-bold tracking-tight text-slate-900 flex items-center gap-2 mb-1">
+                  <Bot className="h-5 w-5 text-indigo-600" /> Build Custom AI Agent
+                </DialogTitle>
+                <p className="text-sm text-slate-500">Design a new autonomous agent to join your orchestration pipeline.</p>
               </div>
+              <TabsList className="bg-slate-50 p-1.5 rounded-full flex gap-1 mb-4 border border-slate-200">
+                <TabsTrigger value="profile" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <User className="w-4 h-4" /> Profile & Model
+                </TabsTrigger>
+                <TabsTrigger value="instructions" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Instructions
+                </TabsTrigger>
+                <TabsTrigger value="tools" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <Zap className="w-4 h-4" /> Tools & Integrations
+                </TabsTrigger>
+                <TabsTrigger value="capabilities" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <Database className="w-4 h-4" /> Capabilities
+                </TabsTrigger>
+              </TabsList>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-slate-700">System Prompt</Label>
-              <Textarea placeholder="Define the agent's core instructions, parameters, and outputs..." className="min-h-[120px] bg-white border-slate-200 focus-visible:ring-indigo-500" />
+
+            <div className="flex-1 overflow-y-auto p-8">
+              {/* ── Profile & Model ── */}
+              <TabsContent value="profile" className="m-0 max-w-4xl mx-auto space-y-8">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900">Profile & Model</h2>
+                  <p className="text-slate-500 mt-2">Define your agent's identity, privacy boundaries, and core LLM engine.</p>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-6"><User className="h-5 w-5 text-indigo-500" /> Agent Identity</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Name</Label>
+                      <Input value={newAgent.name} onChange={e => setNewAgent(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Sanctions Evaluator" className="h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Description</Label>
+                      <Input value={newAgent.description} onChange={e => setNewAgent(p => ({ ...p, description: e.target.value }))} placeholder="Brief description of what this agent does..." className="h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500" />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-6"><Cpu className="h-5 w-5 text-indigo-500" /> Model Configuration</h3>
+                  <div className="space-y-6">
+                    <div className="flex items-start justify-between p-5 rounded-xl border border-slate-200 bg-slate-50/50">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-slate-700" />
+                          <h4 className="font-bold text-slate-900">PII Protection</h4>
+                          <Badge variant="outline" className="bg-slate-200 text-slate-600 border-transparent text-[10px]">{newAgent.piiProtection ? "On" : "Off"}</Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed max-w-lg">Sensitive values are swapped for typed placeholders before reaching the AI.</p>
+                      </div>
+                      <Switch checked={newAgent.piiProtection} onCheckedChange={v => setNewAgent(p => ({ ...p, piiProtection: v }))} className="data-[state=checked]:bg-indigo-600" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select LLM Engine</Label>
+                      <div className="relative group max-w-md">
+                        <select value={newAgent.model} onChange={e => setNewAgent(p => ({ ...p, model: e.target.value }))} className="appearance-none flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                          <option>Amazon Bedrock GLM 5</option>
+                          <option>OpenAI GPT-4o</option>
+                          <option>Anthropic Claude 3.5 Sonnet</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none"><ChevronDown className="h-4 w-4 text-slate-400" /></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-4">
+                      <Switch checked={newAgent.generativeUI} onCheckedChange={v => setNewAgent(p => ({ ...p, generativeUI: v }))} className="data-[state=checked]:bg-indigo-600" />
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /> Generative UI</Label>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── Instructions ── */}
+              <TabsContent value="instructions" className="m-0 max-w-4xl mx-auto space-y-8">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Instructions</h2>
+                    <p className="text-slate-500 mt-2">Shape your agent's persona, goals, and core system prompt.</p>
+                  </div>
+                  <Button variant="outline" className="gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100"><Sparkles className="w-4 h-4" /> Optimize Prompt</Button>
+                </div>
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Role (Persona)</Label>
+                    <Textarea value={newAgent.persona} onChange={e => setNewAgent(p => ({ ...p, persona: e.target.value }))} placeholder="e.g. You are a senior sanctions analyst specializing in OFAC and EU sanctions compliance..." className="min-h-[80px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 resize-y" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Goal</Label>
+                    <Textarea value={newAgent.goal} onChange={e => setNewAgent(p => ({ ...p, goal: e.target.value }))} placeholder="e.g. Screen entities against global sanctions lists and flag potential matches..." className="min-h-[100px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 resize-y" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">System Instructions</Label>
+                    <Textarea value={newAgent.systemPrompt} onChange={e => setNewAgent(p => ({ ...p, systemPrompt: e.target.value }))} placeholder="Define the agent's core instructions, rules, and output format..." className="min-h-[250px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 font-mono text-sm leading-relaxed" />
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ── Tools & Integrations ── */}
+              <TabsContent value="tools" className="m-0 max-w-5xl mx-auto space-y-8">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Tools & Integrations</h2>
+                    <p className="text-slate-500 mt-2">Equip your agent with MCP tools and external platform APIs.</p>
+                  </div>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2"><Plus className="w-4 h-4" /> Add Tool</Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { name: "ai-studio-utils", tools: ["mcp search", "mcp search mcp", "scrape workflow", "scrape extract"], active: 4 },
+                    { name: "yahoo_finance", tools: ["yfinance get ticker info", "yfinance get ticker news", "yfinance search"], active: 3 },
+                    { name: "selenium", tools: ["start browser", "navigate", "take screenshot", "get element text"], active: 4 },
+                    { name: "current_time", tools: ["get current time", "convert time"], active: 2 },
+                    { name: "Composio Tools", tools: ["Gmail Send Email", "Gmail Create Email Draft", "Gmail Get Profile"], active: 3 },
+                  ].map(tool => (
+                    <div key={tool.name} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Zap className="w-5 h-5" /></div>
+                          <h3 className="font-bold text-slate-800 text-lg">{tool.name}</h3>
+                        </div>
+                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">{tool.active} active</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {tool.tools.map(t => <Badge key={t} variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">{t}</Badge>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* ── Capabilities ── */}
+              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-6">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900">Capabilities</h2>
+                  <p className="text-slate-500 mt-2">Configure autonomous capabilities and guardrails for this agent.</p>
+                </div>
+                {[
+                  { icon: Book, label: "Knowledge Base", desc: "Connect external documents, databases, and APIs for RAG.", state: newAgent.knowledgeBase, key: "knowledgeBase" as const },
+                  { icon: Brain, label: "Memory", desc: "Allow agent to remember past interactions and user preferences.", state: newAgent.memory, key: "memory" as const },
+                  { icon: Calendar, label: "Scheduler", desc: "Run this agent automatically on a recurring schedule.", state: newAgent.scheduler, key: "scheduler" as const },
+                ].map(cap => (
+                  <div key={cap.key} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><cap.icon className="w-6 h-6" /></div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">{cap.label}</h3>
+                        <p className="text-sm text-slate-500 leading-relaxed">{cap.desc}</p>
+                      </div>
+                    </div>
+                    <Switch checked={cap.state} onCheckedChange={v => setNewAgent(p => ({ ...p, [cap.key]: v }))} className="data-[state=checked]:bg-indigo-600" />
+                  </div>
+                ))}
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-orange-100 text-orange-600 rounded-xl"><ShieldAlert className="w-6 h-6" /></div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Human-in-the-Loop Approval</h3>
+                        <p className="text-sm text-slate-500 leading-relaxed">Agent pauses and requests human sign-off before taking actions.</p>
+                      </div>
+                    </div>
+                    <Switch checked={newAgent.humanApproval} onCheckedChange={v => setNewAgent(p => ({ ...p, humanApproval: v }))} className="data-[state=checked]:bg-indigo-600" />
+                  </div>
+                  {newAgent.humanApproval && (
+                    <div className="pt-4 border-t border-orange-200/60 space-y-4 pl-[4.5rem]">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox checked={newAgent.approvalChat} onCheckedChange={v => setNewAgent(p => ({ ...p, approvalChat: !!v }))} className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 border-slate-300" />
+                        <label className="text-sm font-medium text-slate-700">Get approval in chat UI</label>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox checked={newAgent.approvalEmail} onCheckedChange={v => setNewAgent(p => ({ ...p, approvalEmail: !!v }))} className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 border-slate-300" />
+                        <label className="text-sm font-medium text-slate-700">Notify via email</label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
             </div>
-          </div>
-          <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsCreatingAgent(false)}>Cancel</Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setIsCreatingAgent(false); toast({ title: "Agent Provisioned", description: "Your custom agent is now spinning up." }); }}>Deploy Agent</Button>
-          </DialogFooter>
+
+            <div className="p-6 border-t border-slate-100 bg-white flex justify-between items-center flex-shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10">
+              <Button variant="ghost" onClick={() => { setIsCreatingAgent(false); setNewAgent({ name: "", description: "", role: "Data Extraction", systemPrompt: "", model: "Amazon Bedrock GLM 5", piiProtection: false, generativeUI: true, persona: "", goal: "", knowledgeBase: false, memory: false, scheduler: false, humanApproval: true, approvalChat: true, approvalEmail: false }); }} className="text-slate-500">Discard</Button>
+              <Button
+                disabled={!newAgent.name.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm px-8"
+                onClick={() => {
+                  const agent = {
+                    name: newAgent.name,
+                    status: "running" as const,
+                    processed: 0,
+                    signals: 0,
+                    accuracy: 0,
+                    uptime: "100%",
+                    lastAction: "Just deployed — initializing...",
+                  };
+                  setCustomAgents(prev => [...prev, agent]);
+                  setIsCreatingAgent(false);
+                  setNewAgent({ name: "", description: "", role: "Data Extraction", systemPrompt: "", model: "Amazon Bedrock GLM 5", piiProtection: false, generativeUI: true, persona: "", goal: "", knowledgeBase: false, memory: false, scheduler: false, humanApproval: true, approvalChat: true, approvalEmail: false });
+                  toast({ title: "Agent Deployed", description: `"${agent.name}" is now running in your orchestration pipeline.` });
+                }}
+              >
+                Deploy Agent
+              </Button>
+            </div>
+          </Tabs>
         </DialogContent>
       </Dialog>
         </div>

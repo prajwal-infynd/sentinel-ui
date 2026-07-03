@@ -48,7 +48,7 @@ export default function MonitorAIAgent() {
       <div className="w-[300px] shrink-0">
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 h-full flex flex-col">
           <h3 className="text-[13px] font-bold text-slate-900 flex items-center gap-2 mb-4 px-1">
-            <Sparkles className="w-4 h-4 text-pink-600" />
+            <Sparkles className="w-4 h-4 text-blue-600" />
             Suggested questions
           </h3>
           <div className="space-y-1 overflow-y-auto pr-1">

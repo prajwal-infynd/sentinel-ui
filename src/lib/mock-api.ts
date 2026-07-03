@@ -1,6 +1,7 @@
 import MockAdapter from "axios-mock-adapter";
 import { apiClient } from "./api-client";
 import { formatRelativeTime } from "./utils";
+import { allPagePermissions, flattenPagePermissions } from "./permissions";
 
 // Initialize mock adapter, but restore it immediately to disable mocking
 // and allow real API calls to go through to the backend.
@@ -13,10 +14,9 @@ export const mock = new MockAdapter(apiClient, { onNoMatch: "passthrough" });
 // When the backend is ready, swap VITE_API_URL env var — no frontend code changes needed.
 
 export const ROLES = {
-  1: { id: 1, name: "Super Admin", basePermissions: ["admin:*"] },
-  2: { id: 2, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"] },
-  3: { id: 3, name: "User", basePermissions: ["crud:*"] },
-  4: { id: 4, name: "Trial User", basePermissions: ["manage_subscription", "crud:*"] },
+  1: { id: 1, name: "Super Admin", basePermissions: ["admin:*"], pagePermissions: allPagePermissions(true) },
+  2: { id: 2, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"], pagePermissions: allPagePermissions(true) },
+  3: { id: 3, name: "User", basePermissions: ["crud:*"], pagePermissions: allPagePermissions(true) },
 };
 
 // ─── Persistent Mock Store ────────────────────────────────────────────────────
@@ -81,6 +81,12 @@ const computePermissions = (user: any) => {
   const role = ROLES[user.roleId as keyof typeof ROLES];
   if (!role) return [];
   const permissions = new Set([...role.basePermissions, ...(user.allowedPermissions || [])]);
+  // Flatten page permissions from the role
+  if (role.pagePermissions) {
+    for (const perm of flattenPagePermissions(role.pagePermissions)) {
+      permissions.add(perm);
+    }
+  }
   for (const denied of (user.deniedPermissions || [])) {
     permissions.delete(denied);
   }
@@ -88,10 +94,23 @@ const computePermissions = (user: any) => {
 };
 
 
+// --- AUTH & EMAIL SIMULATION ---
+// Mock auth endpoints with full email flow simulation.
+// All emails are logged to console and shown as toasts.
+// In production, swap to backend/server.js with real Cognito + SES.
+
+// Simulated email log — stores all "sent" emails for debugging
+const mockEmailLog: Array<{ to: string; subject: string; body: string; type: string; sentAt: string }> = [];
+
+function logMockEmail(to: string, subject: string, body: string, type: string) {
+  const entry = { to, subject, body, type, sentAt: new Date().toISOString() };
+  mockEmailLog.push(entry);
+  console.log(`%c[MOCK SES] ${type} email → ${to}`, 'color: #16a34a; font-weight: bold;', subject);
+  console.log(`  Subject: ${subject}`);
+  console.log(`  Body: ${body}`);
+}
+
 // --- LOGIN FLOW ---
-// Step 1: POST /auth/initiate-login
-// Mirrors: Cognito InitiateAuth (USER_AUTH / CUSTOM_AUTH with OTP challenge)
-// SES sends OTP email in production
 mock.onPost("/auth/initiate-login").reply((config) => {
   const { email } = JSON.parse(config.data);
   const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -108,6 +127,19 @@ mock.onPost("/auth/initiate-login").reply((config) => {
     return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: true, message: "Your email is not yet verified. Please confirm your OTP." }];
   }
 
+  if (user.status === "invited") {
+    // Invited user — send OTP for first-login verification
+    otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+    saveOtps(otpStore);
+    logMockEmail(
+      email,
+      "Your Sentinel login code",
+      `Your one-time verification code is: ${MOCK_OTP}\n\nThis code expires in 10 minutes. Verify to complete your account setup.`,
+      "INVITE_LOGIN_OTP"
+    );
+    return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: true, invited: true, message: "Please verify your email with the OTP sent to you." }];
+  }
+
   if (user.status === "awaiting_approval") {
     return [403, { code: "NotAuthorizedException", message: "Your account is awaiting admin approval." }];
   }
@@ -115,6 +147,12 @@ mock.onPost("/auth/initiate-login").reply((config) => {
   // Happy path — issue OTP (Cognito triggers SES Lambda in production)
   otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
   saveOtps(otpStore);
+  logMockEmail(
+    email,
+    "Your Sentinel login code",
+    `Your one-time verification code is: ${MOCK_OTP}\n\nThis code expires in 10 minutes. If you did not request this, ignore this email.`,
+    "LOGIN_OTP"
+  );
   return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: false }];
 });
 
@@ -144,7 +182,33 @@ mock.onPost("/auth/respond-to-challenge").reply((config) => {
   if (user.status === "otp_pending") {
     user.status = "awaiting_approval";
     saveUsers(mockUsers);
+    // Email 1: to user — "waiting for admin approval"
+    logMockEmail(
+      email,
+      "Sentinel — Your account is awaiting admin approval",
+      `Hi ${user.firstName || "there"},\n\nYour email has been verified. Your account is now awaiting approval from an administrator.\n\nYou will receive a confirmation email once your account is approved.\n\nBest regards,\nThe Sentinel Team`,
+      "USER_AWAITING_APPROVAL"
+    );
+    // Email 2: to admin — "new user needs approval" with approve/reject link
+    logMockEmail(
+      "prajwalgenious@gmail.com",
+      `[Sentinel] New user awaiting approval: ${email}`,
+      `A new user has registered and verified their email:\n\nName: ${user.name}\nEmail: ${email}\nCompany: ${user.companyName || "N/A"}\n\nApprove or reject: http://localhost:8080/admin`,
+      "ADMIN_APPROVAL_REQUEST"
+    );
     return [200, { status: "awaiting_approval", message: "Email verified. Your account is now pending admin approval." }];
+  }
+
+  // Activate invited user after OTP verification
+  if (user.status === "invited") {
+    user.status = "Active";
+    saveUsers(mockUsers);
+    logMockEmail(
+      email,
+      "Welcome to Sentinel — Your account is ready!",
+      `Hi ${user.firstName || "there"},\n\nYour email has been verified and your account is now active. You can start using Sentinel immediately.\n\nLog in: http://localhost:8080/login\n\nBest regards,\nThe Sentinel Team`,
+      "INVITE_ACTIVATED"
+    );
   }
 
   // Mirrors: Cognito AuthenticationResult (tokens)
@@ -189,7 +253,7 @@ mock.onPost("/auth/signup").reply((config) => {
     name: `${firstName} ${lastName}`,
     companyName,
     email,
-    roleId: 4, // Trial User — pending approval
+    roleId: 3, // User — pending approval
     allowedPermissions: [],
     deniedPermissions: [],
     tokensUsed: "0",
@@ -202,6 +266,12 @@ mock.onPost("/auth/signup").reply((config) => {
   // Issue OTP — in production: Cognito triggers SES delivery automatically
   otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
   saveOtps(otpStore);
+  logMockEmail(
+    email,
+    "Verify your Sentinel email",
+    `Hi ${firstName},\n\nYour one-time verification code is: ${MOCK_OTP}\n\nThis code expires in 10 minutes.\n\nBest regards,\nThe Sentinel Team`,
+    "SIGNUP_OTP"
+  );
 
   return [201, { status: "otp_pending", deliveryMedium: "EMAIL", destination: email.replace(/(.{2}).*(@.*)/, "$1***$2") }];
 });
@@ -223,7 +293,12 @@ mock.onPost("/auth/resend-otp").reply((config) => {
 mock.onPost("/auth/notify-admin").reply((config) => {
   const { email } = JSON.parse(config.data);
   // Simulate SES email dispatch to admin — always succeeds in mock
-  console.log(`[MOCK SES] Admin notification sent for new signup: ${email}`);
+  logMockEmail(
+    "prajwalgenious@gmail.com",
+    `[Sentinel] New user awaiting approval: ${email}`,
+    `User ${email} has verified their email and is awaiting admin approval.\n\nReview in Admin Portal: http://localhost:8080/admin`,
+    "ADMIN_APPROVAL_REQUEST"
+  );
   return [200, { status: "notification_sent", medium: "SES", recipient: "admin@sentinel.com" }];
 });
 
@@ -247,10 +322,17 @@ mock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
     const id = parseInt(match[1]);
     const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex !== -1) {
-      mockUsers[userIndex].status = "Active";
-      mockUsers[userIndex].roleId = 3; // Promote to standard User on approval
+      const user = mockUsers[userIndex];
+      user.status = "Active";
+      user.roleId = 3; // Promote to standard User on approval
       saveUsers(mockUsers);
-      console.log(`[MOCK SES] Welcome email sent to: ${mockUsers[userIndex].email}`);
+      // Simulate SES approval confirmation email to user
+      logMockEmail(
+        user.email,
+        "Welcome to Sentinel — Your account has been approved!",
+        `Hi ${user.firstName || user.name || "there"},\n\nYour Sentinel account has been approved by an administrator. You can now log in and start using the platform.\n\nLog in: http://localhost:8080/login\n\nBest regards,\nThe Sentinel Team`,
+        "USER_APPROVAL_CONFIRMATION"
+      );
       return [200, { success: true, message: "User approved and welcome email sent via SES." }];
     }
   }
@@ -263,6 +345,16 @@ mock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/reject/);
   if (match) {
     const id = parseInt(match[1]);
+    const user = mockUsers.find(u => u.id === id);
+    if (user) {
+      // Simulate SES rejection email to user before deleting
+      logMockEmail(
+        user.email,
+        "Sentinel — Account Application Update",
+        `Hi ${user.firstName || user.name || "there"},\n\nThank you for your interest in Sentinel. After review, we are unable to approve your account at this time.\n\nIf you believe this is an error, please contact support@27x.ai.\n\nBest regards,\nThe Sentinel Team`,
+        "USER_REJECTION"
+      );
+    }
     mockUsers = mockUsers.filter(u => u.id !== id);
     saveUsers(mockUsers);
     return [200, { success: true }];
@@ -274,33 +366,52 @@ mock.onGet("/admin/users").reply(() => {
   const safeUsers = mockUsers.map((user) => {
     return {
       id: user.id, name: user.name, email: user.email,
-      companyName: user.companyName, tokensUsed: user.tokensUsed, cost: user.cost,
+      companyName: user.companyName, organizationId: user.organizationId || null,
+      tokensUsed: user.tokensUsed, cost: user.cost,
       status: user.status,
       role: ROLES[user.roleId as keyof typeof ROLES]?.name,
+      roleId: user.roleId,
       computedPermissions: computePermissions(user),
+      allowedPermissions: user.allowedPermissions || [],
     };
   });
   return [200, safeUsers];
 });
 
 mock.onPost("/admin/users/invite").reply((config) => {
-  const { name, email, roleId, allowedPermissions } = JSON.parse(config.data);
+  const { name, email, roleId, allowedPermissions, organizationId } = JSON.parse(config.data);
   if (mockUsers.some(u => u.email === email)) {
     return [400, { message: "Email already exists" }];
   }
+  const firstName = name?.split(" ")[0] || email.split("@")[0];
+  const lastName = name?.split(" ").slice(1).join(" ") || "";
   const newUser = {
     id: mockUsers.length + 1,
+    firstName,
+    lastName,
     name: name || email.split('@')[0],
     email,
-    password: "password", // default password for mock
-    roleId: roleId || 3, // Default to User if not provided
+    roleId: roleId || 3,
     allowedPermissions: allowedPermissions || [],
     deniedPermissions: [],
+    organizationId: organizationId || null,
     tokensUsed: "0",
     cost: "$0.00",
-    status: "Active",
+    status: "invited",
   };
   mockUsers.push(newUser);
+  saveUsers(mockUsers);
+
+  // Send invitation email with OTP for first-login verification
+  otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  saveOtps(otpStore);
+  logMockEmail(
+    email,
+    "You've been invited to Sentinel",
+    `Hi ${firstName},\n\nYou have been invited to join Sentinel by an administrator.\n\nTo get started, log in at http://localhost:8080/login using your email and verify your account with the OTP code: ${MOCK_OTP}\n\nThis code expires in 10 minutes.\n\nBest regards,\nThe Sentinel Team`,
+    "USER_INVITE"
+  );
+
   const { password: _, ...userWithoutPassword } = newUser;
   return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId as keyof typeof ROLES]?.name, permissions: computePermissions(newUser) } }];
 });
@@ -329,6 +440,122 @@ mock.onDelete(/\/admin\/users\/.+/).reply((config) => {
   return [404, { message: "User not found" }];
 });
 
+// --- ORGANIZATION DATA ---
+const MOCK_ORG_KEY = "sentinel_mock_orgs";
+const SEED_ORGS = [
+  { id: 1, name: "Sentinel Inc" },
+  { id: 2, name: "Acme Corp" },
+  { id: 3, name: "Globex Corp" },
+];
+
+const loadOrgs = () => {
+  try { const stored = localStorage.getItem(MOCK_ORG_KEY); return stored ? JSON.parse(stored) : [...SEED_ORGS]; } catch { return [...SEED_ORGS]; }
+};
+const saveOrgs = (orgs: any[]) => {
+  try { localStorage.setItem(MOCK_ORG_KEY, JSON.stringify(orgs)); } catch { /* ignore */ }
+};
+let mockOrgs = loadOrgs();
+
+mock.onGet("/admin/organizations").reply(() => [200, mockOrgs]);
+
+mock.onPost("/admin/organizations").reply((config) => {
+  const { name } = JSON.parse(config.data);
+  if (!name) return [400, { message: "Name required" }];
+  const newOrg = { id: mockOrgs.length + 1, name };
+  mockOrgs.push(newOrg);
+  saveOrgs(mockOrgs);
+  return [201, newOrg];
+});
+
+// --- ROLES ---
+const MOCK_ROLES_KEY = "sentinel_mock_roles";
+
+const loadRoles = () => {
+  try {
+    const stored = localStorage.getItem(MOCK_ROLES_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return ROLES;
+};
+
+const saveRoles = (roles: any) => {
+  try { localStorage.setItem(MOCK_ROLES_KEY, JSON.stringify(roles)); } catch { /* ignore */ }
+};
+
+let mockRoles: any = loadRoles();
+
+mock.onGet("/admin/roles").reply(() => {
+  const roles = Object.values(mockRoles).map((role: any) => ({
+    id: role.id,
+    name: role.name,
+    basePermissions: role.basePermissions,
+    pagePermissions: role.pagePermissions || {},
+  }));
+  return [200, roles];
+});
+
+mock.onPost("/admin/roles").reply((config) => {
+  const { name, pagePermissions } = JSON.parse(config.data);
+  if (!name) return [400, { message: "Name required" }];
+  const newId = Object.keys(mockRoles).length + 1;
+  const newRole = {
+    id: newId,
+    name,
+    basePermissions: [],
+    pagePermissions: pagePermissions || {},
+  };
+  mockRoles[newId] = newRole;
+  saveRoles(mockRoles);
+  return [201, newRole];
+});
+
+mock.onPut(/\/admin\/roles\/.+/).reply((config) => {
+  const match = config.url?.match(/\/admin\/roles\/(.+)/);
+  if (!match) return [400, { message: "Invalid URL" }];
+  const id = parseInt(match[1]);
+  if (!mockRoles[id]) return [404, { message: "Role not found" }];
+  const { name, pagePermissions } = JSON.parse(config.data);
+  if (name) mockRoles[id].name = name;
+  if (pagePermissions) mockRoles[id].pagePermissions = pagePermissions;
+  saveRoles(mockRoles);
+  return [200, mockRoles[id]];
+});
+
+mock.onDelete(/\/admin\/roles\/.+/).reply((config) => {
+  const match = config.url?.match(/\/admin\/roles\/(.+)/);
+  if (!match) return [400, { message: "Invalid URL" }];
+  const id = parseInt(match[1]);
+  if (!mockRoles[id]) return [404, { message: "Role not found" }];
+  delete mockRoles[id];
+  saveRoles(mockRoles);
+  return [200, { success: true }];
+});
+
+// --- UPDATE USER PERMISSIONS ---
+mock.onPatch(/\/admin\/users\/.+\/permissions/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/permissions/);
+  if (!match) return [400, { message: "Invalid URL" }];
+  const id = parseInt(match[1]);
+  const { permissions } = JSON.parse(config.data);
+  const userIndex = mockUsers.findIndex(u => u.id === id);
+  if (userIndex === -1) return [404, { message: "User not found" }];
+  mockUsers[userIndex].allowedPermissions = permissions || [];
+  saveUsers(mockUsers);
+  return [200, { success: true }];
+});
+
+// --- UPDATE USER ORGANIZATION ---
+mock.onPatch(/\/admin\/users\/.+\/organization/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/organization/);
+  if (!match) return [400, { message: "Invalid URL" }];
+  const id = parseInt(match[1]);
+  const { organizationId } = JSON.parse(config.data);
+  const userIndex = mockUsers.findIndex(u => u.id === id);
+  if (userIndex === -1) return [404, { message: "User not found" }];
+  mockUsers[userIndex].organizationId = organizationId;
+  saveUsers(mockUsers);
+  return [200, { success: true }];
+});
 
 // --- DASHBOARD DATA ---
 let dashboardSummary = {

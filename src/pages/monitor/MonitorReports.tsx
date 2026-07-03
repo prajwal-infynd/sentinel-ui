@@ -26,7 +26,7 @@ export default function MonitorReports() {
           <Button variant="outline" className="gap-2 bg-white text-slate-700 border-slate-200 hover:bg-slate-50">
             <Filter className="h-4 w-4" /> Filter
           </Button>
-          <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md">
             <FileText className="h-4 w-4" /> Generate New Report
           </Button>
         </div>

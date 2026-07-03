@@ -186,7 +186,7 @@ export function KybMonitorModal({ open, onOpenChange, entity, onUpdateStatus }: 
                       toast({ title: "Approved", description: "Entity has been approved." });
                       setTimeout(() => onOpenChange(false), 800); // Small delay to see the log
                     }} 
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm h-9"
+                    className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-semibold shadow-sm h-9"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Approve
                   </Button>

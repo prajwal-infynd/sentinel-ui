@@ -55,7 +55,7 @@ const Reporting = () => {
             <Button variant="outline" className="gap-2 text-slate-600 hover:text-slate-900" onClick={() => handleDownload("Excel")}>
               <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Export Data
             </Button>
-            <Button className="gap-2 bg-rose-600 hover:bg-rose-700 text-white" onClick={() => handleDownload("PDF")}>
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleDownload("PDF")}>
               <Download className="h-4 w-4" /> Download Report
             </Button>
           </div>

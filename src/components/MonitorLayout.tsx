@@ -45,12 +45,12 @@ export function MonitorLayout() {
                   to={tab.path}
                   className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
                     ${isActive 
-                      ? 'border-pink-600 text-pink-600' 
+                      ? 'border-blue-600 text-blue-600' 
                       : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                     }
                   `}
                 >
-                  <tab.icon className={`w-4 h-4 ${isActive ? 'text-pink-600' : 'text-slate-400'}`} />
+                  <tab.icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
                   {tab.name}
                 </NavLink>
               );

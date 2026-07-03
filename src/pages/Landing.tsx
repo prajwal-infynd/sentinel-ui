@@ -175,8 +175,7 @@ export default function Landing() {
     setSubmitting(false);
     if (res.error) return;
     if (res.awaitingApproval) {
-      // Fire SES admin notification (non-blocking)
-      await notifyAdmin(signupEmail);
+      // Admin notification + user awaiting email are sent automatically by the backend
       setSignupStep("awaiting");
     }
   };
@@ -389,7 +388,7 @@ export default function Landing() {
                         <CheckCircle2 className="w-9 h-9 text-emerald-500" />
                       </div>
                       <h2 className="text-2xl font-black text-slate-900 mb-2">Email Verified!</h2>
-                      <p className="text-slate-500 text-sm leading-relaxed">Your account is now <span className="font-bold text-indigo-600">awaiting admin approval</span>. You'll receive an email once your access is granted.</p>
+                      <p className="text-slate-500 text-sm leading-relaxed">Your account is now <span className="font-bold text-blue-600">awaiting admin approval</span>. You'll receive an email once your access is granted.</p>
                     </div>
 
                     {sesNotified === null && (

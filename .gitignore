@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 .workspace/
 artifacts/
+.env
+.env.local
+.env.*.local

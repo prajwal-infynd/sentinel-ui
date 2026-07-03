@@ -45,7 +45,7 @@ const crawlItems = [
 
 const systemItems = [
   { title: "Settings", url: "/settings", icon: Settings, permission: "manage_subscription" },
-  { title: "Admin Portal", url: "/admin", icon: Users, permission: "invite_user" },
+  { title: "Admin Portal", url: "/admin", icon: Users },
 ];
 
 export function AppSidebar() {
