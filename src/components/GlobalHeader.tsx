@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Search, Bell, Activity, CheckCircle2, Trash2, User, LogOut } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Search, Bell, Activity, CheckCircle2, Trash2, LogOut, Clock, UserCheck, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,14 +9,26 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/lib/api-client";
+import { toast } from "@/components/ui/use-toast";
+
+const fetchPendingUsers = async () => {
+  try {
+    const { data } = await apiClient.get("/admin/pending-users");
+    return data as any[];
+  } catch {
+    return [];
+  }
+};
 
 export function GlobalHeader() {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
+  const navigate = useNavigate();
+  const isAdmin = hasPermission("invite_user");
+
   const [notifications, setNotifications] = useState([
     { id: 1, title: "Critical Risk: Adverse Media", desc: "Atos SE flagged for potential default risk based on recent executive turnover and credit downgrades.", time: "2 min ago", unread: true },
     { id: 2, title: "Agent Crawler Completed", desc: "AI Agent finished deep-dive screening on 34 recently onboarded entities. 2 high-risk signals detected.", time: "15 min ago", unread: true },
@@ -23,10 +37,41 @@ export function GlobalHeader() {
     { id: 5, title: "Portfolio Sync", desc: "Successfully imported 12 new CRM records into the monitoring pipeline.", time: "1 day ago", unread: false },
   ]);
 
+  const [approvingId, setApprovingId] = useState<number | null>(null);
+
+  // Poll pending approvals every 5s — only for admins
+  const { data: pendingUsers = [], refetch: refetchPending } = useQuery({
+    queryKey: ["header-pending-users"],
+    queryFn: fetchPendingUsers,
+    enabled: isAdmin,
+    refetchInterval: 5000,
+  });
+
   const unreadCount = notifications.filter(n => n.unread).length;
+  const totalBadge = unreadCount + (isAdmin ? pendingUsers.length : 0);
 
   const markAllAsRead = () => setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
   const clearAll = () => setNotifications([]);
+
+  const approveUser = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setApprovingId(id);
+    try {
+      await apiClient.post(`/admin/users/${id}/approve`);
+      await refetchPending();
+      toast({ title: "User Approved ✓", description: "User is now Active. Welcome email sent via SES." });
+    } catch {
+      toast({ title: "Error", description: "Could not approve user.", variant: "destructive" });
+    }
+    setApprovingId(null);
+  };
+
+  const rejectUser = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await apiClient.post(`/admin/users/${id}/reject`);
+    await refetchPending();
+    toast({ title: "User Rejected", description: "User removed from approval queue.", variant: "destructive" });
+  };
 
   return (
     <header className="flex h-14 items-center justify-between border-b bg-white shadow-sm px-4 gap-4 relative z-50">
@@ -46,35 +91,99 @@ export function GlobalHeader() {
           <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
           <span>Monitoring Workspace</span>
         </div>
-        <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+        <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+        {/* ── Notification Bell ─────────────────────────────────────────── */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="relative h-10 w-10 rounded-full border-slate-200 bg-white hover:bg-slate-50 hover:text-indigo-600 shadow-sm transition-all focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1">
               <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
+              {totalBadge > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-black text-white shadow-sm ring-2 ring-white">
-                  {unreadCount}
+                  {totalBadge > 9 ? "9+" : totalBadge}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 rounded-2xl p-0 shadow-2xl border-white/20 overflow-hidden z-[100] glass">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 bg-slate-50/50">
-              <span className="font-bold text-sm text-slate-900 flex items-center gap-2"><Bell className="h-4 w-4 text-indigo-500"/> Notifications</span>
-              {unreadCount > 0 && (
-                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{unreadCount} New</span>
+          <DropdownMenuContent align="end" className="w-96 rounded-2xl p-0 shadow-2xl border border-slate-100 overflow-hidden z-[100]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+              <span className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                <Bell className="h-4 w-4 text-indigo-500" /> Notifications
+              </span>
+              {totalBadge > 0 && (
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                  {totalBadge} New
+                </span>
               )}
             </div>
-            
-            <div className="flex flex-col max-h-[300px] overflow-y-auto">
-              {notifications.length === 0 ? (
+
+            <div className="flex flex-col max-h-[420px] overflow-y-auto divide-y divide-slate-100">
+
+              {/* ── Pending Approvals Section (admin only) ── */}
+              {isAdmin && pendingUsers.length > 0 && (
+                <div>
+                  <div className="px-4 py-2 bg-amber-50 flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-amber-600" />
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                      Pending Approvals · {pendingUsers.length}
+                    </span>
+                  </div>
+                  {pendingUsers.map((u: any) => (
+                    <div key={u.id} className="flex items-center justify-between gap-3 px-4 py-3 bg-amber-50/50 hover:bg-amber-50 transition-colors border-b border-amber-100/60 last:border-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs shrink-0">
+                          {u.firstName?.[0]}{u.lastName?.[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-slate-900 truncate">{u.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                          {u.companyName && (
+                            <p className="text-[10px] text-amber-700 font-semibold mt-0.5">{u.companyName}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={(e) => rejectUser(u.id, e)}
+                          className="h-7 w-7 flex items-center justify-center rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+                          title="Reject"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => approveUser(u.id, e)}
+                          disabled={approvingId === u.id}
+                          className="h-7 px-2.5 flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors disabled:opacity-60"
+                          title="Approve"
+                        >
+                          {approvingId === u.id
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <><UserCheck className="w-3 h-3" /> Approve</>
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Go to Admin Portal */}
+                  <button
+                    onClick={() => navigate("/admin")}
+                    className="w-full px-4 py-2 text-xs text-indigo-600 font-bold hover:bg-indigo-50 text-left transition-colors border-b border-amber-100"
+                  >
+                    View all in Admin Portal →
+                  </button>
+                </div>
+              )}
+
+              {/* ── Regular Notifications ── */}
+              {notifications.length === 0 && pendingUsers.length === 0 ? (
                 <div className="py-10 text-center flex flex-col items-center justify-center text-muted-foreground">
                   <CheckCircle2 className="h-8 w-8 mb-2 opacity-20" />
                   <span className="text-sm font-semibold">You're all caught up!</span>
                 </div>
               ) : (
                 notifications.map((n) => (
-                  <div key={n.id} className={`flex items-start gap-3 p-4 border-b last:border-0 hover:bg-slate-50 cursor-pointer transition-colors ${n.unread ? 'bg-indigo-50/30' : ''}`}>
+                  <div key={n.id} className={`flex items-start gap-3 p-4 hover:bg-slate-50 cursor-pointer transition-colors ${n.unread ? 'bg-indigo-50/30' : ''}`}>
                     <div className={`mt-1.5 h-2 w-2 rounded-full flex-shrink-0 ${n.unread ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-transparent'}`} />
                     <div>
                       <div className={`text-sm ${n.unread ? 'font-bold text-slate-900' : 'font-semibold text-slate-500'}`}>{n.title}</div>
@@ -85,9 +194,10 @@ export function GlobalHeader() {
                 ))
               )}
             </div>
-            
-            {notifications.length > 0 && (
-              <div className="grid grid-cols-2 border-t border-white/20 bg-slate-50/50 divide-x divide-white/20">
+
+            {/* Footer actions */}
+            {(notifications.length > 0) && (
+              <div className="grid grid-cols-2 border-t border-slate-100 bg-slate-50/50 divide-x divide-slate-100">
                 <Button variant="ghost" onClick={markAllAsRead} className="rounded-none text-xs h-10 font-bold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50">
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Mark read
                 </Button>
@@ -98,6 +208,8 @@ export function GlobalHeader() {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* ── User Avatar ──────────────────────────────────────────────── */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -114,10 +226,13 @@ export function GlobalHeader() {
               <Badge variant="outline" className="w-fit mt-1 text-[10px] uppercase font-bold bg-slate-50 text-slate-600">{user?.role}</Badge>
             </div>
             <div className="pt-2">
-              <DropdownMenuItem onClick={logout} className="text-red-600 focus:bg-red-50 focus:text-red-700 cursor-pointer rounded-xl font-medium">
-                <LogOut className="mr-2 h-4 w-4" />
+              <button
+                onClick={logout}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
                 Log out
-              </DropdownMenuItem>
+              </button>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
