@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare } from "lucide-react";
+import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare, User, Zap, Wrench, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
@@ -167,223 +167,273 @@ const AIAgents = () => {
       </div>
 
       <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>
-        <DialogContent aria-describedby={undefined} className="max-w-5xl bg-white/95 backdrop-blur-md shadow-[0_20px_50px_-12px_rgba(0,0,0,0.15)] p-0 overflow-hidden border-slate-200">
-          <DialogHeader className="p-6 pb-0 border-b border-slate-100 bg-white">
-            <DialogTitle className="text-xl font-bold tracking-tight text-slate-900">Edit Root Agent: {editingAgent}</DialogTitle>
-            <DialogDescription className="mt-1">Define your agent's identity, privacy boundaries, and core LLM engine.</DialogDescription>
-          </DialogHeader>
-          <Tabs defaultValue="config" className="w-full">
-            <div className="px-6 pt-4 bg-white border-b border-slate-100">
-              <TabsList className="bg-transparent space-x-2 p-0 h-auto">
-                <TabsTrigger value="config" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none border border-transparent data-[state=active]:border-indigo-100 rounded-lg py-2 px-4 transition-all">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Profile & Model
+        <DialogContent aria-describedby={undefined} className="max-w-6xl bg-[#FAFAFA] shadow-2xl p-0 overflow-hidden border-slate-200 h-[85vh] flex flex-col">
+          
+          <Tabs defaultValue="profile" className="flex-1 flex flex-col overflow-hidden">
+            <div className="px-6 pt-6 bg-white border-b border-slate-100 flex-shrink-0 flex justify-center">
+              <TabsList className="bg-slate-50 p-1.5 rounded-full flex gap-1 mb-4 border border-slate-200">
+                <TabsTrigger value="profile" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <User className="w-4 h-4" /> Profile & Model
                 </TabsTrigger>
-                <TabsTrigger value="logs" className="data-[state=active]:bg-indigo-50 data-[state=active]:text-indigo-700 data-[state=active]:shadow-none border border-transparent data-[state=active]:border-indigo-100 rounded-lg py-2 px-4 transition-all">
-                  <TerminalSquare className="h-4 w-4 mr-2" />
-                  AI Logs
+                <TabsTrigger value="instructions" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <FileText className="w-4 h-4" /> Instructions
+                </TabsTrigger>
+                <TabsTrigger value="tools" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <Zap className="w-4 h-4" /> Tools & Integrations
+                </TabsTrigger>
+                <TabsTrigger value="capabilities" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <Database className="w-4 h-4" /> Capabilities
+                </TabsTrigger>
+                <TabsTrigger value="workflow" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" /> Workflow & Triggers
                 </TabsTrigger>
               </TabsList>
             </div>
             
-            <TabsContent value="config" className="m-0">
-              <div className="p-8 max-h-[60vh] overflow-y-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                  {/* Agent Profile Section */}
-                  <div>
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
-                      <Bot className="h-5 w-5 text-indigo-600" /> Agent Profile
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-6">Define the core identity and objective of your outreach agent.</p>
-                    
-                    <div className="space-y-5">
-                      <div>
-                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">Agent Name</Label>
-                        <Input defaultValue={editingAgent || ""} className="font-semibold bg-white border-slate-200 focus-visible:ring-indigo-500 shadow-sm h-11" />
-                      </div>
-                      <div>
-                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">Description & System Prompt</Label>
-                        <Textarea 
-                          defaultValue="Researches leads and drafts personalized sales emails for buildicy.com. Identifies target companies, finds key decision-makers, and creates tailored outreach messages based on company research, recent news, and industry trends." 
-                          className="min-h-[140px] resize-y bg-white border-slate-200 focus-visible:ring-indigo-500 text-sm shadow-sm leading-relaxed"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5" /> Discovery Frequency Rule
-                        </Label>
-                        <div className="relative group">
-                          <select className="appearance-none flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors group-hover:border-indigo-200 cursor-pointer">
-                            <option value="daily">Daily Continuous Monitoring</option>
-                            <option value="weekly">Weekly Deep Discovery</option>
-                            <option value="realtime">Real-time (High Cost)</option>
-                            <option value="manual">Manual Trigger Only</option>
-                          </select>
-                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Language Model Settings Section */}
-                  <div>
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
-                      <Cpu className="h-5 w-5 text-indigo-600" /> Language Model Settings
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-6">Configure the underlying LLM powering this agent's reasoning.</p>
-                    
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between p-4 rounded-xl border border-indigo-50 bg-indigo-50/30">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Shield className="h-4 w-4 text-indigo-600" />
-                            <h4 className="text-sm font-bold text-indigo-950">PII Protection</h4>
-                          </div>
-                          <p className="text-[11px] text-indigo-900/70 leading-relaxed pr-6">
-                            Sensitive values are swapped for typed placeholders like <Badge variant="outline" className="font-mono text-[9px] bg-white text-indigo-600 border-indigo-200 px-1 py-0">&lt;EMAIL_ADDRESS_1&gt;</Badge> before reaching the AI.
-                          </p>
-                        </div>
-                        <Switch defaultChecked={false} className="data-[state=checked]:bg-indigo-600" />
-                      </div>
-
-                      <div>
-                        <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 flex items-center gap-1.5">
-                          <Webhook className="h-3.5 w-3.5" /> Model Provider (OpenAdapter)
-                        </Label>
-                        <div className="relative group">
-                          <select className="appearance-none flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium shadow-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors group-hover:border-indigo-200 cursor-pointer">
-                            <option value="0g">0G-Qwen3.7-max</option>
-                            <option value="gpt4o">GPT-4o (OpenAI)</option>
-                            <option value="claude">Claude 3.5 Sonnet (Anthropic)</option>
-                            <option value="llama3">Llama-3-70B (Meta)</option>
-                            <option value="mistral">Mistral-Large (Mistral AI)</option>
-                          </select>
-                          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                            <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <div className="flex-1 overflow-y-auto p-8">
+              <TabsContent value="profile" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900">Profile & Model</h2>
+                  <p className="text-slate-500 mt-2">Define your agent's identity, privacy boundaries, and core LLM engine.</p>
                 </div>
-
-                {/* PIL Enablement Section */}
-                <div className="mt-10 pt-8 border-t border-slate-100">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-1">
-                    <Sparkles className="h-5 w-5 text-indigo-600" /> PIL Enablement (Powered by 27x.ai)
+                
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-6">
+                    <User className="h-5 w-5 text-indigo-500" /> Agent Identity
                   </h3>
-                  <p className="text-sm text-slate-500 mb-6">Configure Policy-In-Loop (PIL) self-improvement models and agent telemetry.</p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 pr-6">
-                        <Label className="text-sm font-bold text-slate-800">27x.ai Model Self-Improvement</Label>
-                        <p className="text-xs text-slate-500 leading-relaxed">Allow the model to learn from human-in-the-loop resolutions and overrides automatically.</p>
-                      </div>
-                      <Switch defaultChecked className="data-[state=checked]:bg-indigo-600 mt-1" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Name</Label>
+                      <Input defaultValue={editingAgent || "Company Intelligence Analyst"} className="h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500" />
                     </div>
-                    
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1 pr-6">
-                        <Label className="text-sm font-bold text-slate-800">Agent Telemetry & AI Logs</Label>
-                        <p className="text-xs text-slate-500 leading-relaxed">Send detailed thought-process logs for external auditing and compliance checks.</p>
-                      </div>
-                      <Switch defaultChecked className="data-[state=checked]:bg-indigo-600 mt-1" />
-                    </div>
-
-                    <div className="md:col-span-2 max-w-xl">
-                      <Label className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block">27x.ai Endpoint Configuration</Label>
-                      <Input defaultValue="https://api.27x.ai/v1/models/pil-tune" className="bg-white border-slate-200 shadow-sm h-11 text-slate-600 font-mono text-sm" />
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Description</Label>
+                      <Input defaultValue="Comprehensive company analysis agent that researches and..." className="h-12 bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500" />
                     </div>
                   </div>
                 </div>
-              </div>
-            </TabsContent>
 
-            <TabsContent value="logs" className="m-0">
-              <div className="p-6 max-h-[60vh] overflow-y-auto space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input placeholder="Search logs by model, query, status..." className="pl-9 bg-white border-slate-200 shadow-sm" />
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-6">
+                    <Cpu className="h-5 w-5 text-indigo-500" /> Model Configuration
+                  </h3>
+                  <div className="space-y-6">
+                    <div className="flex items-start justify-between p-5 rounded-xl border border-slate-200 bg-slate-50/50">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-slate-700" />
+                          <h4 className="font-bold text-slate-900">PII Protection</h4>
+                          <Badge variant="outline" className="bg-slate-200 text-slate-600 border-transparent text-[10px]">Off</Badge>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
+                          Sensitive values are swapped for typed placeholders like <code className="bg-slate-200 px-1 py-0.5 rounded text-indigo-600 font-mono">&lt;EMAIL_ADDRESS_1&gt;</code> before reaching the AI.
+                        </p>
+                      </div>
+                      <Switch defaultChecked={false} className="data-[state=checked]:bg-indigo-600" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Select LLM Engine</Label>
+                      <div className="relative group max-w-md">
+                        <select className="appearance-none flex h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer">
+                          <option>Amazon Bedrock GLM 5</option>
+                          <option>OpenAI GPT-4o</option>
+                          <option>Anthropic Claude 3.5 Sonnet</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                          <ChevronDown className="h-4 w-4 text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-4">
+                      <Switch defaultChecked className="data-[state=checked]:bg-indigo-600" />
+                      <Label className="text-sm font-medium text-slate-700 flex items-center gap-2"><Sparkles className="w-4 h-4 text-indigo-500" /> Generative UI</Label>
+                    </div>
                   </div>
-                  <Button variant="outline" className="bg-white border-slate-200 shadow-sm gap-2">
-                    <RefreshCw className="h-4 w-4" /> Refresh Logs
+                </div>
+              </TabsContent>
+
+              <TabsContent value="instructions" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Instructions</h2>
+                    <p className="text-slate-500 mt-2">Shape your agent's persona, goals, and core system prompt.</p>
+                  </div>
+                  <Button variant="outline" className="gap-2 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100">
+                    <Sparkles className="w-4 h-4" /> Optimize Prompt
                   </Button>
                 </div>
 
-                <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
-                  <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 flex flex-row items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm text-indigo-600">
-                        <Cpu className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900">{editingAgent}</h3>
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 text-[10px]">Success</Badge>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] font-mono text-slate-500">
-                          <span>openadapter/0G-Qwen3.7-max</span>
-                          <span className="text-slate-300">•</span>
-                          <span>Latency: 9.72s</span>
-                          <span className="text-slate-300">•</span>
-                          <span>{new Date().toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[11px] font-bold text-slate-700 mb-1">2950 Tokens</div>
-                      <Progress value={75} className="h-1.5 w-24 bg-slate-100" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-                      <div className="p-6 bg-slate-50/30">
-                        <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2 mb-4">
-                          <MessageSquare className="h-4 w-4" /> User Prompt
-                        </Label>
-                        <div className="bg-white border border-slate-200 rounded-xl p-4 text-sm text-slate-700 shadow-sm font-mono min-h-[200px]">
-                          ho who are u
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
-                            <Bot className="h-4 w-4" /> Model Response
-                          </Label>
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-400 hover:text-slate-900" onClick={() => toast({ title: "Copied", description: "Response copied to clipboard." })}>
-                            <Copy className="h-3 w-3 mr-1" /> Copy
-                          </Button>
-                        </div>
-                        <div className="bg-indigo-50/30 border border-indigo-100 rounded-xl p-4 text-sm text-slate-800 shadow-sm min-h-[200px] leading-relaxed">
-                          <p className="mb-4">Hey there! 👋</p>
-                          <p className="mb-4">I'm your <strong>Sales Researcher & Email Writer</strong> for <strong>buildicy.com</strong>. Here's what I can do for you:</p>
-                          <ul className="space-y-3">
-                            <li className="flex items-start gap-2">
-                              <Search className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
-                              <span><strong>Lead Research</strong> - Give me a company name or industry, and I'll dig up key details: size, recent news, decision-makers, pain points, and more.</span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <FileSignature className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
-                              <span><strong>Personalized Email Drafts</strong> - I'll craft short, high-converting sales emails (under 150 words) tailored to each lead, with compelling subject lines and clear CTAs.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Role (Persona)</Label>
+                    <Textarea defaultValue="You are a senior business intelligence analyst specializing in comprehensive company research and analysis." className="min-h-[80px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 resize-y" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Agent Goal</Label>
+                    <Textarea defaultValue="Conduct thorough company analysis by gathering data from multiple sources (web, financial databases, news) and synthesize findings into a structured, actionable intelligence report." className="min-h-[100px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 resize-y" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">System Instructions</Label>
+                    <Textarea defaultValue="When analyzing a company, follow this efficient, systematic approach:&#10;&#10;## Efficiency Rules (CRITICAL)&#10;- **Tool call budget**: Limit to 6-8 tool calls for a standard company analysis. Only exceed this for complex multi-company comparisons.&#10;- **No redundant searches**: If a search returns useful results, do NOT run similar searches with slightly different wording.&#10;- **Cache your findings**: Do not re-fetch or re-search for information you already obtained earlier in this session.&#10;- **Skip bot-protected sites**: Trustpilot, G2, and similar review sites often block automated scraping. Rely on search snippets for these instead of direct scraping.&#10;- **Prioritize authoritative sources**: Check these sources first (in order): company website, LinkedIn, getlatka.com, Crunchbase." className="min-h-[250px] bg-slate-50/50 border-slate-200 focus-visible:ring-indigo-500 font-mono text-sm leading-relaxed" />
+                  </div>
+                </div>
 
-          <DialogFooter className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditingAgent(null)}>Cancel</Button>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setEditingAgent(null); toast({ title: "Changes Saved", description: "Agent configuration updated successfully." }); }}>Save Changes</Button>
-          </DialogFooter>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col h-64">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 block">Examples (Few-Shot)</Label>
+                    <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 overflow-y-auto">
+                      <div className="space-y-4 text-sm">
+                        <div>
+                          <span className="font-bold text-slate-700">User:</span> Analyze Stripe
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-700">Agent:</span> I'll conduct a comprehensive analysis of Stripe using targeted research.
+                          <br /><br />
+                          <span className="text-slate-500 italic">[Uses web search for "Stripe company overview"]</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col h-64">
+                    <div className="flex items-center justify-between mb-4">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Structured Output</Label>
+                      <Button variant="outline" size="sm" className="h-8 gap-1 text-indigo-600 border-indigo-200 bg-indigo-50 hover:bg-indigo-100"><Plus className="w-3 h-3"/> Add Schema</Button>
+                    </div>
+                    <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                      <CheckCircle2 className="w-8 h-8 text-slate-300 mb-3" />
+                      <h4 className="font-bold text-slate-700">No JSON Schema</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-[200px]">Agent will return free-form markdown text.</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="tools" className="m-0 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex items-center justify-between mb-8 text-center md:text-left md:flex-row flex-col gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Tools & Integrations</h2>
+                    <p className="text-slate-500 mt-2">Equip your agent with MCP tools and external platform APIs.</p>
+                  </div>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                    <Plus className="w-4 h-4" /> Add Tool
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Tool 1 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-lg">ai-studio-utils</h3>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">4 active</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">mcp search</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">mcp search mcp</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">scrape workflow</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">scrape extract</Badge>
+                    </div>
+                  </div>
+
+                  {/* Tool 2 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-lg">yahoo_finance</h3>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">3 active</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">yfinance get ticker info</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">yfinance get ticker news</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">yfinance search</Badge>
+                    </div>
+                  </div>
+
+                  {/* Tool 3 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-lg">selenium</h3>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">4 active</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">start browser</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">navigate</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">take screenshot</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">get element text</Badge>
+                    </div>
+                  </div>
+
+                  {/* Tool 4 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-lg">current_time</h3>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">2 active</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">get current time</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal">convert time</Badge>
+                    </div>
+                  </div>
+
+                  {/* Tool 5 */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                          <Zap className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-lg">Composio Tools</h3>
+                      </div>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100">3 active</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal uppercase text-[10px]">Gmail Send Email</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal uppercase text-[10px]">Gmail Create Email Draft</Badge>
+                      <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-normal uppercase text-[10px]">Gmail Get Profile</Badge>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="capabilities" className="m-0 h-full flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <Database className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <p>Capabilities settings are not available in this mockup.</p>
+                </div>
+              </TabsContent>
+              <TabsContent value="workflow" className="m-0 h-full flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <ShieldCheck className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                  <p>Workflow & Triggers are not available in this mockup.</p>
+                </div>
+              </TabsContent>
+            </div>
+            
+            <div className="p-6 border-t border-slate-100 bg-white flex justify-end gap-3 flex-shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)] z-10">
+              <Button variant="ghost" onClick={() => setEditingAgent(null)} className="text-slate-500">Discard Changes</Button>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm px-8" onClick={() => { setEditingAgent(null); toast({ title: "Changes Saved", description: "Agent configuration updated successfully." }); }}>Save Changes</Button>
+            </div>
+          </Tabs>
         </DialogContent>
       </Dialog>
       <Dialog open={isCreatingAgent} onOpenChange={setIsCreatingAgent}>
