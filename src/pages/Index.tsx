@@ -1,13 +1,6 @@
-import { FormEvent, useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Activity, ArrowRight, Clock, Globe, Shield, TrendingDown, Zap } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/components/ui/use-toast";
 
 const stats = [
   { value: "50M+", label: "Monitored Signals", icon: Activity },
@@ -29,45 +22,14 @@ const flowNodes = [
 
 const Index = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, signup, user, isLoading: loading } = useAuth();
-  
-  const signInWithPassword = async (email: string, pass: string) => {
-    const success = await login(email, pass);
-    return { error: success ? null : "Invalid credentials" };
-  };
-  
-  const signUpWithPassword = async (email: string, pass: string, name: string) => {
-    const success = await signup(name, email, pass);
-    return { error: success ? null : "Registration failed" };
-  };
-  
-  const signInWithGoogle = async () => {
-    toast({ title: "Coming Soon", description: "Google sign-in is not yet enabled." });
-    return { error: null };
-  };
-
-  const [signInEmail, setSignInEmail] = useState("testuser@example.com");
-  const [signInPassword, setSignInPassword] = useState("harish@123");
-  const [signUpName, setSignUpName] = useState("");
-  const [signUpEmail, setSignUpEmail] = useState("");
-  const [signUpPassword, setSignUpPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      const target = (location.state as { from?: string } | null)?.from ?? "/dashboard";
-      navigate(target, { replace: true });
-    } else if (!loading) {
-      // Auto-login with hardcoded credentials
-      const autoSignIn = async () => {
-        setSubmitting(true);
-        await signInWithPassword("testuser@example.com", "harish@123");
-        setSubmitting(false);
-      };
-      autoSignIn();
+    if (!isLoading) {
+      // Always redirect — Index is no longer the auth page
+      navigate(user ? "/dashboard" : "/login", { replace: true });
     }
-  }, [location.state, navigate, user, loading, signInWithPassword]);
+  }, [user, isLoading, navigate]);
 
   const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

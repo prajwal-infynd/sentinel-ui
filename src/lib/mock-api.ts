@@ -8,6 +8,10 @@ export const mock = new MockAdapter(apiClient, { onNoMatch: "passthrough" });
 
 
 // --- AUTH & USERS DATA ---
+// NOTE: These endpoints mirror the exact contract that will be backed by
+// Amazon Cognito (auth/OTP) + Amazon SES (email notifications) in production.
+// When the backend is ready, swap VITE_API_URL env var — no frontend code changes needed.
+
 export const ROLES = {
   1: { id: 1, name: "Super Admin", basePermissions: ["admin:*"] },
   2: { id: 2, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"] },
@@ -15,11 +19,19 @@ export const ROLES = {
   4: { id: 4, name: "Trial User", basePermissions: ["manage_subscription", "crud:*"] },
 };
 
-let mockUsers = [
-  { id: 1, name: "Super Admin User", roleId: 1, email: "superadmin@sentinel.com", password: "harish@123", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
-  { id: 2, name: "Owner User", roleId: 2, email: "owner@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
-  { id: 3, name: "Standard User", roleId: 3, email: "user@sentinel.com", password: "password", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
+// Mock user store — mirrors Cognito UserPool User records
+// status: "Active" | "otp_pending" | "awaiting_approval"
+let mockUsers: any[] = [
+  { id: 1, firstName: "Super", lastName: "Admin", name: "Super Admin", companyName: "Sentinel Inc", roleId: 1, email: "superadmin@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
+  { id: 2, firstName: "Owner", lastName: "User", name: "Owner User", companyName: "Sentinel Inc", roleId: 2, email: "owner@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
+  { id: 3, firstName: "Standard", lastName: "User", name: "Standard User", companyName: "Acme Corp", roleId: 3, email: "user@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
 ];
+
+// In-memory OTP store — mirrors Cognito's internal session tokens
+// In production: Cognito manages this entirely; SES delivers the email
+const otpStore: Record<string, { otp: string; expiresAt: number }> = {};
+const MOCK_OTP = "123456"; // In production: Cognito generates & sends this via SES
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes — same as Cognito default
 
 const computePermissions = (user: any) => {
   const role = ROLES[user.roleId as keyof typeof ROLES];
@@ -31,36 +43,135 @@ const computePermissions = (user: any) => {
   return Array.from(permissions);
 };
 
-mock.onPost("/auth/login").reply((config) => {
-  const { email, password } = JSON.parse(config.data);
-  const user = mockUsers.find(u => u.email === email && u.password === password);
-  if (user) {
-    const { password: _, ...userWithoutPassword } = user;
-    return [200, { user: { ...userWithoutPassword, role: ROLES[user.roleId as keyof typeof ROLES]?.name, computedPermissions: computePermissions(user) } }];
+// --- LOGIN FLOW ---
+// Step 1: POST /auth/initiate-login
+// Mirrors: Cognito InitiateAuth (USER_AUTH / CUSTOM_AUTH with OTP challenge)
+// SES sends OTP email in production
+mock.onPost("/auth/initiate-login").reply((config) => {
+  const { email } = JSON.parse(config.data);
+  const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+  if (!user) {
+    // Cognito returns UserNotFoundException — we mirror it as 404
+    return [404, { code: "UserNotFoundException", message: "No account found with this email." }];
   }
-  return [401, { message: "Invalid email or password" }];
+
+  if (user.status === "otp_pending") {
+    // User signed up but never verified OTP — redirect to OTP verify with flag
+    otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+    return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: true, message: "Your email is not yet verified. Please confirm your OTP." }];
+  }
+
+  if (user.status === "awaiting_approval") {
+    return [403, { code: "NotAuthorizedException", message: "Your account is awaiting admin approval." }];
+  }
+
+  // Happy path — issue OTP (Cognito triggers SES Lambda in production)
+  otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  return [200, { challengeName: "CUSTOM_CHALLENGE", session: "mock-session-token", otpPending: false }];
 });
 
-mock.onPost("/auth/signup").reply((config) => {
-  const { name, email, password } = JSON.parse(config.data);
-  if (mockUsers.some(u => u.email === email)) {
-    return [400, { message: "Email already exists" }];
+// Step 2: POST /auth/respond-to-challenge
+// Mirrors: Cognito RespondToAuthChallenge (CUSTOM_CHALLENGE answer)
+mock.onPost("/auth/respond-to-challenge").reply((config) => {
+  const { email, otp, session } = JSON.parse(config.data);
+  const stored = otpStore[email];
+
+  if (!stored) {
+    return [400, { code: "CodeMismatchException", message: "OTP expired or not found. Please request a new one." }];
   }
+  if (Date.now() > stored.expiresAt) {
+    delete otpStore[email];
+    return [400, { code: "ExpiredCodeException", message: "OTP has expired. Please request a new one." }];
+  }
+  if (stored.otp !== otp) {
+    return [400, { code: "CodeMismatchException", message: "Incorrect OTP. Please try again." }];
+  }
+
+  delete otpStore[email];
+  const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) return [404, { code: "UserNotFoundException", message: "User not found." }];
+
+  // Mark email as verified if otp_pending
+  if (user.status === "otp_pending") {
+    user.status = "awaiting_approval";
+    return [200, { status: "awaiting_approval", message: "Email verified. Your account is now pending admin approval." }];
+  }
+
+  // Mirrors: Cognito AuthenticationResult (tokens)
+  const { ...safeUser } = user;
+  return [200, {
+    AuthenticationResult: {
+      AccessToken: "mock-access-token",
+      IdToken: "mock-id-token",
+      RefreshToken: "mock-refresh-token",
+    },
+    user: {
+      ...safeUser,
+      role: ROLES[user.roleId as keyof typeof ROLES]?.name,
+      computedPermissions: computePermissions(user),
+    }
+  }];
+});
+
+// --- SIGNUP FLOW ---
+// Step 1: POST /auth/signup
+// Mirrors: Cognito SignUp API — creates user in UserPool with UNCONFIRMED status
+// SES sends OTP verification email automatically via Cognito
+mock.onPost("/auth/signup").reply((config) => {
+  const { firstName, lastName, companyName, email } = JSON.parse(config.data);
+
+  const existing = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (existing) {
+    if (existing.status === "otp_pending") {
+      // Resend OTP — mirrors Cognito ResendConfirmationCode
+      otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+      return [200, { status: "otp_pending", message: "OTP resent to your email." }];
+    }
+    return [400, { code: "UsernameExistsException", message: "An account with this email already exists." }];
+  }
+
+  // Create user with otp_pending status (mirrors Cognito UNCONFIRMED)
   const newUser = {
     id: mockUsers.length + 1,
-    name,
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`,
+    companyName,
     email,
-    password,
-    roleId: 4, // Default to Trial User
+    roleId: 4, // Trial User — pending approval
     allowedPermissions: [],
     deniedPermissions: [],
     tokensUsed: "0",
     cost: "$0.00",
-    status: "Active",
+    status: "otp_pending", // mirrors Cognito UNCONFIRMED
   };
   mockUsers.push(newUser);
-  const { password: _, ...userWithoutPassword } = newUser;
-  return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId as keyof typeof ROLES]?.name, computedPermissions: computePermissions(newUser) } }];
+
+  // Issue OTP — in production: Cognito triggers SES delivery automatically
+  otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+
+  return [201, { status: "otp_pending", deliveryMedium: "EMAIL", destination: email.replace(/(.{2}).*(@.*)/, "$1***$2") }];
+});
+
+// POST /auth/resend-otp
+// Mirrors: Cognito ResendConfirmationCode
+mock.onPost("/auth/resend-otp").reply((config) => {
+  const { email } = JSON.parse(config.data);
+  const user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) return [404, { code: "UserNotFoundException", message: "User not found." }];
+  otpStore[email] = { otp: MOCK_OTP, expiresAt: Date.now() + OTP_TTL_MS };
+  return [200, { status: "otp_sent", deliveryMedium: "EMAIL", destination: email.replace(/(.{2}).*(@.*)/, "$1***$2") }];
+});
+
+// POST /auth/notify-admin
+// Mirrors: SES SendEmail triggered from Lambda post-confirmation hook
+// In production: Lambda fires automatically after Cognito ConfirmSignUp
+mock.onPost("/auth/notify-admin").reply((config) => {
+  const { email } = JSON.parse(config.data);
+  // Simulate SES email dispatch to admin — always succeeds in mock
+  console.log(`[MOCK SES] Admin notification sent for new signup: ${email}`);
+  return [200, { status: "notification_sent", medium: "SES", recipient: "admin@sentinel.com" }];
 });
 
 mock.onGet("/admin/users").reply(() => {
