@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare, User, Zap, Wrench, Plus } from "lucide-react";
+import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare, User, Zap, Wrench, Plus, Book, Brain, Calendar, ShieldAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { fetchAgentOverview } from "@/lib/media-agent-data";
 
@@ -183,9 +184,6 @@ const AIAgents = () => {
                 </TabsTrigger>
                 <TabsTrigger value="capabilities" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
                   <Database className="w-4 h-4" /> Capabilities
-                </TabsTrigger>
-                <TabsTrigger value="workflow" className="rounded-full px-6 py-2.5 text-sm font-semibold text-slate-500 data-[state=active]:text-indigo-600 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4" /> Workflow & Triggers
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -415,26 +413,78 @@ const AIAgents = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-8">
+              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-6">
                 <div className="mb-8 text-center md:text-left">
                   <h2 className="text-2xl font-bold text-slate-900">Capabilities</h2>
                   <p className="text-slate-500 mt-2">Configure autonomous capabilities and guardrails for this agent.</p>
                 </div>
                 
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-slate-900">Human approval</h3>
-                    <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
-                      Agent will pause and wait for your explicit approval before taking any action. You will receive an email notification when approval is needed.
-                    </p>
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <Book className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Knowledge Base</h3>
+                      <p className="text-sm text-slate-500 leading-relaxed">Connect external documents, databases, and APIs for RAG.</p>
+                    </div>
                   </div>
-                  <Switch defaultChecked={true} className="data-[state=checked]:bg-indigo-600 mt-1" />
+                  <Switch defaultChecked={false} className="data-[state=checked]:bg-indigo-600" />
                 </div>
-              </TabsContent>
-              <TabsContent value="workflow" className="m-0">
-                <div className="text-center">
-                  <ShieldCheck className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                  <p>Workflow & Triggers are not available in this mockup.</p>
+
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <Brain className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Memory</h3>
+                      <p className="text-sm text-slate-500 leading-relaxed">Allow agent to remember past interactions and user preferences.</p>
+                    </div>
+                  </div>
+                  <Switch defaultChecked={false} className="data-[state=checked]:bg-indigo-600" />
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">Scheduler</h3>
+                      <p className="text-sm text-slate-500 leading-relaxed">Run this agent automatically on a recurring schedule.</p>
+                    </div>
+                  </div>
+                  <Switch defaultChecked={false} className="data-[state=checked]:bg-indigo-600" />
+                </div>
+
+                <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2.5 bg-orange-100 text-orange-600 rounded-xl">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Human-in-the-Loop Approval</h3>
+                        <p className="text-sm text-slate-500 leading-relaxed">Agent pauses and requests human sign-off before taking actions.</p>
+                      </div>
+                    </div>
+                    <Switch defaultChecked={true} className="data-[state=checked]:bg-indigo-600" />
+                  </div>
+                  <div className="pt-4 border-t border-orange-200/60 space-y-4 pl-[4.5rem]">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox id="chat-ui" defaultChecked className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 border-slate-300" />
+                      <label htmlFor="chat-ui" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700">
+                        Get approval in chat UI
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox id="email-notify" className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 border-slate-300" />
+                      <label htmlFor="email-notify" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-slate-700">
+                        Notify via email
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
             </div>
