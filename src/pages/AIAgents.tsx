@@ -191,7 +191,7 @@ const AIAgents = () => {
             </div>
             
             <div className="flex-1 overflow-y-auto p-8">
-              <TabsContent value="profile" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TabsContent value="profile" className="m-0 max-w-4xl mx-auto space-y-8">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold text-slate-900">Profile & Model</h2>
                   <p className="text-slate-500 mt-2">Define your agent's identity, privacy boundaries, and core LLM engine.</p>
@@ -254,7 +254,7 @@ const AIAgents = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="instructions" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TabsContent value="instructions" className="m-0 max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center justify-between mb-8">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900">Instructions</h2>
@@ -310,7 +310,7 @@ const AIAgents = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="tools" className="m-0 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TabsContent value="tools" className="m-0 max-w-5xl mx-auto space-y-8">
                 <div className="flex items-center justify-between mb-8 text-center md:text-left md:flex-row flex-col gap-4">
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900">Tools & Integrations</h2>
@@ -415,7 +415,7 @@ const AIAgents = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <TabsContent value="capabilities" className="m-0 max-w-4xl mx-auto space-y-8">
                 <div className="mb-8 text-center md:text-left">
                   <h2 className="text-2xl font-bold text-slate-900">Capabilities</h2>
                   <p className="text-slate-500 mt-2">Configure autonomous capabilities and guardrails for this agent.</p>
@@ -431,7 +431,7 @@ const AIAgents = () => {
                   <Switch defaultChecked={true} className="data-[state=checked]:bg-indigo-600 mt-1" />
                 </div>
               </TabsContent>
-              <TabsContent value="workflow" className="m-0 h-full flex items-center justify-center text-slate-400">
+              <TabsContent value="workflow" className="m-0">
                 <div className="text-center">
                   <ShieldCheck className="w-16 h-16 mx-auto mb-4 opacity-20" />
                   <p>Workflow & Triggers are not available in this mockup.</p>
