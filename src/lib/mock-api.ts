@@ -544,6 +544,77 @@ mock.onPatch(/\/admin\/users\/.+\/permissions/).reply((config) => {
   return [200, { success: true }];
 });
 
+// --- USER ANALYTICS DATA ---
+// Generates per-user analytics with daily token/cost breakdowns for the last 14 days
+const userAnalyticsData: Record<number, { daily: Array<{ date: string; tokens: number; cost: number; apiCalls: number }>; featureBreakdown: Array<{ feature: string; pct: number; cost: string }>; alertsGenerated: number; avgSessionTime: string }> = {
+  1: {
+    daily: Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (13 - i));
+      return {
+        date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        tokens: Math.floor(Math.random() * 80000) + 40000,
+        cost: parseFloat((Math.random() * 1.5 + 0.8).toFixed(2)),
+        apiCalls: Math.floor(Math.random() * 200) + 100,
+      };
+    }),
+    featureBreakdown: [
+      { feature: "Swarm Agent Investigations", pct: 40, cost: "$9.60" },
+      { feature: "Data Architecture Embedding", pct: 30, cost: "$7.20" },
+      { feature: "Adverse Media Crawling", pct: 20, cost: "$4.80" },
+      { feature: "Reporting & Analytics", pct: 10, cost: "$2.40" },
+    ],
+    alertsGenerated: 47,
+    avgSessionTime: "1h 23m",
+  },
+  2: {
+    daily: Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (13 - i));
+      return {
+        date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        tokens: Math.floor(Math.random() * 50000) + 20000,
+        cost: parseFloat((Math.random() * 1.0 + 0.4).toFixed(2)),
+        apiCalls: Math.floor(Math.random() * 120) + 50,
+      };
+    }),
+    featureBreakdown: [
+      { feature: "Portfolio Monitoring", pct: 45, cost: "$7.65" },
+      { feature: "Data Architecture Embedding", pct: 25, cost: "$4.25" },
+      { feature: "Adverse Media Crawling", pct: 20, cost: "$3.40" },
+      { feature: "Alert Review", pct: 10, cost: "$1.70" },
+    ],
+    alertsGenerated: 31,
+    avgSessionTime: "52m",
+  },
+  3: {
+    daily: Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (13 - i));
+      return {
+        date: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        tokens: Math.floor(Math.random() * 120000) + 60000,
+        cost: parseFloat((Math.random() * 2.5 + 1.2).toFixed(2)),
+        apiCalls: Math.floor(Math.random() * 300) + 150,
+      };
+    }),
+    featureBreakdown: [
+      { feature: "Data Architecture Embedding", pct: 50, cost: "$21.00" },
+      { feature: "Swarm Agent Investigations", pct: 25, cost: "$10.50" },
+      { feature: "Adverse Media Crawling", pct: 15, cost: "$6.30" },
+      { feature: "Reporting & Analytics", pct: 10, cost: "$4.20" },
+    ],
+    alertsGenerated: 89,
+    avgSessionTime: "2h 15m",
+  },
+};
+
+mock.onGet(/\/admin\/users\/.+\/analytics/).reply((config) => {
+  const match = config.url?.match(/\/admin\/users\/(.+)\/analytics/);
+  if (!match) return [400, { message: "Invalid URL" }];
+  const id = parseInt(match[1]);
+  const data = userAnalyticsData[id];
+  if (!data) return [404, { message: "Analytics not found for user" }];
+  return [200, data];
+});
+
 // --- UPDATE USER ORGANIZATION ---
 mock.onPatch(/\/admin\/users\/.+\/organization/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/organization/);

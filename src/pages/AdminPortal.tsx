@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Users, Shield, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, Shield, Building2, BarChart3 } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import ManageUsers from "@/components/admin/ManageUsers";
 import ManageRoles from "@/components/admin/ManageRoles";
+import UserAnalytics from "@/components/admin/UserAnalytics";
 
 export default function AdminPortal() {
   const { hasPermission } = useAuth();
@@ -18,7 +19,8 @@ export default function AdminPortal() {
   const params = new URLSearchParams(location.search);
   const tabFromUrl = params.get("tab") || "dashboard";
   const validTabs = ["dashboard", "users", "roles"];
-  const [activeTab, setActiveTab] = useState(validTabs.includes(tabFromUrl) ? tabFromUrl : "dashboard");
+  const allTabs = isSuperAdmin ? [...validTabs, "analytics"] : validTabs;
+  const [activeTab, setActiveTab] = useState(allTabs.includes(tabFromUrl) ? tabFromUrl : "dashboard");
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -48,9 +50,14 @@ export default function AdminPortal() {
                   <Users className="h-4 w-4" /> Manage Users
                 </TabsTrigger>
                 {isSuperAdmin && (
-                  <TabsTrigger value="roles" className="rounded-lg px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-slate-500 flex items-center gap-2">
-                    <Shield className="h-4 w-4" /> Manage Roles
-                  </TabsTrigger>
+                  <>
+                    <TabsTrigger value="roles" className="rounded-lg px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-slate-500 flex items-center gap-2">
+                      <Shield className="h-4 w-4" /> Manage Roles
+                    </TabsTrigger>
+                    <TabsTrigger value="analytics" className="rounded-lg px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-slate-500 flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" /> User Analytics
+                    </TabsTrigger>
+                  </>
                 )}
               </TabsList>
 
@@ -64,6 +71,11 @@ export default function AdminPortal() {
                 <TabsContent value="roles" className="m-0">
                   <ManageRoles />
                 </TabsContent>
+                {isSuperAdmin && (
+                  <TabsContent value="analytics" className="m-0">
+                    <UserAnalytics />
+                  </TabsContent>
+                )}
               </motion.div>
             </Tabs>
           </motion.div>
