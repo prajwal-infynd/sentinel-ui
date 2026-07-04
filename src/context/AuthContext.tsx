@@ -7,14 +7,14 @@ import { toast } from "@/components/ui/use-toast";
 // No frontend code changes needed when switching from mock to production.
 
 export interface User {
-  id: number;
+  id: string;
   email: string;
   name: string;
   firstName?: string;
   lastName?: string;
   companyName?: string;
   role: string;
-  roleId?: number;
+  roleId?: string;
   tokensUsed?: string;
   cost?: string;
   status?: string;

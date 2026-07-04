@@ -38,13 +38,13 @@ export default function AdminDashboard() {
   const location = useLocation();
   const orgParam = new URLSearchParams(location.search).get("org") || "all";
   const [searchTerm, setSearchTerm] = useState("");
-  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const { data: users = [], refetch } = useQuery({ queryKey: ["admin-users"], queryFn: fetchUsers });
   const { data: pendingUsers = [], refetch: refetchPending } = useQuery({ queryKey: ["admin-pending-users"], queryFn: fetchPendingUsers, refetchInterval: 5000 });
   const { data: globalLogs, isLoading: isLogsLoading } = useQuery({ queryKey: ["global-audit-logs"], queryFn: () => fetchAuditLogs() });
 
-  const approveUser = async (id: number) => {
+  const approveUser = async (id: string) => {
     setApprovingId(id);
     await apiClient.post(`/admin/users/${id}/approve`);
     refetch(); refetchPending();
@@ -52,20 +52,20 @@ export default function AdminDashboard() {
     setApprovingId(null);
   };
 
-  const rejectUser = async (id: number) => {
+  const rejectUser = async (id: string) => {
     await apiClient.post(`/admin/users/${id}/reject`);
     refetch(); refetchPending();
     toast({ title: "User Rejected", description: "User removed.", variant: "destructive" });
   };
 
-  const toggleUserStatus = async (id: number, currentStatus: string) => {
+  const toggleUserStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
     await apiClient.patch(`/admin/users/${id}/status`, { status: newStatus });
     refetch();
     toast({ title: "User Updated", description: `User is now ${newStatus}.` });
   };
 
-  const deleteUser = async (id: number) => {
+  const deleteUser = async (id: string) => {
     await apiClient.delete(`/admin/users/${id}`);
     refetch();
     toast({ title: "User Removed", description: "User deleted.", variant: "destructive" });

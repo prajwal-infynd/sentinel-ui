@@ -11,7 +11,7 @@ const OTP_TTL_MS = 10 * 60 * 1000;
 
 // ── In-memory stores ──────────────────────────────────────────────────────
 let mockUsers = [
-  { id: 1, firstName: "Super", lastName: "Admin", name: "Super Admin", email: "superadmin@sentinel.com", companyName: "Sentinel Inc", roleId: 1, status: "Active", allowedPermissions: [], deniedPermissions: [] },
+  { id: "b1c2d3e4-0001-4000-8000-000000000001", firstName: "Super", lastName: "Admin", name: "Super Admin", email: "superadmin@sentinel.com", companyName: "Sentinel Inc", roleId: "a1b2c3d4-0001-4000-8000-000000000001", status: "Active", allowedPermissions: [], deniedPermissions: [] },
 ];
 const otpStore: Record<string, { otp: string; expiresAt: number }> = {};
 const mockEmailLog: Array<{ to: string; subject: string; type: string }> = [];
@@ -33,7 +33,7 @@ testMock.onPost("/auth/signup").reply((config) => {
     return [400, { code: "UsernameExistsException", message: "An account with this email already exists." }];
   }
   mockUsers.push({
-    id: mockUsers.length + 1, firstName, lastName, name: `${firstName} ${lastName}`,
+    id: crypto.randomUUID(), firstName, lastName, name: `${firstName} ${lastName}`,
     companyName, email, roleId: 3, allowedPermissions: [], deniedPermissions: [], status: "otp_pending",
   });
   otpStore[email] = { otp: TEST_OTP, expiresAt: Date.now() + OTP_TTL_MS };
@@ -78,7 +78,7 @@ testMock.onGet("/admin/pending-users").reply(() => {
 testMock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/approve/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     const user = mockUsers.find(u => u.id === id);
     if (user) {
       user.status = "Active"; user.roleId = 3;
@@ -92,7 +92,7 @@ testMock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
 testMock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/reject/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     const user = mockUsers.find(u => u.id === id);
     if (user) logEmail(user.email, "Sentinel — Account Application Update", "USER_REJECTION");
     mockUsers = mockUsers.filter(u => u.id !== id);
@@ -104,7 +104,7 @@ testMock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
 // ── Reset ─────────────────────────────────────────────────────────────────
 beforeAll(() => {
   mockUsers = [
-    { id: 1, firstName: "Super", lastName: "Admin", name: "Super Admin", email: "superadmin@sentinel.com", companyName: "Sentinel Inc", roleId: 1, status: "Active", allowedPermissions: [], deniedPermissions: [] },
+    { id: "b1c2d3e4-0001-4000-8000-000000000001", firstName: "Super", lastName: "Admin", name: "Super Admin", email: "superadmin@sentinel.com", companyName: "Sentinel Inc", roleId: "a1b2c3d4-0001-4000-8000-000000000001", status: "Active", allowedPermissions: [], deniedPermissions: [] },
   ];
   mockEmailLog.length = 0;
 });

@@ -13,10 +13,27 @@ export const mock = new MockAdapter(apiClient, { onNoMatch: "passthrough" });
 // Amazon Cognito (auth/OTP) + Amazon SES (email notifications) in production.
 // When the backend is ready, swap VITE_API_URL env var — no frontend code changes needed.
 
-export const ROLES = {
-  1: { id: 1, name: "Super Admin", basePermissions: ["admin:*"], pagePermissions: allPagePermissions(true) },
-  2: { id: 2, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"], pagePermissions: allPagePermissions(true) },
-  3: { id: 3, name: "User", basePermissions: ["crud:*"], pagePermissions: allPagePermissions(true) },
+// Deterministic UUIDs for seed data so references remain consistent across refreshes
+export const ROLE_UUIDS = {
+  SUPER_ADMIN: "a1b2c3d4-0001-4000-8000-000000000001",
+  OWNER: "a1b2c3d4-0002-4000-8000-000000000002",
+  USER: "a1b2c3d4-0003-4000-8000-000000000003",
+};
+export const USER_UUIDS = {
+  SUPER_ADMIN: "b1c2d3e4-0001-4000-8000-000000000001",
+  OWNER: "b1c2d3e4-0002-4000-8000-000000000002",
+  STANDARD: "b1c2d3e4-0003-4000-8000-000000000003",
+};
+export const ORG_UUIDS = {
+  SENTINEL_INC: "c1d2e3f4-0001-4000-8000-000000000001",
+  ACME_CORP: "c1d2e3f4-0002-4000-8000-000000000002",
+  GLOBEX_CORP: "c1d2e3f4-0003-4000-8000-000000000003",
+};
+
+export const ROLES: Record<string, { id: string; name: string; basePermissions: string[]; pagePermissions: Record<string, any> }> = {
+  [ROLE_UUIDS.SUPER_ADMIN]: { id: ROLE_UUIDS.SUPER_ADMIN, name: "Super Admin", basePermissions: ["admin:*"], pagePermissions: allPagePermissions(true) },
+  [ROLE_UUIDS.OWNER]: { id: ROLE_UUIDS.OWNER, name: "Owner", basePermissions: ["invite_user", "manage_subscription", "crud:*"], pagePermissions: allPagePermissions(true) },
+  [ROLE_UUIDS.USER]: { id: ROLE_UUIDS.USER, name: "User", basePermissions: ["crud:*"], pagePermissions: allPagePermissions(true) },
 };
 
 // ─── Persistent Mock Store ────────────────────────────────────────────────────
@@ -24,9 +41,9 @@ export const ROLES = {
 // and cross-tab navigation during demos. In production, Cognito/RDS handles this.
 
 const SEED_USERS = [
-  { id: 1, firstName: "Super", lastName: "Admin", name: "Super Admin", companyName: "Sentinel Inc", roleId: 1, email: "superadmin@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active" },
-  { id: 2, firstName: "Owner", lastName: "User", name: "Owner User", companyName: "Sentinel Inc", roleId: 2, email: "owner@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active" },
-  { id: 3, firstName: "Standard", lastName: "User", name: "Standard User", companyName: "Acme Corp", roleId: 3, email: "user@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active" },
+  { id: USER_UUIDS.SUPER_ADMIN, firstName: "Super", lastName: "Admin", name: "Super Admin", companyName: "Sentinel Inc", roleId: ROLE_UUIDS.SUPER_ADMIN, email: "superadmin@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "1.2M", cost: "$24.00", status: "Active", organizationId: ORG_UUIDS.SENTINEL_INC },
+  { id: USER_UUIDS.OWNER, firstName: "Owner", lastName: "User", name: "Owner User", companyName: "Sentinel Inc", roleId: ROLE_UUIDS.OWNER, email: "owner@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "850k", cost: "$17.00", status: "Active", organizationId: ORG_UUIDS.SENTINEL_INC },
+  { id: USER_UUIDS.STANDARD, firstName: "Standard", lastName: "User", name: "Standard User", companyName: "Acme Corp", roleId: ROLE_UUIDS.USER, email: "user@sentinel.com", allowedPermissions: [], deniedPermissions: [], tokensUsed: "2.1M", cost: "$42.00", status: "Active", organizationId: ORG_UUIDS.ACME_CORP },
 ];
 
 const MOCK_STORE_KEY = "sentinel_mock_users";
@@ -78,7 +95,7 @@ const MOCK_OTP = "123456"; // In production: Cognito generates & sends this via 
 const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes — same as Cognito default
 
 const computePermissions = (user: any) => {
-  const role = ROLES[user.roleId as keyof typeof ROLES];
+  const role = ROLES[user.roleId];
   if (!role) return [];
   const permissions = new Set([...role.basePermissions, ...(user.allowedPermissions || [])]);
   // Flatten page permissions from the role
@@ -221,7 +238,7 @@ mock.onPost("/auth/respond-to-challenge").reply((config) => {
     },
     user: {
       ...safeUser,
-      role: ROLES[user.roleId as keyof typeof ROLES]?.name,
+      role: ROLES[user.roleId]?.name,
       computedPermissions: computePermissions(user),
     }
   }];
@@ -247,13 +264,13 @@ mock.onPost("/auth/signup").reply((config) => {
 
   // Create user with otp_pending status (mirrors Cognito UNCONFIRMED)
   const newUser = {
-    id: mockUsers.length + 1,
+    id: crypto.randomUUID(),
     firstName,
     lastName,
     name: `${firstName} ${lastName}`,
     companyName,
     email,
-    roleId: 3, // User — pending approval
+    roleId: ROLE_UUIDS.USER, // User — pending approval
     allowedPermissions: [],
     deniedPermissions: [],
     tokensUsed: "0",
@@ -308,7 +325,7 @@ mock.onGet("/admin/pending-users").reply(() => {
   const pending = mockUsers.filter(u => u.status === "awaiting_approval").map(u => ({
     id: u.id, name: u.name, firstName: u.firstName, lastName: u.lastName,
     email: u.email, companyName: u.companyName, status: u.status,
-    role: ROLES[u.roleId as keyof typeof ROLES]?.name,
+    role: ROLES[u.roleId]?.name,
   }));
   return [200, pending];
 });
@@ -319,12 +336,12 @@ mock.onGet("/admin/pending-users").reply(() => {
 mock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/approve/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex !== -1) {
       const user = mockUsers[userIndex];
       user.status = "Active";
-      user.roleId = 3; // Promote to standard User on approval
+      user.roleId = ROLE_UUIDS.USER; // Promote to standard User on approval
       saveUsers(mockUsers);
       // Simulate SES approval confirmation email to user
       logMockEmail(
@@ -344,7 +361,7 @@ mock.onPost(/\/admin\/users\/.+\/approve/).reply((config) => {
 mock.onPost(/\/admin\/users\/.+\/reject/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/reject/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     const user = mockUsers.find(u => u.id === id);
     if (user) {
       // Simulate SES rejection email to user before deleting
@@ -369,7 +386,7 @@ mock.onGet("/admin/users").reply(() => {
       companyName: user.companyName, organizationId: user.organizationId || null,
       tokensUsed: user.tokensUsed, cost: user.cost,
       status: user.status,
-      role: ROLES[user.roleId as keyof typeof ROLES]?.name,
+      role: ROLES[user.roleId]?.name,
       roleId: user.roleId,
       computedPermissions: computePermissions(user),
       allowedPermissions: user.allowedPermissions || [],
@@ -386,7 +403,7 @@ mock.onPost("/admin/users/invite").reply((config) => {
   const firstName = name?.split(" ")[0] || email.split("@")[0];
   const lastName = name?.split(" ").slice(1).join(" ") || "";
   const newUser = {
-    id: mockUsers.length + 1,
+    id: crypto.randomUUID(),
     firstName,
     lastName,
     name: name || email.split('@')[0],
@@ -413,13 +430,13 @@ mock.onPost("/admin/users/invite").reply((config) => {
   );
 
   const { password: _, ...userWithoutPassword } = newUser;
-  return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId as keyof typeof ROLES]?.name, permissions: computePermissions(newUser) } }];
+  return [200, { user: { ...userWithoutPassword, role: ROLES[newUser.roleId]?.name, permissions: computePermissions(newUser) } }];
 });
 
 mock.onPatch(/\/admin\/users\/.+\/status/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/status/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     const { status } = JSON.parse(config.data);
     const userIndex = mockUsers.findIndex(u => u.id === id);
     if (userIndex !== -1) {
@@ -433,7 +450,7 @@ mock.onPatch(/\/admin\/users\/.+\/status/).reply((config) => {
 mock.onDelete(/\/admin\/users\/.+/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)/);
   if (match) {
-    const id = parseInt(match[1]);
+    const id = match[1];
     mockUsers = mockUsers.filter(u => u.id !== id);
     return [200, { success: true }];
   }
@@ -443,9 +460,9 @@ mock.onDelete(/\/admin\/users\/.+/).reply((config) => {
 // --- ORGANIZATION DATA ---
 const MOCK_ORG_KEY = "sentinel_mock_orgs";
 const SEED_ORGS = [
-  { id: 1, name: "Sentinel Inc" },
-  { id: 2, name: "Acme Corp" },
-  { id: 3, name: "Globex Corp" },
+  { id: ORG_UUIDS.SENTINEL_INC, name: "Sentinel Inc" },
+  { id: ORG_UUIDS.ACME_CORP, name: "Acme Corp" },
+  { id: ORG_UUIDS.GLOBEX_CORP, name: "Globex Corp" },
 ];
 
 const loadOrgs = () => {
@@ -461,7 +478,7 @@ mock.onGet("/admin/organizations").reply(() => [200, mockOrgs]);
 mock.onPost("/admin/organizations").reply((config) => {
   const { name } = JSON.parse(config.data);
   if (!name) return [400, { message: "Name required" }];
-  const newOrg = { id: mockOrgs.length + 1, name };
+  const newOrg = { id: crypto.randomUUID(), name };
   mockOrgs.push(newOrg);
   saveOrgs(mockOrgs);
   return [201, newOrg];
@@ -497,7 +514,7 @@ mock.onGet("/admin/roles").reply(() => {
 mock.onPost("/admin/roles").reply((config) => {
   const { name, pagePermissions } = JSON.parse(config.data);
   if (!name) return [400, { message: "Name required" }];
-  const newId = Object.keys(mockRoles).length + 1;
+  const newId = crypto.randomUUID();
   const newRole = {
     id: newId,
     name,
@@ -512,7 +529,7 @@ mock.onPost("/admin/roles").reply((config) => {
 mock.onPut(/\/admin\/roles\/.+/).reply((config) => {
   const match = config.url?.match(/\/admin\/roles\/(.+)/);
   if (!match) return [400, { message: "Invalid URL" }];
-  const id = parseInt(match[1]);
+  const id = match[1];
   if (!mockRoles[id]) return [404, { message: "Role not found" }];
   const { name, pagePermissions } = JSON.parse(config.data);
   if (name) mockRoles[id].name = name;
@@ -524,7 +541,7 @@ mock.onPut(/\/admin\/roles\/.+/).reply((config) => {
 mock.onDelete(/\/admin\/roles\/.+/).reply((config) => {
   const match = config.url?.match(/\/admin\/roles\/(.+)/);
   if (!match) return [400, { message: "Invalid URL" }];
-  const id = parseInt(match[1]);
+  const id = match[1];
   if (!mockRoles[id]) return [404, { message: "Role not found" }];
   delete mockRoles[id];
   saveRoles(mockRoles);
@@ -535,7 +552,7 @@ mock.onDelete(/\/admin\/roles\/.+/).reply((config) => {
 mock.onPatch(/\/admin\/users\/.+\/permissions/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/permissions/);
   if (!match) return [400, { message: "Invalid URL" }];
-  const id = parseInt(match[1]);
+  const id = match[1];
   const { permissions } = JSON.parse(config.data);
   const userIndex = mockUsers.findIndex(u => u.id === id);
   if (userIndex === -1) return [404, { message: "User not found" }];
@@ -546,8 +563,8 @@ mock.onPatch(/\/admin\/users\/.+\/permissions/).reply((config) => {
 
 // --- USER ANALYTICS DATA ---
 // Generates per-user analytics with daily token/cost breakdowns for the last 14 days
-const userAnalyticsData: Record<number, { daily: Array<{ date: string; tokens: number; cost: number; apiCalls: number }>; featureBreakdown: Array<{ feature: string; pct: number; cost: string }>; alertsGenerated: number; avgSessionTime: string }> = {
-  1: {
+const userAnalyticsData: Record<string, { daily: Array<{ date: string; tokens: number; cost: number; apiCalls: number }>; featureBreakdown: Array<{ feature: string; pct: number; cost: string }>; alertsGenerated: number; avgSessionTime: string }> = {
+  [USER_UUIDS.SUPER_ADMIN]: {
     daily: Array.from({ length: 14 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (13 - i));
       return {
@@ -566,7 +583,7 @@ const userAnalyticsData: Record<number, { daily: Array<{ date: string; tokens: n
     alertsGenerated: 47,
     avgSessionTime: "1h 23m",
   },
-  2: {
+  [USER_UUIDS.OWNER]: {
     daily: Array.from({ length: 14 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (13 - i));
       return {
@@ -585,7 +602,7 @@ const userAnalyticsData: Record<number, { daily: Array<{ date: string; tokens: n
     alertsGenerated: 31,
     avgSessionTime: "52m",
   },
-  3: {
+  [USER_UUIDS.STANDARD]: {
     daily: Array.from({ length: 14 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (13 - i));
       return {
@@ -609,7 +626,7 @@ const userAnalyticsData: Record<number, { daily: Array<{ date: string; tokens: n
 mock.onGet(/\/admin\/users\/.+\/analytics/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/analytics/);
   if (!match) return [400, { message: "Invalid URL" }];
-  const id = parseInt(match[1]);
+  const id = match[1];
   const data = userAnalyticsData[id];
   if (!data) return [404, { message: "Analytics not found for user" }];
   return [200, data];
@@ -619,7 +636,7 @@ mock.onGet(/\/admin\/users\/.+\/analytics/).reply((config) => {
 mock.onPatch(/\/admin\/users\/.+\/organization/).reply((config) => {
   const match = config.url?.match(/\/admin\/users\/(.+)\/organization/);
   if (!match) return [400, { message: "Invalid URL" }];
-  const id = parseInt(match[1]);
+  const id = match[1];
   const { organizationId } = JSON.parse(config.data);
   const userIndex = mockUsers.findIndex(u => u.id === id);
   if (userIndex === -1) return [404, { message: "User not found" }];

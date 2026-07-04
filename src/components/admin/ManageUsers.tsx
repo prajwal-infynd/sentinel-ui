@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/context/AuthContext";
+import { ROLE_UUIDS } from "@/lib/mock-api";
 
 export default function ManageUsers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,7 +22,7 @@ export default function ManageUsers() {
   const selectedOrgId = new URLSearchParams(location.search).get("org") || "all";
   const [confirmAction, setConfirmAction] = useState<{ type: "suspend" | "delete"; user: any } | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ firstName: "", lastName: "", email: "", roleId: "3" });
+  const [inviteForm, setInviteForm] = useState({ firstName: "", lastName: "", email: "", roleId: ROLE_UUIDS.USER });
   const [isInviting, setIsInviting] = useState(false);
   const { hasPermission } = useAuth();
   const isSuperAdmin = hasPermission("admin:*");
@@ -62,7 +63,7 @@ export default function ManageUsers() {
       await apiClient.post("/admin/users/invite", {
         name: `${inviteForm.firstName} ${inviteForm.lastName}`.trim(),
         email: inviteForm.email,
-        roleId: parseInt(inviteForm.roleId),
+        roleId: inviteForm.roleId,
       });
       toast({ title: "Invitation Sent", description: `Invite sent to ${inviteForm.email}.` });
       setIsInviteOpen(false);
@@ -80,7 +81,7 @@ export default function ManageUsers() {
     return matchesSearch && matchesOrg;
   });
 
-  const getOrgName = (orgId: number | null) => {
+  const getOrgName = (orgId: string | null) => {
     if (!orgId) return "—";
     const org = organizations.find((o: any) => o.id === orgId);
     return org?.name || "Unknown";
@@ -213,9 +214,9 @@ export default function ManageUsers() {
               <Select value={inviteForm.roleId} onValueChange={v => setInviteForm(f => ({ ...f, roleId: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="3">User</SelectItem>
-                  <SelectItem value="2">Owner</SelectItem>
-                  <SelectItem value="1">Super Admin</SelectItem>
+                  <SelectItem value={ROLE_UUIDS.USER}>User</SelectItem>
+                  <SelectItem value={ROLE_UUIDS.OWNER}>Owner</SelectItem>
+                  <SelectItem value={ROLE_UUIDS.SUPER_ADMIN}>Super Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>

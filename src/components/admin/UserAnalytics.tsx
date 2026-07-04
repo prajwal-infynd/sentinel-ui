@@ -14,7 +14,7 @@ const fetchUsers = async () => {
   return data;
 };
 
-const fetchUserAnalytics = async (userId: number) => {
+const fetchUserAnalytics = async (userId: string) => {
   const { data } = await apiClient.get(`/admin/users/${userId}/analytics`);
   return data;
 };
@@ -26,7 +26,7 @@ export default function UserAnalytics() {
   const { data: users = [], isLoading: usersLoading } = useQuery({ queryKey: ["admin-users"], queryFn: fetchUsers });
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ["user-analytics", selectedUserId],
-    queryFn: () => fetchUserAnalytics(parseInt(selectedUserId)),
+    queryFn: () => fetchUserAnalytics(selectedUserId),
     enabled: selectedUserId !== "",
   });
 

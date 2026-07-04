@@ -56,7 +56,7 @@ export function GlobalHeader() {
     { id: 5, title: "Portfolio Sync", desc: "Successfully imported 12 new CRM records into the monitoring pipeline.", time: "1 day ago", unread: false },
   ]);
 
-  const [approvingId, setApprovingId] = useState<number | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   // Poll pending approvals every 5s — only for admins
   const { data: pendingUsers = [], refetch: refetchPending } = useQuery({
@@ -72,7 +72,7 @@ export function GlobalHeader() {
   const markAllAsRead = () => setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
   const clearAll = () => setNotifications([]);
 
-  const approveUser = async (id: number, e: React.MouseEvent) => {
+  const approveUser = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setApprovingId(id);
     try {
@@ -85,7 +85,7 @@ export function GlobalHeader() {
     setApprovingId(null);
   };
 
-  const rejectUser = async (id: number, e: React.MouseEvent) => {
+  const rejectUser = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await apiClient.post(`/admin/users/${id}/reject`);
     await refetchPending();
