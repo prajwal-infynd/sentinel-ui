@@ -121,7 +121,10 @@ export default function Onboarding() {
            <span>›</span>
            <span className="font-bold text-slate-900 dark:text-slate-100">{leftTitle}</span>
            <div className="flex-1" />
-           <Button variant="outline" className="h-9 gap-2 rounded-xl border-slate-200" onClick={() => setDossier(null)}>
+           <Button variant="outline" className="h-9 gap-2 rounded-xl border-slate-200" onClick={() => {
+              setActiveTab(type === 'corporate' ? 'corporate' : type === 'document' ? 'document' : 'aml');
+              setDossier(null);
+           }}>
               <ArrowLeft className="w-4 h-4" /> Back to Workspace
            </Button>
          </div>
@@ -356,7 +359,7 @@ export default function Onboarding() {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-medium text-slate-500 mb-2">AML Watchlists</p>
-                        <div className="text-5xl font-extrabold text-blue-600">6</div>
+                        <div className="text-5xl font-extrabold text-slate-900 dark:text-white">6</div>
                         <p className="text-sm text-slate-500 mt-4 font-medium">Total checks performed</p>
                       </div>
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600">
@@ -371,7 +374,7 @@ export default function Onboarding() {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-medium text-slate-500 mb-2">Corporate Registry</p>
-                        <div className="text-5xl font-extrabold text-blue-600">3</div>
+                        <div className="text-5xl font-extrabold text-slate-900 dark:text-white">3</div>
                         <p className="text-sm text-slate-500 mt-4 font-medium">Total checks performed</p>
                       </div>
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-600">
@@ -552,36 +555,58 @@ export default function Onboarding() {
              </div>
           )}
           
-          {/* Default Engine Cards (AML) - hide if not on 'aml' tab, wait, original had this logic: */}
+          {/* Tab Content: AML Screening */}
           {activeTab === "aml" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-6">
-              {/* AML Screening */}
-              <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                <CardContent className="p-8">
-                  <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 mb-8">
-                    <Database className="w-7 h-7" />
+             <div className="space-y-6 mt-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">AML Watchlist Screenings</h2>
+                    <p className="text-sm text-slate-500 font-medium">Check individuals or companies against global watchlists and sanctions.</p>
                   </div>
-                  <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-white">AML Screening</h3>
-                  <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">Check individuals or companies against global watchlists, politically exposed persons lists, and negative media reports.</p>
-                  
-                  <div className="space-y-5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Engine Process</p>
-                    <ul className="space-y-4">
-                      <li className="flex items-center gap-4 text-sm font-medium text-slate-700 dark:text-slate-300">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-blue-200 dark:bg-blue-800"></div> Input Query Validate
-                      </li>
-                      <li className="flex items-center gap-4 text-sm font-medium text-slate-700 dark:text-slate-300">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-blue-200 dark:bg-blue-800"></div> Global Sanctions Matching
-                      </li>
-                      <li className="flex items-center gap-4 text-sm font-medium text-slate-700 dark:text-slate-300">
-                        <div className="w-2.5 h-2.5 rounded-sm bg-blue-200 dark:bg-blue-800"></div> PEP & Adverse Media Risk Score
-                      </li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <Button className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 shadow-md shadow-blue-600/20" onClick={() => setIsAmlModalOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" /> Run AML Check
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {AML_ACTIVITIES.map((row, idx) => (
+                    <Card key={idx} className="rounded-3xl border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="flex justify-between items-start">
+                           <div className="flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                               <Database className="w-5 h-5" />
+                             </div>
+                             <div>
+                               <h3 className="font-bold text-slate-900">{row.name}</h3>
+                               <p className="text-xs text-slate-500 font-medium">{row.id} • AML Screening</p>
+                             </div>
+                           </div>
+                           <Badge className={row.status === 'Clean' ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border-emerald-200 shadow-none' : 'bg-amber-50 text-amber-600 hover:bg-amber-100 border-amber-200 shadow-none'}>
+                             {row.status}
+                           </Badge>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl">
+                           <div>
+                             <p className="text-xs text-slate-400 font-bold mb-1">Risk Level: <span className="text-emerald-600">Low Risk</span></p>
+                             <p className="text-xs text-slate-400 font-bold">Match: 0% Match</p>
+                           </div>
+                           <div className="text-right">
+                             <p className="text-xs text-slate-400 font-bold">Timestamp: {row.date.split(' ')[0]}</p>
+                           </div>
+                        </div>
+                        
+                        <div className="flex justify-end pt-2">
+                           <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 font-semibold gap-2 h-9" onClick={() => setDossier({name: row.name, type: 'aml', id: row.id})}>
+                             <Eye className="w-4 h-4" /> View Details
+                           </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+             </div>
           )}
         </div>
       )}
