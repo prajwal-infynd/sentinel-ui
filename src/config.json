@@ -1,0 +1,83 @@
+{
+  "tenantId": "acme-corp",
+  "name": "Acme CRM",
+  "version": "1.0.0",
+  "branding": {
+    "appName": "Acme CRM",
+    "companyName": "Acme Corporation",
+    "logo": {
+      "light": "https://cdn.example.com/acme/logo-light.png",
+      "dark": "https://cdn.example.com/acme/logo-dark.png",
+      "favicon": "https://cdn.example.com/acme/favicon.ico"
+    },
+    "colors": {
+      "primary": "#2563EB",
+      "secondary": "#1E293B",
+      "accent": "#F59E0B",
+      "success": "#16A34A",
+      "warning": "#EAB308",
+      "error": "#DC2626",
+      "background": "#FFFFFF",
+      "text": "#111827"
+    },
+    "fonts": {
+      "primary": "Inter",
+      "secondary": "Roboto"
+    }
+  },
+  "theme": {
+    "mode": "light",
+    "borderRadius": "8px",
+    "buttonStyle": "rounded"
+  },
+  "urls": {
+    "website": "https://acme.example.com",
+    "support": "https://support.acme.example.com",
+    "privacyPolicy": "https://acme.example.com/privacy",
+    "terms": "https://acme.example.com/terms"
+  },
+  "authentication": {
+    "provider": "azure-ad",
+    "ssoEnabled": true,
+    "mfaRequired": true,
+    "loginLogo": "https://cdn.example.com/acme/login-logo.png"
+  },
+  "features": {
+    "chat": true,
+    "analytics": true,
+    "billing": false,
+    "notifications": true,
+    "multiLanguage": true,
+    "darkMode": true
+  },
+  "localization": {
+    "defaultLanguage": "en",
+    "supportedLanguages": [
+      "en",
+      "fr",
+      "de"
+    ],
+    "timezone": "UTC",
+    "currency": "USD"
+  },
+  "email": {
+    "fromName": "Acme Support",
+    "fromEmail": "support@acme.example.com"
+  },
+  "storage": {
+    "logoPath": "branding/acme/",
+    "cdnBaseUrl": "https://cdn.example.com/"
+  },
+  "api": {
+    "baseUrl": "https://api.acme.example.com",
+    "version": "v1"
+  },
+  "contact": {
+    "phone": "+1-555-123-4567",
+    "email": "support@acme.example.com"
+  },
+  "legal": {
+    "copyright": "© 2026 Acme Corporation",
+    "showPoweredBy": false
+  }
+}

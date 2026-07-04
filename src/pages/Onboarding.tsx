@@ -13,6 +13,7 @@ import {
   ArrowLeft, Printer, Download, Search, Settings, X, Activity, ShieldCheck,
   UploadCloud
 } from "lucide-react";
+import config from "@/config.json";
 
 const AML_ACTIVITIES = [
   { id: "AML-1884", name: "Sentinel", type: "AML Screening", status: "Clean", date: "2026-07-01 13:43" },
@@ -114,7 +115,14 @@ export default function Onboarding() {
     }
     
     return (
-      <div className="flex-1 p-6 max-w-[1400px] mx-auto w-full space-y-6">
+      <div 
+        className="flex-1 p-6 max-w-[1400px] mx-auto w-full space-y-6"
+        style={{
+          fontFamily: config.branding.fonts.primary,
+          backgroundColor: config.branding.colors.background,
+          color: config.branding.colors.text
+        }}
+      >
          {/* Breadcrumbs */}
          <div className="flex items-center gap-2 text-sm text-slate-500 mb-6">
            <span>Sentinel Verify™</span>
@@ -318,11 +326,18 @@ export default function Onboarding() {
   return (
     <DashboardLayout>
       {dossier ? renderDossierContent() : (
-        <div className="flex-1 p-6 max-w-[1400px] mx-auto w-full space-y-6">
+        <div 
+          className="flex-1 p-6 max-w-[1400px] mx-auto w-full space-y-6"
+          style={{
+            fontFamily: config.branding.fonts.primary,
+            backgroundColor: config.branding.colors.background,
+            color: config.branding.colors.text
+          }}
+        >
           
           {/* Page Title */}
           <div className="pt-2">
-            <h1 className="text-3xl font-extrabold tracking-tight text-navy dark:text-white">Onboarding V2</h1>
+            <h1 className="text-3xl font-extrabold tracking-tight text-navy dark:text-white">Onboarding</h1>
             <p className="text-muted-foreground mt-2">Perform, manage, and audit corporate registries, identity checks, and AML compliance screenings.</p>
           </div>
 
