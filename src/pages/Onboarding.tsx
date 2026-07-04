@@ -628,9 +628,6 @@ export default function Onboarding() {
 
       {/* Footer versions */}
       <div className="flex justify-end items-center p-6 text-sm font-medium text-slate-500 max-w-[1400px] mx-auto w-full">
-        <div className="flex items-center gap-2">
-          <Database className="w-4 h-4 text-blue-600" /> Version 1.0
-        </div>
       </div>
 
       {/* -------------------- AML MODALS -------------------- */}
