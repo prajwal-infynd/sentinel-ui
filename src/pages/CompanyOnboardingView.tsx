@@ -8,7 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { 
   Printer, Download, ChevronDown, Globe, AlertCircle, 
   CheckCircle2, FileText, Activity, ShieldAlert, FileWarning, HelpCircle, Database,
-  ArrowLeft, FileCheck, Home, Fingerprint, MapPin, Smartphone, UserCheck, Info, MessageSquare, Check, X, Plus, Clock, Shield, ArrowRight, Server
+  ArrowLeft, FileCheck, Home, Fingerprint, MapPin, Smartphone, UserCheck, Info, MessageSquare, Check, X, Plus, Clock, Shield, ArrowRight, Server, UploadCloud
 } from "lucide-react";
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer 
@@ -485,6 +485,9 @@ export default function CompanyOnboardingView() {
                 <Info className="w-12 h-12 text-slate-300 mb-2" />
                 <h4 className="font-bold text-slate-700">Verification Pending</h4>
                 <p className="text-slate-500 text-sm max-w-sm text-center mb-6">User has not completed this verification step yet.</p>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                  <UploadCloud className="w-4 h-4" /> Upload Document
+                </Button>
              </div>
            )}
         </div>
