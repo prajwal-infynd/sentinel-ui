@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -195,7 +196,19 @@ export default function Onboarding() {
                      <Search className="w-5 h-5 text-blue-600" /> {title}
                    </div>
                    <div className="flex items-center gap-3">
-                     <Settings className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer" />
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Settings className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer outline-none" />
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                         <DropdownMenuLabel>Settings</DropdownMenuLabel>
+                         <DropdownMenuSeparator />
+                         <DropdownMenuItem className="cursor-pointer">Configure Match Thresholds</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Manage Alert Preferences</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Export Audit Log</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Edit Entity Details</DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
                      <X className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer" onClick={() => setDossier(null)} />
                    </div>
                  </div>
@@ -255,7 +268,19 @@ export default function Onboarding() {
                      <Activity className="w-5 h-5 text-blue-600" /> Monitoring Logs
                    </div>
                    <div className="flex items-center gap-3">
-                     <Settings className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer" />
+                     <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                         <Settings className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer outline-none" />
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-56 rounded-xl">
+                         <DropdownMenuLabel>Log Settings</DropdownMenuLabel>
+                         <DropdownMenuSeparator />
+                         <DropdownMenuItem className="cursor-pointer">Alert Frequency</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Log Retention Settings</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Notification Channels</DropdownMenuItem>
+                         <DropdownMenuItem className="cursor-pointer">Download Log Data</DropdownMenuItem>
+                       </DropdownMenuContent>
+                     </DropdownMenu>
                      <X className="w-4 h-4 text-slate-400 hover:text-slate-600 cursor-pointer" />
                    </div>
                  </div>
