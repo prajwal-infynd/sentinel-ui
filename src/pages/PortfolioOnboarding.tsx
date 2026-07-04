@@ -954,13 +954,7 @@ const PortfolioOnboarding = () => {
         {/* Main Content Area */}
         <div className="max-w-screen-2xl mx-auto px-6 py-8">
           
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-[28px] font-bold text-slate-900 mb-2 tracking-tight">Monitor Customers</h1>
-            <p className="text-[14px] text-slate-500 max-w-4xl leading-relaxed">
-              An AI-powered risk analyst continuously monitoring every customer on your portfolio — proactively telling you what matters before it becomes a problem.
-            </p>
-          </div>
+
           
           {/* Add Companies Card */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>

@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import DemoEntry from "./pages/DemoEntry";
 import PortfolioOnboarding from "./pages/PortfolioOnboarding";
 import Onboarding from "./pages/Onboarding";
+import CompanyOnboardingView from "./pages/CompanyOnboardingView";
 import Dashboard from "./pages/Dashboard";
 import LiveAlerts from "./pages/LiveAlerts";
 import Investigation from "./pages/Investigation";
@@ -20,7 +21,6 @@ import InfyndData from "./pages/data/InfyndData";
 import CrawlingData from "./pages/data/CrawlingData";
 import PolicyConfig from "./pages/PolicyConfig";
 import AIGovernance from "./pages/AIGovernance";
-import Reporting from "./pages/Reporting";
 import DemoClosing from "./pages/DemoClosing";
 import NotFound from "./pages/NotFound";
 import { MonitorLayout } from "@/components/MonitorLayout";
@@ -43,6 +43,7 @@ import MediaAutomation from "./pages/media/MediaAutomation";
 import LiveCrawlEngine from "./pages/LiveCrawlEngine";
 import Settings from "./pages/Settings";
 import AdminPortal from "./pages/AdminPortal";
+import UserDetailView from "./pages/UserDetailView";
 import Landing from "./pages/Landing";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AuthProvider } from "@/context/AuthContext";
@@ -84,6 +85,7 @@ const App = () => (
                 <Route path="/investigations" element={<Navigate to="/monitor/investigations" replace />} />
                 <Route path="/agents" element={<Navigate to="/ai-agent" replace />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/onboarding/:id" element={<CompanyOnboardingView />} />
                 <Route path="/investigations/:id" element={<Investigation />} />
                 <Route path="/architecture" element={<Navigate to="/architecture/external" replace />} />
                 <Route path="/architecture/external" element={<ExternalData />} />
@@ -92,7 +94,6 @@ const App = () => (
                 <Route path="/architecture/crawling" element={<CrawlingData />} />
                 <Route path="/policy" element={<PolicyConfig />} />
                 <Route path="/governance" element={<AIGovernance />} />
-                <Route path="/reporting" element={<Reporting />} />
                 <Route path="/closing" element={<DemoClosing />} />
                 <Route path="/media" element={<MediaDashboard />} />
                 <Route path="/media/sources" element={<MediaSources />} />
@@ -113,6 +114,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route element={<SidebarLayout />}>
                 <Route path="/admin" element={<AdminPortal />} />
+                <Route path="/admin/users/:id" element={<UserDetailView />} />
               </Route>
             </Route>
 

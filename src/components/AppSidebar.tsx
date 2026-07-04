@@ -26,13 +26,11 @@ const platformItems = [
       { title: "External Data", url: "/architecture/external" },
       { title: "Custom Data", url: "/architecture/custom" },
       { title: "Infynd Data", url: "/architecture/infynd" },
-      { title: "Crawling Data", url: "/architecture/crawling" },
     ]
   },
   { title: "Policy Layer", url: "/policy", icon: Shield },
   { title: "AI Governance", url: "/governance", icon: ShieldAlert },
   { title: "AI Agents", url: "/ai-agent", icon: Bot },
-  { title: "Reporting", url: "/reporting", icon: BarChart3 },
 ];
 
 const mediaItems = [
@@ -125,6 +123,7 @@ export function AppSidebar() {
       <SidebarContent className="px-2">
         {renderGroup("Monitoring", mainItems)}
         {renderGroup("Platform", platformItems)}
+        {renderGroup("Data Engine", mediaItems)}
         {renderGroup("System", systemItems)}
       </SidebarContent>
       <SidebarFooter className={cn("p-4", collapsed && "p-2 items-center justify-center")}>

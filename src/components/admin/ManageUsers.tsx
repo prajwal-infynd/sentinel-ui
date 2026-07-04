@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, CheckCircle2, MoreHorizontal, ShieldOff, Trash2, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { ROLE_UUIDS } from "@/lib/mock-api";
 export default function ManageUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
   const selectedOrgId = new URLSearchParams(location.search).get("org") || "all";
   const [confirmAction, setConfirmAction] = useState<{ type: "suspend" | "delete"; user: any } | null>(null);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -121,7 +122,7 @@ export default function ManageUsers() {
                 {filteredUsers.length === 0 ? (
                   <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">No users found matching your filters.</td></tr>
                 ) : filteredUsers.map((u: any) => (
-                  <tr key={u.id} className="bg-white hover:bg-slate-50/50 transition-colors">
+                  <tr key={u.id} className="bg-white hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/users/${u.id}`)}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 text-xs shrink-0">
@@ -140,7 +141,7 @@ export default function ManageUsers() {
                         <Badge variant="outline" className="bg-slate-50 text-slate-500 border-slate-200">Inactive</Badge>
                       )}
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>

@@ -9,6 +9,7 @@ import AdminDashboard from "@/components/admin/AdminDashboard";
 import ManageUsers from "@/components/admin/ManageUsers";
 import ManageRoles from "@/components/admin/ManageRoles";
 import UserAnalytics from "@/components/admin/UserAnalytics";
+import Reporting from "@/pages/Reporting";
 
 export default function AdminPortal() {
   const { hasPermission } = useAuth();
@@ -18,12 +19,13 @@ export default function AdminPortal() {
 
   const params = new URLSearchParams(location.search);
   const tabFromUrl = params.get("tab") || "dashboard";
-  const validTabs = ["dashboard", "users", "roles"];
+  const validTabs = ["dashboard", "users", "roles", "reporting"];
   const allTabs = isSuperAdmin ? [...validTabs, "analytics"] : validTabs;
-  const [activeTab, setActiveTab] = useState(allTabs.includes(tabFromUrl) ? tabFromUrl : "dashboard");
+  
+  // Derive active tab directly from URL to allow external navigation to switch tabs dynamically
+  const activeTab = allTabs.includes(tabFromUrl) ? tabFromUrl : "dashboard";
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
     navigate(`/admin?tab=${tab}`, { replace: true });
   };
 
@@ -59,6 +61,9 @@ export default function AdminPortal() {
                     </TabsTrigger>
                   </>
                 )}
+                <TabsTrigger value="reporting" className="rounded-lg px-5 py-2.5 text-sm font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 text-slate-500 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" /> Reporting
+                </TabsTrigger>
               </TabsList>
 
               <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
@@ -76,6 +81,9 @@ export default function AdminPortal() {
                     <UserAnalytics />
                   </TabsContent>
                 )}
+                <TabsContent value="reporting" className="m-0">
+                  <Reporting />
+                </TabsContent>
               </motion.div>
             </Tabs>
           </motion.div>

@@ -70,14 +70,8 @@ const DataSourceCard = ({ file, setPreviewFile, toast, navigate }: any) => {
               ))}
             </div>
           </div>
-          <Button 
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[11px] font-bold px-4 py-1.5 h-auto rounded-full w-fit shadow-sm shadow-blue-500/20 mt-1"
-            onClick={() => navigate(`/policy?source=${encodeURIComponent(file.name)}`)}
-          >
-            Configure Policy Links
-          </Button>
-        </div>
-
+          </div>
+  
         {/* Right: Toggle & Actions */}
         <div className="flex flex-col items-center justify-center gap-2 shrink-0 lg:pl-4 min-w-[80px]">
           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{isActive ? 'ON' : 'OFF'}</span>
@@ -114,11 +108,10 @@ export const ExternalData = () => {
 
   const mockFiles = [
     { name: "Historical_SAR_Filings_2023.csv", type: "csv-excel", size: "14.2 MB", date: "2 hrs ago", status: "Active", records: "15,420", reliability: "98%", utilization: ["Global KYB Thresholds Policy", "Investigator Swarm Agent"], schema: ["TransactionID", "Amount", "RiskScore"] },
-    { name: "KYB_Compliance_Policy_V4.pdf", type: "pdf", size: "2.1 MB", date: "5 hrs ago", status: "Active", records: "1", reliability: "100%", utilization: ["Document Analysis Rules", "Skeptic Defense Agent"], schema: ["Text Content", "Metadata"] },
     { name: "Core Banking Customer API", type: "api", size: "Live", date: "1 min ago", status: "Active", records: "8,400,000", reliability: "85%", utilization: ["Real-time Tx Monitoring", "Anomaly Detection Engine"], schema: ["CustomerID", "Balance", "KYBStatus"] }
   ];
 
-  const tabs = ["All", "PDF", "CSV/Excel", "Docs", "API"];
+  const tabs = ["All", "CSV/Excel", "API"];
 
 
 
@@ -144,12 +137,12 @@ export const ExternalData = () => {
                 </DialogHeader>
                 <div className="space-y-6 py-4">
                   <div className="border-2 border-dashed border-indigo-200/60 rounded-2xl bg-indigo-50/30 p-10 flex flex-col items-center justify-center hover:bg-indigo-50/60 hover:border-indigo-400 transition-all cursor-pointer relative group">
-                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".pdf,.doc,.docx,.csv,.xlsx,.txt" onChange={(e) => e.target.files && toast({ title: "Upload Started", description: `File ${e.target.files[0].name} is being ingested.` })} />
+                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".csv,.xlsx,.txt" onChange={(e) => e.target.files && toast({ title: "Upload Started", description: `File ${e.target.files[0].name} is being ingested.` })} />
                     <div className="h-14 w-14 rounded-full bg-white shadow-sm flex items-center justify-center mb-4 group-hover:-translate-y-1 transition-transform">
                       <UploadCloud className="h-6 w-6 text-indigo-500" />
                     </div>
                     <h4 className="text-base font-bold text-slate-900 mb-1">Drag & Drop Documents</h4>
-                    <p className="text-sm text-slate-500 text-center">Supports PDF, CSV, Excel, DOCX</p>
+                    <p className="text-sm text-slate-500 text-center">Supports CSV, Excel</p>
                   </div>
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200" /></div>
@@ -205,9 +198,7 @@ export const ExternalData = () => {
           <div className="space-y-4 relative">
             {mockFiles.filter(file => {
               if (activeTab === "All") return true;
-              if (activeTab === "PDF") return file.type === "pdf";
               if (activeTab === "CSV/Excel") return file.type === "csv-excel";
-              if (activeTab === "Docs") return file.type === "docs";
               if (activeTab === "API") return file.type === "api";
               return true;
             }).map((file, i) => (

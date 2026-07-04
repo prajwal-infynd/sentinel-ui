@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare, User, Zap, Wrench, Plus, Book, Brain, Calendar, ShieldAlert } from "lucide-react";
+import { Bot, CheckCircle2, Clock, Play, Pause, Database, FileSearch, Network, Activity, ShieldCheck, Bell, FileSignature, Sparkles, Settings as SettingsIcon, Shield, Webhook, ChevronDown, Cpu, Globe, FileText, Search, RefreshCw, Copy, TerminalSquare, SlidersHorizontal, MessageSquare, User, Zap, Wrench, Plus, Book, Brain, Calendar, ShieldAlert, Trash2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
@@ -62,6 +62,16 @@ const AIAgents = () => {
     });
   };
 
+  const [activeTab, setActiveTab] = useState("agents");
+
+  // Risk Scoring State
+  const [scoringThreshold, setScoringThreshold] = useState(75);
+  const [scoringRules, setScoringRules] = useState([
+    { id: 1, source: "Infynd Corporate Data", field: "Status is Inactive", score: 50 },
+    { id: 2, source: "OFAC Sanctions List", field: "Exact Name Match", score: 100 },
+    { id: 3, source: "UK Companies House", field: "Address Unverified", score: 30 }
+  ]);
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-[#F8F9FC] font-sans text-slate-800">
@@ -81,97 +91,148 @@ const AIAgents = () => {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.5 }}>
-          <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm relative overflow-hidden">
-            <h3 className="mb-6 text-base font-bold tracking-tight flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-indigo-500" />
-              Live Orchestration Pipeline
-            </h3>
-            
-            <div className="relative flex justify-between items-start w-full max-w-5xl mx-auto pb-4 pt-2">
-              <div className="absolute top-8 left-8 right-8 h-0.5 bg-border/80 z-0" />
-              
-              {pipelineSteps.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = index < 4; // Mocking active state
-                return (
-                  <div key={step.name} className="flex flex-col items-center gap-3 z-10">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-all shadow-sm ${
-                        isActive 
-                          ? "bg-indigo-50 text-indigo-600 border border-indigo-100" 
-                          : "bg-white text-muted-foreground border border-border/50"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" strokeWidth={2} />
-                    </div>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider ${isActive ? "text-indigo-900" : "text-muted-foreground"}`}>
-                      {step.name}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </motion.div>
+        {/* Navigation Menu */}
+        <div className="flex items-center gap-1 overflow-x-auto border-b border-slate-200 mb-6 bg-white rounded-t-xl px-2 pt-2 shadow-sm">
+          <button 
+            onClick={() => setActiveTab('entities')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'entities' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <Database className={`w-4 h-4 ${activeTab === 'entities' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('agents')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'agents' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <Bot className={`w-4 h-4 ${activeTab === 'agents' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Agents
+          </button>
+          <button 
+            onClick={() => setActiveTab('guardrails')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'guardrails' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <ShieldAlert className={`w-4 h-4 ${activeTab === 'guardrails' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Guardrails
+          </button>
+          <button 
+            onClick={() => setActiveTab('audit')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'audit' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <FileSignature className={`w-4 h-4 ${activeTab === 'audit' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Audit Trail
+          </button>
+          <button 
+            onClick={() => setActiveTab('improvement')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'improvement' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <Brain className={`w-4 h-4 ${activeTab === 'improvement' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Self Improvement
+          </button>
+          <button 
+            onClick={() => setActiveTab('tokens')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap
+              ${activeTab === 'tokens' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+          >
+            <Cpu className={`w-4 h-4 ${activeTab === 'tokens' ? 'text-indigo-600' : 'text-slate-400'}`} />
+            Token Optimization
+          </button>
+        </div>
 
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {[...agents, ...customAgents].map((agent, index) => {
-            const isPaused = pausedAgents.has(agent.name);
-            const displayStatus = isPaused ? "paused" : agent.status;
-            const config = getAgentConfig(agent.name);
-            const AgentIcon = config.icon;
-            
-            return (
-            <motion.div key={agent.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + index * 0.08 }} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:-translate-y-1 hover:shadow-md hover:border-slate-300 transition-all duration-300">
-              <div className={`absolute inset-0 bg-gradient-to-br from-${config.color.split('-')[1]}-500/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none`} />
-              <div className="relative z-10">
-                <div className="mb-6 flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${config.bg} ${config.color} border ${config.border} shadow-sm ${config.hover} transition-colors duration-300`}>
-                      <AgentIcon className="h-5 w-5 relative z-10" />
-                    </div>
-                    <div>
-                      <div className="text-base font-bold tracking-tight text-slate-900">{agent.name}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className={`h-2 w-2 rounded-full ${displayStatus === "running" ? "bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" : displayStatus === "paused" ? "bg-slate-400" : displayStatus === "completed" ? "bg-blue-500" : "bg-slate-400"}`} />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{displayStatus}</span>
+        {activeTab === 'entities' && (
+          <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-200 shadow-sm border-dashed">
+            <div className="text-center text-slate-500">Dashboard (Coming Soon)</div>
+          </div>
+        )}
+
+        {activeTab === 'agents' && (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {[...agents, ...customAgents].map((agent, index) => {
+              const isPaused = pausedAgents.has(agent.name);
+              const displayStatus = isPaused ? "paused" : agent.status;
+              const config = getAgentConfig(agent.name);
+              const AgentIcon = config.icon;
+              
+              return (
+              <motion.div key={agent.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + index * 0.08 }} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:-translate-y-1 hover:shadow-md hover:border-slate-300 transition-all duration-300">
+                <div className={`absolute inset-0 bg-gradient-to-br from-${config.color.split('-')[1]}-500/5 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none`} />
+                <div className="relative z-10">
+                  <div className="mb-6 flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${config.bg} ${config.color} border ${config.border} shadow-sm ${config.hover} transition-colors duration-300`}>
+                        <AgentIcon className="h-5 w-5 relative z-10" />
+                      </div>
+                      <div>
+                        <div className="text-base font-bold tracking-tight text-slate-900">{agent.name}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className={`h-2 w-2 rounded-full ${displayStatus === "running" ? "bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" : displayStatus === "paused" ? "bg-slate-400" : displayStatus === "completed" ? "bg-blue-500" : "bg-slate-400"}`} />
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">{displayStatus}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors" onClick={() => setEditingAgent(agent.name)}>
+                        <SettingsIcon className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:bg-slate-100 rounded-full transition-colors" onClick={() => togglePause(agent.name)}>
+                        {isPaused ? <Play className="h-4 w-4" fill="currentColor" /> : <Pause className="h-4 w-4" fill="currentColor" />}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors" onClick={() => setEditingAgent(agent.name)}>
-                      <SettingsIcon className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:bg-slate-100 rounded-full transition-colors" onClick={() => togglePause(agent.name)}>
-                      {isPaused ? <Play className="h-4 w-4" fill="currentColor" /> : <Pause className="h-4 w-4" fill="currentColor" />}
-                    </Button>
-                  </div>
-                </div>
 
-                <div className="mb-6 grid grid-cols-2 gap-4">
-                  <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
-                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.processed || 0).toLocaleString()}</div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Items Processed</div>
+                  <div className="mb-6 grid grid-cols-2 gap-4">
+                    <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
+                      <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.processed || 0).toLocaleString()}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Items Processed</div>
+                    </div>
+                    <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
+                      <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.signals || 0).toLocaleString()}</div>
+                      <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Signals Found</div>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-slate-50/80 border border-slate-100 p-3 shadow-sm">
-                    <div className="text-2xl font-black font-mono tracking-tighter text-slate-800">{(agent.signals || 0).toLocaleString()}</div>
-                    <div className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-0.5">Signals Found</div>
-                  </div>
-                </div>
 
-                <div className="space-y-3">
-                  <div className={`text-[11px] font-medium ${config.color} truncate ${config.bg} px-3 py-2 rounded-lg border ${config.border} flex items-center shadow-sm`}><Clock className="mr-2 h-3.5 w-3.5 opacity-80" />{agent.lastAction || "Unknown"}</div>
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Uptime {agent.uptime || "N/A"}</div>
-                  <div className="flex items-center gap-3 pt-2">
-                    <Progress value={agent.accuracy || 0} className="h-2 flex-1 bg-slate-100" />
-                    <span className={`text-xs font-black font-mono ${config.color}`}>{agent.accuracy || 0}%</span>
+                  <div className="space-y-3">
+                    <div className={`text-[11px] font-medium ${config.color} truncate ${config.bg} px-3 py-2 rounded-lg border ${config.border} flex items-center shadow-sm`}><Clock className="mr-2 h-3.5 w-3.5 opacity-80" />{agent.lastAction || "Unknown"}</div>
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1"><CheckCircle2 className="h-4 w-4 text-emerald-500" />Uptime {agent.uptime || "N/A"}</div>
+                    <div className="flex items-center gap-3 pt-2">
+                      <Progress value={agent.accuracy || 0} className="h-2 flex-1 bg-slate-100" />
+                      <span className={`text-xs font-black font-mono ${config.color}`}>{agent.accuracy || 0}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-            );
-          })}
-        </div>
+              </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {activeTab === 'guardrails' && (
+          <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-200 shadow-sm border-dashed">
+            <div className="text-center text-slate-500">Guardrails (Coming Soon)</div>
+          </div>
+        )}
+
+        {activeTab === 'audit' && (
+          <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-200 shadow-sm border-dashed">
+            <div className="text-center text-slate-500">Audit Trail (Coming Soon)</div>
+          </div>
+        )}
+
+        {activeTab === 'improvement' && (
+          <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-200 shadow-sm border-dashed">
+            <div className="text-center text-slate-500">Self Improvement (Coming Soon)</div>
+          </div>
+        )}
+
+        {activeTab === 'tokens' && (
+          <div className="flex items-center justify-center p-20 bg-white rounded-2xl border border-slate-200 shadow-sm border-dashed">
+            <div className="text-center text-slate-500">Token Optimization (Coming Soon)</div>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>

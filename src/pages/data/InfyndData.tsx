@@ -83,14 +83,8 @@ const RecordCard = ({ record, getIcon, setPreviewFile, toast, navigate }: any) =
               }} 
             />
           </div>
-          <Button 
-            className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold px-5 py-2 h-auto rounded-full shadow-sm shadow-blue-500/20 ml-2" 
-            onClick={() => navigate(`/policy?entity=${encodeURIComponent(record.entity)}`)}
-          >
-            Configure Policy
-          </Button>
+          </div>
         </div>
-      </div>
       
       <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>

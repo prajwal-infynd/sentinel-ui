@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { DashboardLayout } from "@/components/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -42,7 +42,7 @@ const Reporting = () => {
   };
 
   return (
-    <DashboardLayout>
+    <div className="w-full">
       <div className="p-8 max-w-[1400px] mx-auto space-y-8">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="pb-4 border-b border-slate-100 flex justify-between items-end">
           <div>
@@ -148,7 +148,7 @@ const Reporting = () => {
           </motion.div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

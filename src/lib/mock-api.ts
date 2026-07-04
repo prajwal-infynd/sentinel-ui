@@ -1312,3 +1312,8 @@ export const pipelineStages = [
   },
 ];
 
+mock.onPost("/custom-data/order").reply((config) => {
+  const data = JSON.parse(config.data);
+  console.log("Mock Custom Data Order Received:", data);
+  return [200, { success: true, message: "Custom data order submitted successfully", orderId: `CDO-${Date.now()}` }];
+});

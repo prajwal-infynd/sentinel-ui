@@ -11,6 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/lib/api-client";
@@ -57,6 +58,9 @@ export function GlobalHeader() {
   ]);
 
   const [approvingId, setApprovingId] = useState<string | null>(null);
+
+  type CloudStatus = "live" | "degraded" | "down";
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>("live");
 
   // Poll pending approvals every 5s — only for admins
   const { data: pendingUsers = [], refetch: refetchPending } = useQuery({
@@ -116,12 +120,32 @@ export function GlobalHeader() {
         )}
       </div>
       <div className="flex items-center gap-4">
-        <Badge variant="outline" className="hidden sm:flex gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 border-emerald-200 text-emerald-700 bg-emerald-50">
-          <Activity className="h-3 w-3" />
-          Cloud Live
-        </Badge>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="hidden sm:flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md border transition-colors hover:shadow-sm focus:outline-none 
+              ${cloudStatus === 'live' ? 'border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100' : ''}
+              ${cloudStatus === 'degraded' ? 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100' : ''}
+              ${cloudStatus === 'down' ? 'border-red-200 text-red-700 bg-red-50 hover:bg-red-100' : ''}
+            ">
+              <Activity className="h-3 w-3" />
+              Cloud {cloudStatus === 'live' ? 'Live' : cloudStatus === 'degraded' ? 'Degraded' : 'Down'}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-40">
+            <DropdownMenuItem onClick={() => setCloudStatus('live')} className="text-emerald-700 focus:text-emerald-800 font-medium text-xs flex items-center gap-2 cursor-pointer">
+              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Live
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCloudStatus('degraded')} className="text-amber-700 focus:text-amber-800 font-medium text-xs flex items-center gap-2 cursor-pointer">
+              <div className="h-2 w-2 rounded-full bg-amber-500" /> Degraded
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setCloudStatus('down')} className="text-red-700 focus:text-red-800 font-medium text-xs flex items-center gap-2 cursor-pointer">
+              <div className="h-2 w-2 rounded-full bg-red-500" /> System Down
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 hidden sm:flex bg-slate-100 px-3 py-1.5 rounded-full">
-          <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+          <div className={`h-2 w-2 rounded-full shadow-sm ${cloudStatus === 'live' ? 'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]' : cloudStatus === 'degraded' ? 'bg-amber-500' : 'bg-red-500'}`} />
           <span>Monitoring Workspace</span>
         </div>
         <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />

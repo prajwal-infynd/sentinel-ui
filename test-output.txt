@@ -1,0 +1,90 @@
+
+[1m[46m RUN [49m[22m [36mv3.2.6 [39m[90mC:/Users/Prajwal/Downloads/sentinel[39m
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 1: signup creates a new user and sends OTP email
+[22m[39m[Backend API Request] POST /auth/signup
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 1b: duplicate signup with unverified email resends OTP
+[22m[39m[Backend API Request] POST /auth/signup
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 2: wrong OTP is rejected
+[22m[39m[Backend API Request] POST /auth/respond-to-challenge
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 3: correct OTP verifies email and moves to awaiting_approval
+[22m[39m[Backend API Request] POST /auth/respond-to-challenge
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 4: notify-admin sends admin approval request email
+[22m[39m[Backend API Request] POST /auth/notify-admin
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 5: admin can see pending users
+[22m[39m[Backend API Request] GET /admin/pending-users
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 6: admin approves user — sends approval confirmation email
+[22m[39m[Backend API Request] GET /admin/pending-users
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 7: approved user no longer appears in pending list
+[22m[39m[Backend API Request] GET /admin/pending-users
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 8: initiate login sends OTP email
+[22m[39m[Backend API Request] POST /auth/initiate-login
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 9: wrong OTP rejects login
+[22m[39m[Backend API Request] POST /auth/respond-to-challenge
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 10: correct OTP returns tokens and user
+[22m[39m[Backend API Request] POST /auth/respond-to-challenge
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Approval → Login[2m > [22m[2mStep 11: unapproved user cannot login (awaiting_approval blocks)
+[22m[39m[Backend API Request] POST /auth/signup
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Rejection[2m > [22m[2mRejection: admin rejects user — sends rejection email
+[22m[39m[Backend API Request] POST /auth/signup
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAuth Flow: Signup → Admin Rejection[2m > [22m[2mRejection: rejected user cannot login
+[22m[39m[Backend API Request] POST /auth/signup
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAdmin: User Management[2m > [22m[2madmin can list all users
+[22m[39m[Backend API Request] GET /admin/users
+
+[90mstdout[2m | src/test/auth-flow.test.ts[2m > [22m[2mAdmin: User Management[2m > [22m[2madmin can invite a new user (bypasses OTP)
+[22m[39m[Backend API Request] POST /admin/users/invite
+
+ [31m❯[39m src/test/auth-flow.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m16 failed[39m[2m)[22m[32m 165[2mms[22m[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 1: signup creates a new user and sends OTP email[39m[32m 63[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 1b: duplicate signup with unverified email resends OTP[39m[32m 11[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 2: wrong OTP is rejected[39m[32m 7[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'status')[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 3: correct OTP verifies email and moves to awaiting_approval[39m[32m 6[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 4: notify-admin sends admin approval request email[39m[32m 7[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 5: admin can see pending users[39m[32m 5[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 6: admin approves user — sends approval confirmation email[39m[32m 7[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 7: approved user no longer appears in pending list[39m[32m 6[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 8: initiate login sends OTP email[39m[32m 7[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 9: wrong OTP rejects login[39m[32m 7[2mms[22m[39m
+[31m     → Cannot read properties of undefined (reading 'status')[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 10: correct OTP returns tokens and user[39m[32m 5[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Approval → Login[2m > [22mStep 11: unapproved user cannot login (awaiting_approval blocks)[39m[32m 6[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Rejection[2m > [22mRejection: admin rejects user — sends rejection email[39m[32m 4[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Auth Flow: Signup → Admin Rejection[2m > [22mRejection: rejected user cannot login[39m[32m 9[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Admin: User Management[2m > [22madmin can list all users[39m[32m 6[2mms[22m[39m
+[31m     → Network Error[39m
+[31m   [31m×[31m Admin: User Management[2m > [22madmin can invite a new user (bypasses OTP)[39m[32m 5[2mms[22m[39m
+[31m     → Network Error[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m16 failed[39m[22m[90m (16)[39m
+[2m   Start at [22m 15:42:20
+[2m   Duration [22m 3.62s[2m (transform 74ms, setup 225ms, collect 165ms, tests 165ms, environment 1.06s, prepare 170ms)[22m
+
